@@ -367,7 +367,10 @@ fi
 # that LaunchServices knows about elsewhere on the disk.
 COMPONENTS="$WORK/components.plist"
 pkgbuild --analyze --root "$STAGING" "$COMPONENTS" >/dev/null
-/usr/libexec/PlistBuddy -c 'Set :0:BundleIsRelocatable false' "$COMPONENTS" \
+# Newer pkgbuild versions omit the key from the analysis, so add it when
+# there is nothing to set.
+/usr/libexec/PlistBuddy -c 'Set :0:BundleIsRelocatable false' "$COMPONENTS" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c 'Add :0:BundleIsRelocatable bool false' "$COMPONENTS" \
     || die "could not set BundleIsRelocatable in $COMPONENTS"
 
 COMPONENT="$WORK/component.pkg"
