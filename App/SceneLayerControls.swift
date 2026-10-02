@@ -269,14 +269,7 @@ struct SceneFontRows: View {
 
     var body: some View {
         ComposerRow(title: "Font") {
-            Picker("Font", selection: $font.design) {
-                ForEach(SceneFont.Design.allCases) { design in
-                    Text(design.displayName).tag(design)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
+            FontFamilyPicker(font: $font)
         }
         SettingsDivider()
         ComposerRow(title: "Weight") {
@@ -449,6 +442,10 @@ struct IconLayerControls: View {
                     }
                 }
                 .padding(16)
+                SettingsDivider()
+                ComposerRow(title: icon.symbolName) {
+                    SymbolBrowserButton(symbolName: $icon.symbolName)
+                }
                 SettingsDivider()
                 ComposerColorRow(title: "Color", hex: $icon.colorHex)
             }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FF0000000000000000000092 /* ComposerPickers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000092 /* ComposerPickers.swift */; };
 		FF0000000000000000000090 /* SceneComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000090 /* SceneComposer.swift */; };
 		FF0000000000000000000091 /* SceneLayerControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000091 /* SceneLayerControls.swift */; };
 		FF0000000000000000000080 /* ScreenSaverSceneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000080 /* ScreenSaverSceneStore.swift */; };
@@ -85,6 +86,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DD0000000000000000000092 /* ComposerPickers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerPickers.swift; sourceTree = "<group>"; };
 		DD0000000000000000000090 /* SceneComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneComposer.swift; sourceTree = "<group>"; };
 		DD0000000000000000000091 /* SceneLayerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneLayerControls.swift; sourceTree = "<group>"; };
 		DD0000000000000000000080 /* ScreenSaverSceneStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverSceneStore.swift; sourceTree = "<group>"; };
@@ -244,6 +246,7 @@
 				DD0000000000000000000084 /* StudioPage.swift */,
 				DD0000000000000000000090 /* SceneComposer.swift */,
 				DD0000000000000000000091 /* SceneLayerControls.swift */,
+				DD0000000000000000000092 /* ComposerPickers.swift */,
 				DD0000000000000000000014 /* SettingsView.swift */,
 				DD0000000000000000000018 /* Components.swift */,
 				DD0000000000000000000017 /* Theme.swift */,
@@ -442,6 +445,7 @@
 				FF0000000000000000000086 /* StudioPage.swift in Sources */,
 				FF0000000000000000000090 /* SceneComposer.swift in Sources */,
 				FF0000000000000000000091 /* SceneLayerControls.swift in Sources */,
+				FF0000000000000000000092 /* ComposerPickers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

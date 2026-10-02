@@ -6,6 +6,8 @@ import SwiftUI
 struct StudioPage: View {
     @EnvironmentObject private var model: AppModel
 
+    @ObservedObject var studio: StudioSession
+
     private var tabs: [StudioTab] { model.visibleStudioTabs }
 
     /// The selected tab, or the first visible one if the selection's gate
@@ -14,28 +16,44 @@ struct StudioPage: View {
         tabs.contains(model.studioTab) ? model.studioTab : tabs.first
     }
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                PageHeader(title: "Studio",
-                           subtitle: "Compose your own wallpapers and screen savers") {
-                } trailing: {
-                    if tabs.count > 1 {
-                        SegmentedPills(options: tabs.map { ($0.displayName, $0) },
-                                       selection: $model.studioTab)
-                    }
-                }
+    /// While composing, the page itself doesn't scroll — the composer pins
+    /// its preview and scrolls only the edit form.
+    private var isComposing: Bool {
+        currentTab == .screenSaver && studio.draft != nil
+    }
 
-                switch currentTab {
-                case .wallpapers:
-                    StudioWallpapersTab()
-                case .screenSaver:
-                    StudioScreenSaverTab(studio: model.studio)
-                case nil:
-                    EmptyView()
+    var body: some View {
+        if isComposing {
+            content
+                .padding(28)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            ScrollView {
+                content
+                    .padding(28)
+            }
+        }
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: isComposing ? 16 : 24) {
+            PageHeader(title: "Studio",
+                       subtitle: "Compose your own wallpapers and screen savers") {
+            } trailing: {
+                if tabs.count > 1 {
+                    SegmentedPills(options: tabs.map { ($0.displayName, $0) },
+                                   selection: $model.studioTab)
                 }
             }
-            .padding(28)
+
+            switch currentTab {
+            case .wallpapers:
+                StudioWallpapersTab()
+            case .screenSaver:
+                StudioScreenSaverTab(studio: studio)
+            case nil:
+                EmptyView()
+            }
         }
     }
 }

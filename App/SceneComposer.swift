@@ -20,14 +20,26 @@ struct SceneComposer: View {
     @State private var savedName: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            toolbar
-            preview
-            HStack(alignment: .top, spacing: 20) {
-                layersPanel
+        // The preview stays put; only the edit form below it scrolls, so
+        // every change is visible as it's made.
+        GeometryReader { proxy in
+            VStack(alignment: .leading, spacing: 16) {
+                toolbar
+                preview
+                    .frame(height: min(400, max(180, proxy.size.height * 0.42)))
+                    .frame(maxWidth: .infinity)
+                HStack(alignment: .top, spacing: 20) {
+                    ScrollView {
+                        layersPanel
+                            .padding(.bottom, 20)
+                    }
                     .frame(width: 300)
-                controlsPanel
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    ScrollView {
+                        controlsPanel
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .padding(.bottom, 20)
+                    }
+                }
             }
         }
         .onAppear(perform: selectFrontLayer)
@@ -107,14 +119,11 @@ struct SceneComposer: View {
     private var preview: some View {
         SaverSceneView(scene: draft.scene, resources: model.sceneResources)
             .aspectRatio(16.0 / 10.0, contentMode: .fit)
-            // Cap the width (not the height) so the 16:10 shape holds.
-            .frame(maxWidth: 640)
             .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                     .strokeBorder(Theme.hairline)
             }
-            .frame(maxWidth: .infinity)
             .accessibilityLabel("Live preview")
     }
 

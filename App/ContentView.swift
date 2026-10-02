@@ -99,7 +99,7 @@ struct ContentView: View {
         case .screenSavers:
             ScreenSaversPage()
         case .studio:
-            StudioPage()
+            StudioPage(studio: model.studio)
         case .settings:
             SettingsPage()
         }

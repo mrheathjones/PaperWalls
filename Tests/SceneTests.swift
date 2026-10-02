@@ -296,6 +296,21 @@ final class ScreenSaverSceneCodingTests: XCTestCase {
         XCTAssertEqual(text.segments, [.text("Hi "), .text(""), .token(.date)])
     }
 
+    func testFontFamilyRoundTripsAndDefaultsToSystem() throws {
+        var clock = SceneLayer.clock()
+        clock.content = .clock(ClockLayer(font: SceneFont(design: .serif, weight: .bold, family: "Futura")))
+        let scene = ScreenSaverScene(layers: [clock])
+        XCTAssertEqual(try roundTrip(scene), scene)
+
+        // Scenes saved before font families existed have no "family" key.
+        let older = try decode(#"{"layers": [{"content": {"kind": "clock", "font": {"design": "serif", "weight": "bold"}}}]}"#)
+        guard case .clock(let decoded) = older.layers.first?.content else {
+            return XCTFail("expected a clock layer")
+        }
+        XCTAssertNil(decoded.font.family)
+        XCTAssertEqual(decoded.font.design, .serif)
+    }
+
     func testNewLayerDefaultsAreSensible() {
         for layer in [SceneLayer.clock(), .text(), .icon()] {
             XCTAssertTrue(layer.isVisible)

@@ -341,12 +341,40 @@ enum SceneLayerMetrics {
 
 // MARK: - Model → SwiftUI/AppKit
 
+/// Installed font families (what Font Book lists), cached — the renderer
+/// asks on every frame.
+enum SceneFontLibrary {
+    static let families: [String] = NSFontManager.shared.availableFontFamilies
+        .filter { !$0.hasPrefix(".") }
+        .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+
+    private static let familySet = Set(families)
+
+    static func isInstalled(_ family: String) -> Bool {
+        familySet.contains(family)
+    }
+}
+
 extension SceneFont {
+    /// The chosen family when it's installed here, else nil (system font).
+    var installedFamily: String? {
+        guard let family, SceneFontLibrary.isInstalled(family) else { return nil }
+        return family
+    }
+
     func font(size: CGFloat) -> Font {
-        .system(size: size, weight: weight.fontWeight, design: design.fontDesign)
+        if let installedFamily {
+            return .custom(installedFamily, fixedSize: size).weight(weight.fontWeight)
+        }
+        return .system(size: size, weight: weight.fontWeight, design: design.fontDesign)
     }
 
     func nsFont(size: CGFloat) -> NSFont {
+        if let installedFamily,
+           let font = NSFontManager.shared.font(withFamily: installedFamily, traits: [],
+                                                weight: weight.fontManagerWeight, size: size) {
+            return font
+        }
         let base = NSFont.systemFont(ofSize: size, weight: weight.nsFontWeight)
         guard let systemDesign = design.nsFontDesign,
               let descriptor = base.fontDescriptor.withDesign(systemDesign),
@@ -385,6 +413,17 @@ extension SceneFont.Weight {
         case .medium: return .medium
         case .semibold: return .semibold
         case .bold: return .bold
+        }
+    }
+
+    /// NSFontManager's 0–15 scale (5 is regular, 9 is bold).
+    var fontManagerWeight: Int {
+        switch self {
+        case .light: return 3
+        case .regular: return 5
+        case .medium: return 6
+        case .semibold: return 8
+        case .bold: return 9
         }
     }
 

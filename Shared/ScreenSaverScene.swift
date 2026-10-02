@@ -299,6 +299,10 @@ struct SceneFont: Codable, Equatable {
 
     var design: Design = .rounded
     var weight: Weight = .semibold
+    /// An installed font family (as listed in Font Book), e.g. "Futura".
+    /// nil uses the system font in `design`. If the family isn't installed
+    /// on the Mac showing the scene, the renderer falls back to `design`.
+    var family: String?
 }
 
 extension SceneFont {
@@ -306,6 +310,7 @@ extension SceneFont {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         design = container.sceneValue(.design, default: .rounded)
         weight = container.sceneValue(.weight, default: .semibold)
+        family = container.sceneValue(.family, default: nil)
     }
 }
 
