@@ -3,10 +3,19 @@
   "forced": {
     "lockMode": "soft",
     "selectedWallpaperID": "bundled-aurora-veil",
-    "externalWallpaperFolderPath": "/Library/CompanyWallpapers"
+    "externalWallpaperFolderPath": "/Library/CompanyWallpapers",
+    "activeScreenSaverSceneID": "managed",
+    "managedScreenSaverScene": {
+      "name": "Company Screen Saver",
+      "scene": {
+        "background": { "source": { "kind": "currentDesktop" }, "treatment": { "blur": 0.25, "dim": 0.45 } },
+        "layers": [ { "content": { "kind": "clock" }, "size": 0.14, "motion": { "kind": "bounce", "speed": 0.3 } } ]
+      }
+    }
   },
   "defaults": {
     "autoRotateIntervalMinutes": 30,
-    "showFeaturedWallpaper": true
+    "showFeaturedWallpaper": true,
+    "showStudio": true
   }
 }

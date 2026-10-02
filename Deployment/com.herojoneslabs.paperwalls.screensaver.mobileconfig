@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Reference profile: select PaperWalls.saver as the screen saver and
+	     set the idle time. PaperWalls never installs this — the admin
+	     deploys it via MDM. WHICH SCENE the saver shows is controlled
+	     separately, by activeScreenSaverSceneID / managedScreenSaverScene in
+	     the com.herojoneslabs.paperwalls domain.
+
+	     ⚠️ UNVERIFIED per macOS version. Apple documents moduleName /
+	     modulePath for this payload, but admins report that macOS Sonoma
+	     (14) and later often ignore them for third-party savers, because the
+	     selection moved into the wallpaper system's own store. Test on each
+	     target release before relying on it. If the saver is not selected,
+	     the idle time below still applies and users can pick "PaperWalls"
+	     under System Settings > Screen Saver > Other. See the Administrator
+	     Guide for the alternatives admins use on newer releases.
+
+	     There is deliberately no PaperWalls preference for the idle time:
+	     it is an OS setting, and this payload is the supported way to set it. -->
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadType</key>
+			<string>com.apple.screensaver.user</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadIdentifier</key>
+			<string>com.herojoneslabs.paperwalls.screensaver.user</string>
+			<key>PayloadUUID</key>
+			<string>5E2B7A90-1C4D-4F3E-8A6B-9D0C2E4F6A01</string>
+			<key>PayloadDisplayName</key>
+			<string>Screen Saver Selection</string>
+			<!-- seconds of inactivity before the saver starts (600 = 10 min) -->
+			<key>idleTime</key>
+			<integer>600</integer>
+			<key>moduleName</key>
+			<string>PaperWalls</string>
+			<key>modulePath</key>
+			<string>/Library/Screen Savers/PaperWalls.saver</string>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Selects the PaperWalls screen saver and sets the idle time. Verify on each macOS release you deploy to.</string>
+	<key>PayloadDisplayName</key>
+	<string>PaperWalls Screen Saver Selection</string>
+	<key>PayloadIdentifier</key>
+	<string>com.herojoneslabs.paperwalls.screensaver.profile</string>
+	<key>PayloadOrganization</key>
+	<string>YourOrg</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadScope</key>
+	<string>User</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>5E2B7A90-1C4D-4F3E-8A6B-9D0C2E4F6A02</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>

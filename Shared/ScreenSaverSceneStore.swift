@@ -157,6 +157,10 @@ enum ScreenSaverSceneStore {
 
     // MARK: - Image assets
 
+    static func assetsDirectory(in directory: URL = defaultDirectory) -> URL {
+        directory.appendingPathComponent(assetsFolderName, isDirectory: true)
+    }
+
     /// File for an imported icon image (`IconLayer.imageAssetName`), or nil
     /// for a name that isn't a plain filename.
     static func assetURL(named name: String, in directory: URL = defaultDirectory) -> URL? {

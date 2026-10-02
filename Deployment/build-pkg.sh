@@ -12,8 +12,10 @@
 #   /usr/local/bin/paperwallscli
 #   /Library/LaunchAgents/com.herojoneslabs.paperwalls.manage.plist   (optional)
 #   /Library/LaunchAgents/com.herojoneslabs.paperwalls.watch.plist    (optional, Tier-3 fleets)
+#   /Library/Screen Savers/PaperWalls.saver                           (optional, spec §10)
 # A postinstall script bootstraps the LaunchAgent(s) into the console user's
-# gui domain so they start converging without a logout/login.
+# gui domain so they start converging without a logout/login, and restarts the
+# screen saver host so an updated saver is loaded.
 #
 #   Version scheme (composed from the project's Version + Build):
 #     0.1.0-d.x  Dev team machines   (CHANNEL="dev")
@@ -36,10 +38,11 @@ CHANNEL="dev"
 # script's parent folder.
 PROJECT=""
 
-# Scheme names. The project has two — the app and the CLI — so both are pinned
-# here instead of auto-detected.
+# Scheme names. The project has several products, so each is pinned here
+# instead of auto-detected.
 APP_SCHEME="PaperWalls"
 CLI_SCHEME="paperwallscli"
+SAVER_SCHEME="PaperWallsSaver"
 
 # Output directory for the .pkg. Empty = "<project folder>/dist".
 OUTPUT=""
@@ -53,6 +56,13 @@ INSTALL_LAUNCHAGENT=true
 # every other mode, but there's no reason to run it elsewhere). Never
 # combine with the Tier-2 desktop-override profile.
 INSTALL_WATCH_AGENT=false
+
+# Include the screen saver (spec §10): PaperWalls.saver → /Library/Screen Savers.
+# It shows the scene chosen on the app's ScreenSavers page (or forced by
+# activeScreenSaverSceneID / managedScreenSaverScene). Signed with APP_IDENTITY
+# and notarized alongside the app when NOTARIZE=true. Set false to ship
+# without it.
+INSTALL_SAVER=true
 
 # --- App signing ---------------------------------------------------
 # Sign the APP + CLI with a Developer ID Application identity + hardened runtime.
@@ -210,6 +220,20 @@ CLI_PRODUCT_NAME="$(jq -r '.[0].buildSettings.FULL_PRODUCT_NAME // empty' <<<"$C
 CLI_PRODUCTS_DIR="$(jq -r '.[0].buildSettings.BUILT_PRODUCTS_DIR // empty' <<<"$CLI_SETTINGS")"
 [[ -n "$CLI_PRODUCT_NAME" && -n "$CLI_PRODUCTS_DIR" ]] || die "could not resolve CLI product name/path from build settings"
 
+SAVER_PATH=""
+SAVER_PRODUCT_NAME=""
+if [[ "$INSTALL_SAVER" == "true" ]]
+then
+    info "Reading build settings (scheme: $SAVER_SCHEME)…"
+    SAVER_SETTINGS="$(xcodebuild -showBuildSettings -json \
+        -project "$PROJECT" -scheme "$SAVER_SCHEME" -configuration Release \
+        -derivedDataPath "$DERIVED" 2>/dev/null)"
+    SAVER_PRODUCT_NAME="$(jq -r '.[0].buildSettings.FULL_PRODUCT_NAME // empty' <<<"$SAVER_SETTINGS")"
+    SAVER_PRODUCTS_DIR="$(jq -r '.[0].buildSettings.BUILT_PRODUCTS_DIR // empty' <<<"$SAVER_SETTINGS")"
+    [[ -n "$SAVER_PRODUCT_NAME" && -n "$SAVER_PRODUCTS_DIR" ]] || die "could not resolve the screen saver product from build settings (set INSTALL_SAVER=false to skip)"
+    SAVER_PATH="$SAVER_PRODUCTS_DIR/$SAVER_PRODUCT_NAME"
+fi
+
 # ---------------------------------------------------------------------------
 # Compose the channel version
 # ---------------------------------------------------------------------------
@@ -232,6 +256,7 @@ cat <<EOF
   CLI     : $CLI_PRODUCT_NAME → /usr/local/bin
   Agent   : $([[ "$INSTALL_LAUNCHAGENT" == "true" ]] && echo "yes → /Library/LaunchAgents" || echo "no")
   Watcher : $([[ "$INSTALL_WATCH_AGENT" == "true" ]] && echo "yes → /Library/LaunchAgents (Tier 3)" || echo "no")
+  Saver   : $([[ "$INSTALL_SAVER" == "true" ]] && echo "$SAVER_PRODUCT_NAME → /Library/Screen Savers" || echo "no")
   Channel : $CHANNEL  →  version $FULL_VERSION  (build $BASE_BUILD)
   Output  : $PKG_PATH
   App sign: ${APP_IDENTITY:-<project default>}
@@ -240,7 +265,7 @@ cat <<EOF
 EOF
 
 # ---------------------------------------------------------------------------
-# Build both schemes (inject the channel version; CFBundleVersion stays numeric)
+# Build the schemes (inject the channel version; CFBundleVersion stays numeric)
 # ---------------------------------------------------------------------------
 common_args=(
     -project "$PROJECT"
@@ -272,6 +297,13 @@ xcodebuild build -scheme "$APP_SCHEME" "${common_args[@]}"
 info "Building $CLI_SCHEME (Release, universal)…"
 xcodebuild build -scheme "$CLI_SCHEME" "${common_args[@]}"
 
+if [[ "$INSTALL_SAVER" == "true" ]]
+then
+    info "Building $SAVER_SCHEME (Release, universal)…"
+    xcodebuild build -scheme "$SAVER_SCHEME" "${common_args[@]}"
+    [[ -d "$SAVER_PATH" ]] || die "built screen saver not found at: $SAVER_PATH"
+fi
+
 [[ -d "$APP_PATH" ]] || die "built app not found at: $APP_PATH"
 [[ -f "$CLI_PATH" ]] || die "built CLI not found at: $CLI_PATH"
 
@@ -294,6 +326,17 @@ then
     info "Stapling the app…"
     xcrun stapler staple "$APP_PATH"
     xcrun stapler validate "$APP_PATH"
+
+    if [[ "$INSTALL_SAVER" == "true" ]]
+    then
+        info "Notarizing the screen saver (profile: $NOTARY_PROFILE)…"
+        SAVER_ZIP="$WORK/saver-notarize.zip"
+        /usr/bin/ditto -c -k --keepParent "$SAVER_PATH" "$SAVER_ZIP"
+        xcrun notarytool submit "$SAVER_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+        info "Stapling the screen saver…"
+        xcrun stapler staple "$SAVER_PATH"
+        xcrun stapler validate "$SAVER_PATH"
+    fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -325,21 +368,30 @@ then
         || die "watch LaunchAgent plist failed plutil -lint"
 fi
 
+if [[ "$INSTALL_SAVER" == "true" ]]
+then
+    mkdir -p "$STAGING/Library/Screen Savers"
+    cp -R "$SAVER_PATH" "$STAGING/Library/Screen Savers/"
+fi
+
 /usr/bin/xattr -cr "$STAGING" 2>/dev/null || true   # strip detritus so pkg/notarization don't choke
 
 # Postinstall: bootstrap the LaunchAgent for the console user (if present) so
 # managed preferences converge immediately instead of at next login.
 SCRIPTS_DIR="$WORK/scripts"
 mkdir -p "$SCRIPTS_DIR"
-if [[ "$INSTALL_LAUNCHAGENT" == "true" || "$INSTALL_WATCH_AGENT" == "true" ]]
+HAS_POSTINSTALL=false
+if [[ "$INSTALL_LAUNCHAGENT" == "true" || "$INSTALL_WATCH_AGENT" == "true" || "$INSTALL_SAVER" == "true" ]]
 then
+    HAS_POSTINSTALL=true
     AGENT_NAMES=()
     [[ "$INSTALL_LAUNCHAGENT" == "true" ]] && AGENT_NAMES+=("$(basename "$AGENT_PLIST_SRC")")
     [[ "$INSTALL_WATCH_AGENT" == "true" ]] && AGENT_NAMES+=("$(basename "$WATCH_PLIST_SRC")")
-    AGENT_NAME_LIST="${AGENT_NAMES[*]}"
+    AGENT_NAME_LIST="${AGENT_NAMES[*]:-}"
     cat > "$SCRIPTS_DIR/postinstall" <<POSTINSTALL_EOF
 #!/bin/bash
-# postinstall — load the PaperWalls LaunchAgent(s) for the console user.
+# postinstall — load the PaperWalls LaunchAgent(s) for the console user and
+# make the screen saver host pick up a newly installed saver.
 # Agents are per-user; when nobody (or only loginwindow/_mbsetupuser) is at
 # the console, skip quietly — RunAtLoad picks them up at next login.
 
@@ -356,22 +408,37 @@ then
     done
 fi
 
+# The screen saver host keeps a loaded saver bundle in memory; restart it so
+# the installed version is the one that runs (the system relaunches it on
+# demand). Harmless when it isn't running.
+if [[ "${INSTALL_SAVER}" == "true" ]]
+then
+    /usr/bin/killall legacyScreenSaver 2>/dev/null || true
+fi
+
 exit 0
 POSTINSTALL_EOF
     chmod 755 "$SCRIPTS_DIR/postinstall"
     bash -n "$SCRIPTS_DIR/postinstall" || die "generated postinstall failed bash -n"
 fi
 
-# Component plist: mark the app non-relocatable so the installer always puts it
-# in /Applications instead of "upgrading" a stray copy (e.g. a dev build)
-# that LaunchServices knows about elsewhere on the disk.
+# Component plist: mark every bundle (the app, and the screen saver when
+# included) non-relocatable so the installer always puts it at its payload
+# path instead of "upgrading" a stray copy (e.g. a dev build) that
+# LaunchServices knows about elsewhere on the disk.
 COMPONENTS="$WORK/components.plist"
 pkgbuild --analyze --root "$STAGING" "$COMPONENTS" >/dev/null
-# Newer pkgbuild versions omit the key from the analysis, so add it when
-# there is nothing to set.
-/usr/libexec/PlistBuddy -c 'Set :0:BundleIsRelocatable false' "$COMPONENTS" 2>/dev/null \
-    || /usr/libexec/PlistBuddy -c 'Add :0:BundleIsRelocatable bool false' "$COMPONENTS" \
-    || die "could not set BundleIsRelocatable in $COMPONENTS"
+component_index=0
+while /usr/libexec/PlistBuddy -c "Print :${component_index}:RootRelativeBundlePath" "$COMPONENTS" >/dev/null 2>&1
+do
+    # Newer pkgbuild versions omit the key from the analysis, so add it
+    # when there is nothing to set.
+    /usr/libexec/PlistBuddy -c "Set :${component_index}:BundleIsRelocatable false" "$COMPONENTS" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Add :${component_index}:BundleIsRelocatable bool false" "$COMPONENTS" \
+        || die "could not set BundleIsRelocatable in $COMPONENTS"
+    component_index=$(( component_index + 1 ))
+done
+[[ "$component_index" -gt 0 ]] || die "pkgbuild found no bundle components in $STAGING"
 
 COMPONENT="$WORK/component.pkg"
 info "Building component package…"
@@ -383,7 +450,7 @@ pkg_args=(
     --version "$FULL_VERSION"
     --ownership recommended
 )
-if [[ "$INSTALL_LAUNCHAGENT" == "true" ]]
+if [[ "$HAS_POSTINSTALL" == "true" ]]
 then
     pkg_args+=( --scripts "$SCRIPTS_DIR" )
 fi
@@ -427,5 +494,5 @@ then
 fi
 if [[ "$NOTARIZE" == "true" ]]
 then
-    printf '   app notarized + stapled (pkg not notarized)\n'
+    printf '   app%s notarized + stapled (pkg not notarized)\n' "$([[ "$INSTALL_SAVER" == "true" ]] && echo " + screen saver")"
 fi

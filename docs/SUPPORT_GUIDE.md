@@ -6,8 +6,11 @@ quick-hits version.
 
 ## What "working correctly" looks like
 
-- The app shows a sidebar (Browse, Collections, macOS, Managed, Personal,
-  Settings — some entries hide when their source is disabled by policy).
+- The app shows a sidebar: **Library** (Browse, Collections, macOS, Managed,
+  Personal, ScreenSavers), **Tools** (Studio), then Settings — some entries
+  hide when their source or feature is disabled by policy.
+- With "PaperWalls" chosen in System Settings → Screen Saver, the screen
+  saver shows the scene marked **ACTIVE** on the ScreenSavers page.
 - Clicking **Set** on any wallpaper changes the desktop within a second or
   two, and the card gains an **ACTIVE** badge shortly after.
 - A menu bar icon offers rotate controls and "Up next" previews.
@@ -28,6 +31,12 @@ quick-hits version.
 | Curated/org feed shows nothing | Feed disabled (default), never synced, or its signature failed verification (the app refuses unsigned/tampered manifests silently and keeps the last good state) | Check gates: `appCuratedEnabled` / `orgCatalogEnabled`+URL+key. Then check the log (below) for `remotecatalog` errors |
 | Personal page won't import dropped images | Only image files import (`.jpg .jpeg .png .heic .tiff`); dropped *folders* are ignored in app-managed mode | Try a single JPEG. In user-defined mode, dropping a folder switches the source instead |
 | A sidebar item is missing (Collections / macOS) | Its source is disabled (`showBundledWallpapers` / `showSystemWallpapers` false) | By design; check policy |
+| ScreenSavers or Studio missing from the sidebar | Hidden by policy (`showScreenSaversPage` / `showStudio`), or creation is disabled (`allowScreenSaverCreation=false` hides Studio's ScreenSaver tab) | By design; check policy |
+| Screen saver shows a plain color | Screen savers turned off (`screenSaverEnabled=false`) or a hard lock | `paperwallscli screensaver` prints `state: disabled` or `hardLock` — expected under policy |
+| Screen saver shows a simple clock, not the user's scene | Nothing is ACTIVE, or the chosen scene isn't allowed/doesn't exist on this Mac | Have the user click **Set Active** on a card. `paperwallscli screensaver` shows `noneSelected` |
+| Screen saver shows an out-of-date scene | The saver reads a published snapshot when it starts | Open PaperWalls once, or run `paperwallscli manage` as the user; `paperwallscli screensaver` should then say `published: up to date` |
+| A different screen saver runs | "PaperWalls" isn't selected in macOS | System Settings → Screen Saver → Other → PaperWalls (a macOS setting, not a PaperWalls one) |
+| "Set Active" is greyed | Active scene forced by the organization, a soft/hard lock, or the scene isn't on the allow-list | Hover the button — the tooltip states the reason |
 | App asks for access to Downloads/Desktop etc. at launch | macOS privacy (TCC) prompt: the current desktop picture lives in that folder and the app checks what's on screen | Either answer is safe; "Don't Allow" only hides the ACTIVE badge for wallpapers stored there |
 | Theme looks wrong after switching to System | Fixed in current versions (applies instantly and tracks macOS) | Update the app if older than 1.0 build 14 |
 | Wallpaper didn't survive logout/restart | macOS re-applies per-space pictures; the manage agent converges it | Confirm the manage LaunchAgent is installed and loaded |
@@ -66,12 +75,21 @@ log show --last 30m --predicate 'subsystem == "com.herojoneslabs.paperwalls"' --
 
 Categories: `preferences` (config resolution), `catalog` (folder scans),
 `engine` (setting the wallpaper), `enforcement` (lock detection),
-`remotecatalog` (feed sync/signature), `systemwallpapers` (Apple downloads).
+`remotecatalog` (feed sync/signature), `systemwallpapers` (Apple downloads),
+`scenestore` (screen saver library), `screensaver` (publishing to the
+saver), `saver` (the screen saver itself).
+
+**Screen saver state:**
+
+```sh
+/usr/local/bin/paperwallscli screensaver
+```
 
 **Caches** (safe to delete; the app rebuilds them):
 `~/Library/Application Support/PaperWalls/` — `RemoteCache/` (feeds),
 `SystemWallpapers/` (Apple downloads), `content-id-cache.json` (hash cache).
-Do **not** delete `Personal/` — that's the user's own wallpaper library.
+Do **not** delete `Personal/` (the user's own wallpaper library) or
+`Studio/ScreenSavers/` (the screen savers they made).
 
 ## Escalation
 

@@ -18,7 +18,7 @@ set -euo pipefail
 # ======================= CONFIG — edit these ========================
 
 # Version stamped into the pkg (and its filename). Bump when uninstall.sh changes.
-UNINSTALL_VERSION="1.0"
+UNINSTALL_VERSION="1.1"
 
 # Output directory for the .pkg. Empty = "<project folder>/dist".
 OUTPUT=""

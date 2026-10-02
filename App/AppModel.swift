@@ -120,6 +120,9 @@ final class AppModel: ObservableObject {
     /// The Scene Composer's working state. A separate object so editing
     /// (every slider tick) doesn't republish the whole app model.
     let studio = StudioSession()
+    /// False until the scene library has been read once — nothing is
+    /// published to the saver before then.
+    var screenSaversLoaded = false
 
     private var pixelSizeCache: [URL: CGSize] = [:]
     private var cancellables: Set<AnyCancellable> = []
@@ -149,7 +152,10 @@ final class AppModel: ObservableObject {
         // the next main-queue turn.
         prefs.objectWillChange
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in self?.enforcePageVisibility() }
+            .sink { [weak self] _ in
+                self?.enforcePageVisibility()
+                self?.publishScreenSaverSnapshot()
+            }
             .store(in: &cancellables)
 
         // Feed toggles: sync immediately when a feed turns on or its config
@@ -384,8 +390,10 @@ final class AppModel: ObservableObject {
             if next.showsLockedView && !previous.showsLockedView {
                 lockOverlayDismissed = false
             }
-            // A hard lock disables Studio's composer (spec §10).
+            // A hard lock disables Studio's composer and blanks the saver
+            // (spec §10).
             enforcePageVisibility()
+            publishScreenSaverSnapshot()
         }
     }
 
@@ -472,6 +480,8 @@ final class AppModel: ObservableObject {
             scanned.orgRemoteFolderURL = cached.folderURL
         }
         library = scanned
+        // Wallpaper and rotating backgrounds resolve against the library.
+        publishScreenSaverSnapshot()
         refreshCurrentWallpapers()
         refreshSystemCatalogIfNeeded()
     }

@@ -1,8 +1,14 @@
+#if DEBUG
 import AppKit
 import SystemConfiguration
 import os
 
-/// PHASE 2 SPIKE ONLY (spec §10) — remove once scene delivery is decided.
+/// DEBUG BUILDS ONLY (spec §10) — never compiled into a release saver.
+///
+/// The saver's design rests on what the sandboxed host can read; this is
+/// how that was established, and how to re-check it on another macOS
+/// version: install a Debug build of the saver, preview it, then read the
+/// report from the log (`log show --predicate 'category == "saverprobe"'`).
 ///
 /// Records what the saver can actually see from inside the system's
 /// legacyScreenSaver host: where "home" resolves, which PaperWalls folders
@@ -263,3 +269,4 @@ enum SaverProbe {
         }
     }
 }
+#endif

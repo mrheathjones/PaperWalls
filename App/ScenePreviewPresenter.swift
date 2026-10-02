@@ -102,35 +102,3 @@ extension AppModel {
                 companyName: prefs.companyName.trimmingCharacters(in: .whitespaces)))
     }
 }
-
-/// DEBUG-only menu for eyeballing the renderer until the ScreenSavers
-/// page and Studio exist (spec §10, phase 1).
-struct ScenePreviewCommands: Commands {
-    let model: AppModel
-
-    var body: some Commands {
-        CommandMenu("Scene Preview") {
-            ForEach(ScreenSaverPreset.allCases) { preset in
-                Button(preset.displayName) {
-                    ScenePreviewPresenter.show(scene: preset.scene,
-                                               resources: model.sceneResources,
-                                               title: preset.displayName)
-                }
-            }
-            Divider()
-            Button("Rotating Pool") {
-                var scene = ScreenSaverPreset.bouncingClock.scene
-                scene.background = SceneBackground(
-                    source: .rotatingPool(intervalSeconds: 8),
-                    treatment: SceneBackgroundTreatment(dim: 0.3, slowZoom: true))
-                ScenePreviewPresenter.show(scene: scene, resources: model.sceneResources,
-                                           title: "Rotating Pool")
-            }
-            Button("Bouncing Clock — Fullscreen") {
-                ScenePreviewPresenter.show(scene: ScreenSaverPreset.bouncingClock.scene,
-                                           resources: model.sceneResources,
-                                           fullscreen: true)
-            }
-        }
-    }
-}

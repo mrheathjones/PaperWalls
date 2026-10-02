@@ -16,14 +16,16 @@ configurability via MDM configuration profiles.
 
 ## Project layout
 
-Single plain Xcode project (`PaperWalls.xcodeproj`), no SPM packages. Three
-pieces, two targets:
+Single plain Xcode project (`PaperWalls.xcodeproj`), no SPM packages. Four
+pieces, three product targets (plus the unit-test target):
 
 | Path | Target(s) | Purpose |
 | --- | --- | --- |
-| `App/` | PaperWalls | SwiftUI app: Browse/Collections/Personal/Managed/Settings library UI |
+| `App/` | PaperWalls | SwiftUI app: the library pages (Browse/Collections/macOS/Managed/Personal/ScreenSavers), Studio, and Settings |
+| `Saver/` | PaperWallsSaver | `PaperWalls.saver` — a real macOS screen saver that plays the scene chosen in the app |
 | `CLI/` | paperwallscli | Command-line tool (`get`/`set`/`manage`/`version`/`help`) |
-| `Shared/` | both | Engine, catalog, and preference logic shared via target membership |
+| `Shared/` | several | Engine, catalog, preference, and scene logic shared via target membership |
+| `Tests/` | PaperWallsTests | Unit tests for the pure logic in `Shared/` |
 | `Resources/Wallpapers/` | PaperWalls | Bundled images + `catalog.json` (copied as a folder reference) |
 | `Deployment/` | — | Sample `.mobileconfig`, Jamf custom schema (`.schema.json`), LaunchAgent plist, and `build-pkg.sh` |
 
@@ -38,6 +40,15 @@ clicking a card opens a detail sheet with display/target options, and the
 current desktop picture is badged **ACTIVE**. Auto-rotate cycles the desktop
 through favorites, all sources, or the company folder on a configurable
 interval while the app is running.
+
+**Screen savers.** The **ScreenSavers** page (Library) holds the screen
+savers you make; **Studio** (Tools) is where you compose them — start from a
+preset (Bouncing Clock, Floating Message, Minimal Clock, Help Desk Contact)
+or a blank scene, then add clock, text, and icon layers over a background
+(the current desktop picture, a specific wallpaper, a rotating pool, a color,
+or a gradient) with a live preview. **Set Active** on a card makes that scene
+what `PaperWalls.saver` shows; pick the saver itself once in System Settings
+› Screen Saver › Other. Settings is always the last sidebar item.
 
 Shared sources (`WallpaperEngine.swift`, `PreferencesStore.swift`,
 `ManagedPreferences.swift`, `WallpaperCatalog.swift`) are compiled into **both**
@@ -65,6 +76,7 @@ paperwallscli set ~/Pictures/x.jpg   # set on all screens (default)
 paperwallscli set x.jpg 0 --scale fit --color 1D2E3F
 paperwallscli set x.jpg --all-screens
 paperwallscli manage                 # apply MDM/user preferences
+paperwallscli screensaver            # print what the screen saver will show (read-only)
 paperwallscli version
 paperwallscli help
 ```
@@ -127,6 +139,36 @@ profile exactly like the ones above):
 | `autoRotateOnWake` | bool | `false` | New wallpaper each time the Mac wakes |
 | `appearanceTheme` | string | `light` | Window theme: `light` \| `dark` \| `system` (follows macOS appearance) |
 | `gridColumns` | integer | `2` | Wallpaper grid density (2–4 columns; the header view control) |
+
+Screen savers and Studio (same domain, same forcing rules):
+
+| Key | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `screenSaverEnabled` | bool | `true` | Master switch for the PaperWalls screen saver; `false` makes the saver show a solid color and nothing else |
+| `activeScreenSaverSceneID` | string | — | The scene the saver runs: a scene's UUID from the user's library, or `managed` for the scene provisioned by `managedScreenSaverScene`. Forcing it disables **Set Active** |
+| `managedScreenSaverScene` | string (JSON) | — | An organization-provided scene, shown as a read-only **Managed** entry (ID `managed`). Build it in Studio and use the card's **Copy Scene for MDM** action. In `managed.json` it may be an inline object instead of a string |
+| `allowedScreenSaverSceneIDs` | array of strings | — | Optional allow-list of scene IDs that may be active; other scenes stay visible but can't be set active |
+| `allowScreenSaverCreation` | bool | `true` | `false` = users can't create, edit, rename, or delete scenes (Studio's ScreenSaver tab is unavailable); they can still browse, preview, and Set Active |
+| `showScreenSaversPage` | bool | `true` | Shows/hides the ScreenSavers page in the sidebar's Library section |
+| `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
+| `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (a "coming soon" placeholder today) |
+| `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
+
+There is deliberately no idle-time key: when the screen saver starts is a
+macOS setting. Set it (and select the saver) with a `com.apple.screensaver`
+profile — see `Deployment/com.herojoneslabs.paperwalls.screensaver.mobileconfig`
+and its caveats.
+
+**How the saver gets its scene.** macOS runs third-party savers in a
+sandboxed host that cannot read this preference domain, so the saver never
+evaluates policy itself. The app (on any relevant change) and
+`paperwallscli manage` (at login and hourly, via the LaunchAgent) resolve
+the master switch, lock tier, allow-list, and active scene, and publish the
+outcome to `~/Library/Application Support/PaperWalls/Studio/ActiveScreenSaver.json`,
+which the saver reads each time it starts. Under `lockMode=hard` (or with
+`screenSaverEnabled=false`) the saver shows a solid color; under `soft` only
+the forced/managed scene applies; with nothing selected yet it shows a
+built-in Minimal Clock.
 
 Legacy rotation keys `autoRotateSource` and
 `rotateIncludeBundled/Personal/Managed` are **migrated into `rotationPool`**
@@ -213,6 +255,10 @@ the CONFIG block at the top and run it. Pkg payload:
 - `paperwallscli` → `/usr/local/bin/`
 - `Deployment/com.herojoneslabs.paperwalls.manage.plist` → `/Library/LaunchAgents/`
   (+ a postinstall that bootstraps the agent for the console user)
+- `PaperWalls.saver` → `/Library/Screen Savers/` (`INSTALL_SAVER=true`, the
+  default; signed with the app identity, notarized with the app when
+  `NOTARIZE=true`; the postinstall restarts the screen saver host so an
+  updated saver loads)
 
 The LaunchAgent runs `paperwallscli manage` at login and hourly, so MDM
 preference changes converge without user interaction. Load it immediately for

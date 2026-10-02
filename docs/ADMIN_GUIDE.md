@@ -7,6 +7,7 @@ configuration profile). It also works fully standalone on unmanaged Macs.
 
 - App: `/Applications/PaperWalls.app` (bundle ID `com.herojoneslabs.paperwalls`)
 - CLI: `/usr/local/bin/paperwallscli`
+- Screen saver: `/Library/Screen Savers/PaperWalls.saver` (optional — see §12)
 - Preference domain: `com.herojoneslabs.paperwalls` (equals the bundle ID)
 - Requires: macOS 13+ (some wallpaper sources offer more content on newer macOS)
 
@@ -28,11 +29,14 @@ Package payload:
 | `/usr/local/bin/paperwallscli` | CLI (same rules and preferences as the app) |
 | `/Library/LaunchAgents/com.herojoneslabs.paperwalls.manage.plist` | Optional: runs `paperwallscli manage` at login + hourly so managed selections converge without the app running |
 | `/Library/LaunchAgents/com.herojoneslabs.paperwalls.watch.plist` | Optional (off by default): the Tier-3 enforcement watcher — see §5 |
+| `/Library/Screen Savers/PaperWalls.saver` | Optional (on by default): the screen saver — see §12 |
 
 A postinstall script bootstraps the included LaunchAgent(s) into the console
-user's session immediately, so settings converge without a logout/login.
+user's session immediately, so settings converge without a logout/login, and
+restarts the screen saver host so an updated saver is the one that runs.
 Building your own pkg: `Deployment/build-pkg.sh` (configure the CONFIG block;
-`INSTALL_WATCH_AGENT=true` adds the watcher agent to the payload).
+`INSTALL_WATCH_AGENT=true` adds the watcher agent to the payload,
+`INSTALL_SAVER=false` leaves the screen saver out).
 
 The app is deliberately **not sandboxed** (it must set the desktop picture,
 read `/Library/Managed Preferences`, and scan arbitrary folders) and is
@@ -136,6 +140,22 @@ is also in `Deployment/`.
 | `gridColumns` | int | `2` | Wallpaper grid density, 2–4 columns |
 | `favoriteWallpaperIDs` | array | — | The user's hearted wallpapers (usually left to the user) |
 
+### Screen savers and Studio
+
+| Key | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `screenSaverEnabled` | bool | `true` | Master switch for the PaperWalls screen saver; `false` makes the saver show a solid color and nothing else |
+| `activeScreenSaverSceneID` | string | — | The scene the saver runs: a scene's UUID from the user's library, or `managed` for the scene provisioned by `managedScreenSaverScene`. Forcing it disables **Set Active** |
+| `managedScreenSaverScene` | string (JSON) | — | An organization-provided scene, shown as a read-only **Managed** entry (ID `managed`). Build it in Studio and use the card's **Copy Scene for MDM** action. In `managed.json` it may be an inline object instead of a string |
+| `allowedScreenSaverSceneIDs` | array of strings | — | Optional allow-list of scene IDs that may be active; other scenes stay visible but can't be set active |
+| `allowScreenSaverCreation` | bool | `true` | `false` = users can't create, edit, rename, or delete scenes (Studio's ScreenSaver tab is unavailable); they can still browse, preview, and Set Active |
+| `showScreenSaversPage` | bool | `true` | Shows/hides the ScreenSavers page in the sidebar's Library section |
+| `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
+| `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (a "coming soon" placeholder today) |
+| `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
+
+See §12 for how these interact with lock tiers and how the saver is deployed.
+
 ---
 
 ## 4. Wallpaper sources
@@ -221,6 +241,7 @@ paperwallscli get [screen-index]        current desktop picture path(s)
 paperwallscli set <path> [screen-index] [--scale fill|fit|stretch|center] [--color RRGGBB] [--all-screens]
 paperwallscli manage                    apply the managed/user preferences (LaunchAgent entry point)
 paperwallscli watch [--interval s]      Tier-3 enforcement watcher (min 5s, default 15s)
+paperwallscli screensaver               print what the screen saver will show (read-only)
 paperwallscli version | help
 ```
 
@@ -236,9 +257,12 @@ failed · `5` ran as root (refused — the desktop is a per-user setting) ·
 | `~/Library/Application Support/PaperWalls/RemoteCache/` | Feed caches (verified manifests + assets) |
 | `~/Library/Application Support/PaperWalls/SystemWallpapers/` | Downloaded Apple wallpapers + catalog copy |
 | `~/Library/Application Support/PaperWalls/content-id-cache.json` | Folder-wallpaper hash cache |
+| `~/Library/Application Support/PaperWalls/Studio/ScreenSavers/` | The user's screen savers: one `<uuid>.json` per scene, `Thumbnails/` (cache), `Assets/` (images imported into scenes). **User data, not a cache** |
+| `~/Library/Application Support/PaperWalls/Studio/ActiveScreenSaver.json` | The resolved scene published for the saver (cache; rewritten by the app and `manage`) |
 | `/Library/Application Support/PaperWalls/managed.json` | Optional local admin config (admin-writable) |
 
-Deleting any per-user cache is safe — the app rebuilds it.
+Deleting any per-user cache is safe — the app rebuilds it. `Personal/` and
+`Studio/ScreenSavers/*.json` (+ `Assets/`) are the user's own content.
 
 ---
 
@@ -255,6 +279,9 @@ The app **and** the CLI log to the macOS unified log under one subsystem:
 | `enforcement` | Lock-tier resolution and OS-restriction detection |
 | `remotecatalog` | Feed sync: HTTP results, **signature failures**, sha256 mismatches, evictions |
 | `systemwallpapers` | Apple built-in downloads and the MobileAsset catalog fallback |
+| `scenestore` | Screen saver library: skipped/corrupt scene files, managed-scene parse failures |
+| `screensaver` | Publishing the saver snapshot; scene image decoding |
+| `saver` | The screen saver itself (logged by the system's `legacyScreenSaver` process) |
 
 Useful invocations:
 
@@ -297,6 +324,18 @@ go to its stdout and the unified log.
 | Watcher/rotation fight the desktop | You deployed the Tier-2 OS override **and** `enforcedRotation` together. Don't — the app detects the OS restriction, treats the Mac as hard-locked, and the watcher stands down, but the OS profile should simply not be combined with rotation |
 | App shows "App-only" instead of "Enforced by configuration profile" | The Tier-2 profile isn't on the device (or doesn't set `allowWallpaperModification=false` / a `com.apple.desktop` override). `enforcement` log category shows what was detected |
 
+### Screen savers
+
+| Symptom | Check |
+| --- | --- |
+| Saver shows a plain color | `paperwallscli screensaver` prints the state: `disabled` (`screenSaverEnabled=false`) or `hardLock` (`lockMode=hard`) — both are by design |
+| Saver shows a Minimal Clock instead of the chosen scene | State is `noneSelected` (nothing active, the active ID doesn't exist on this Mac, or the allow-list excludes it), or nothing has been published yet — open PaperWalls once or run `paperwallscli manage` as the user |
+| Saver shows an old scene | The saver reads the published snapshot when it starts. `paperwallscli screensaver` reports `published: stale` if it's behind; `manage` (hourly agent) or opening the app refreshes it |
+| "PaperWalls" isn't the selected screen saver | Selection is a macOS setting, not a PaperWalls one — see §12 on the selection profile and its limits |
+| Managed scene missing from the ScreenSavers page | `managedScreenSaverScene` isn't valid scene JSON — `scenestore` log says "Ignoring managedScreenSaverScene" |
+| A chosen font doesn't appear in the saver | The font family isn't installed on that Mac; the scene falls back to the system font |
+| Updated saver doesn't take effect | The host process caches the loaded bundle: `killall legacyScreenSaver` (the pkg postinstall does this) |
+
 ### Feeds
 
 | Symptom | Check |
@@ -338,3 +377,92 @@ Avoid `defaults delete com.herojoneslabs.paperwalls` (the whole domain) —
 it wipes the user's favorites and rotation state; delete individual keys
 instead. And never delete `…/PaperWalls/Personal/` — that's the user's own
 wallpaper library, not a cache.
+
+---
+
+## 12. Screen savers and Studio
+
+PaperWalls includes a real macOS screen saver (`PaperWalls.saver`) that plays
+a *scene* — a background plus clock, text, and icon layers — composed in the
+app's **Studio** and kept on the **ScreenSavers** page.
+
+### How the pieces fit
+
+1. Users (or you) compose scenes in Studio; they are saved per user under
+   `~/Library/Application Support/PaperWalls/Studio/ScreenSavers/`.
+2. One scene is **active** (`activeScreenSaverSceneID`).
+3. The app and `paperwallscli manage` resolve policy — master switch, lock
+   tier, allow-list, active scene — and publish the result to
+   `…/PaperWalls/Studio/ActiveScreenSaver.json`.
+4. The saver reads that file each time it starts.
+
+Step 3 exists because macOS runs third-party savers in a sandboxed host
+(`legacyScreenSaver`) that **cannot read this preference domain**; it can read
+files in the user's home folder. The saver therefore never evaluates policy
+itself. On Macs where nobody opens the app, the `manage` LaunchAgent keeps the
+snapshot current (login + hourly), so deploy that agent if you manage the
+screen saver by profile.
+
+### Provisioning a company screen saver
+
+1. On any Mac, build the scene in Studio and save it.
+2. On its card in ScreenSavers choose **Copy Scene for MDM**.
+3. Paste the JSON as the value of `managedScreenSaverScene` (a string in a
+   profile; `managed.json` also accepts it as an inline object).
+4. Force `activeScreenSaverSceneID` = `managed` to make it the one that runs.
+
+It appears on every user's ScreenSavers page as a read-only **Managed** entry.
+Users can duplicate it into a personal copy unless `allowScreenSaverCreation`
+is `false`. Notes for managed scenes:
+
+- A scene that uses a specific wallpaper stores the wallpaper's ID — use a
+  bundled or content-ID wallpaper present on every Mac (§7).
+- Scenes that use an imported image or a non-system font only render fully
+  where that image/font exists; elsewhere the icon is omitted and the font
+  falls back to the system font. Prefer SF Symbols and system fonts for
+  fleet-wide scenes.
+
+### Lock tiers
+
+| `lockMode` | Saver shows | In the app |
+| --- | --- | --- |
+| `off`, `enforcedRotation` | The active scene (if it exists and the allow-list permits it) | Full use, subject to the keys above |
+| `soft` | The forced active scene if `activeScreenSaverSceneID` is forced, else the managed scene if provisioned, else the user's current scene | **Set Active** is greyed out; editing is still allowed |
+| `hard` | A solid color only | **Set Active** greyed out; Studio's composer unavailable |
+
+A scene with a *rotating* background draws from the same resolved rotation
+pool as wallpaper rotation (§5), so `allowedWallpaperIDs` and the pool rules
+apply to it.
+
+### Selecting the saver and the idle time
+
+Installing the pkg puts the saver in `/Library/Screen Savers`; it then appears
+under **System Settings › Screen Saver › Other** as "PaperWalls". Which saver
+is selected, and how long before it starts, are macOS settings — there is no
+PaperWalls key for either.
+
+`Deployment/com.herojoneslabs.paperwalls.screensaver.mobileconfig` is a
+reference `com.apple.screensaver.user` payload that sets `moduleName`,
+`modulePath`, and `idleTime`. **Treat saver selection by profile as
+unverified on macOS 14 and later:** Apple still documents those keys, but
+admins report that newer releases frequently ignore them for third-party
+savers (selection moved into the wallpaper system's own per-user store, and
+some fleets fall back to a scripted approach). Test on every macOS version you
+deploy to. The idle time is unaffected by that caveat.
+
+The saver's tile in System Settings shows macOS's generic thumbnail: on
+macOS 27 (where this was tested) the system ignores a third-party saver's own
+thumbnail image.
+
+### Verifying a new macOS version
+
+The design depends on the saver host being able to read the user's home
+folder. That was verified on macOS 27; before deploying to another major
+version, install a **Debug** build of the saver, preview it once, and read the
+access report it logs:
+
+```sh
+log show --last 10m --predicate 'subsystem == "com.herojoneslabs.paperwalls" AND category == "saverprobe"' --style compact
+```
+
+Release builds contain no probe.

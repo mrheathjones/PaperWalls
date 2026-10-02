@@ -355,3 +355,120 @@ final class SceneDraftTests: XCTestCase {
         XCTAssertTrue([SceneTextSegment.text("")].normalized.isEmpty)
     }
 }
+
+// MARK: - Saver snapshot (spec §10)
+
+final class ScreenSaverSnapshotTests: XCTestCase {
+    private func saver(_ name: String, source: SceneBackgroundSource = .currentDesktop) -> StoredScreenSaver {
+        StoredScreenSaver(name: name, scene: ScreenSaverScene(background: SceneBackground(source: source),
+                                                             layers: [.clock()]))
+    }
+
+    private func make(policy: ScreenSaverPolicy,
+                      scenes: [StoredScreenSaver],
+                      wallpaperPath: @escaping (String) -> String? = { _ in nil },
+                      rotationPaths: @escaping () -> [String] = { [] }) -> ScreenSaverSnapshot {
+        ScreenSaverSnapshot.make(policy: policy, scenes: scenes, companyName: "Acme",
+                                 assetsDirectory: "/tmp/assets",
+                                 wallpaperPath: wallpaperPath, rotationPaths: rotationPaths)
+    }
+
+    func testActiveSceneIsCarriedInFull() {
+        let scene = saver("Lobby")
+        let snapshot = make(policy: ScreenSaverPolicy(activeID: scene.id), scenes: [scene])
+        XCTAssertEqual(snapshot.state, .active)
+        XCTAssertEqual(snapshot.sceneID, scene.id)
+        XCTAssertEqual(snapshot.sceneName, "Lobby")
+        XCTAssertEqual(snapshot.scene, scene.scene)
+        XCTAssertEqual(snapshot.companyName, "Acme")
+    }
+
+    func testNothingSelectedCarriesNoScene() {
+        let snapshot = make(policy: ScreenSaverPolicy(activeID: nil), scenes: [saver("Lobby")])
+        XCTAssertEqual(snapshot.state, .noneSelected)
+        XCTAssertNil(snapshot.scene)
+    }
+
+    func testDisabledAndHardLockCarryNoScene() {
+        let scene = saver("Lobby")
+        XCTAssertEqual(make(policy: ScreenSaverPolicy(enabled: false, activeID: scene.id), scenes: [scene]).state,
+                       .disabled)
+        let locked = make(policy: ScreenSaverPolicy(lockMode: .hard, activeID: scene.id), scenes: [scene])
+        XCTAssertEqual(locked.state, .hardLock)
+        XCTAssertNil(locked.scene)
+    }
+
+    func testSoftLockPublishesTheManagedScene() {
+        var managed = saver("Company")
+        managed.id = ScreenSaverSceneStore.managedSceneID
+        let mine = saver("Mine")
+        let snapshot = make(policy: ScreenSaverPolicy(lockMode: .soft, activeID: mine.id),
+                            scenes: [managed, mine])
+        XCTAssertEqual(snapshot.sceneID, ScreenSaverSceneStore.managedSceneID)
+    }
+
+    func testOnlyTheUsedBackgroundIsResolved() {
+        let wallpaper = saver("Wall", source: .wallpaper(id: "bundled-dune"))
+        var rotationAsked = false
+        let snapshot = make(policy: ScreenSaverPolicy(activeID: wallpaper.id), scenes: [wallpaper],
+                            wallpaperPath: { $0 == "bundled-dune" ? "/w/dune.png" : nil },
+                            rotationPaths: { rotationAsked = true; return ["/x"] })
+        XCTAssertEqual(snapshot.wallpaperPaths, ["bundled-dune": "/w/dune.png"])
+        XCTAssertTrue(snapshot.rotationPaths.isEmpty)
+        XCTAssertFalse(rotationAsked)
+
+        let rotating = saver("Rotate", source: .rotatingPool(intervalSeconds: 60))
+        let rotated = make(policy: ScreenSaverPolicy(activeID: rotating.id), scenes: [rotating],
+                           rotationPaths: { ["/a.png", "/b.png"] })
+        XCTAssertEqual(rotated.rotationPaths, ["/a.png", "/b.png"])
+    }
+
+    func testWriteReadRoundTripAndSkipsUnchangedContent() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PaperWallsSnapshotTests-\(UUID().uuidString)/Studio/ActiveScreenSaver.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent().deletingLastPathComponent()) }
+
+        let scene = saver("Lobby")
+        var snapshot = make(policy: ScreenSaverPolicy(activeID: scene.id), scenes: [scene])
+        XCTAssertNil(ScreenSaverSnapshot.read(from: url))
+        XCTAssertTrue(try snapshot.write(to: url))
+
+        let loaded = try XCTUnwrap(ScreenSaverSnapshot.read(from: url))
+        XCTAssertTrue(loaded.hasSameContent(as: snapshot))
+        XCTAssertEqual(loaded.scene, scene.scene)
+
+        // Same outcome later → the file is left alone.
+        snapshot.generatedAt = Date().addingTimeInterval(3_600)
+        XCTAssertFalse(try snapshot.write(to: url))
+        // A different outcome → rewritten.
+        snapshot.state = .disabled
+        snapshot.scene = nil
+        XCTAssertTrue(try snapshot.write(to: url))
+        XCTAssertEqual(ScreenSaverSnapshot.read(from: url)?.state, .disabled)
+    }
+
+    func testGarbageOrNewerSnapshotReadsAsNil() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PaperWallsSnapshotTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("ActiveScreenSaver.json")
+
+        try Data("nope".utf8).write(to: url)
+        XCTAssertNil(ScreenSaverSnapshot.read(from: url))
+
+        var future = ScreenSaverSnapshot(state: .disabled)
+        future.version = ScreenSaverSnapshot.currentVersion + 1
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(future).write(to: url)
+        XCTAssertNil(ScreenSaverSnapshot.read(from: url))
+    }
+
+    func testAssetURLsStayInsideTheAssetsFolder() {
+        let snapshot = ScreenSaverSnapshot(state: .active, assetsDirectory: "/tmp/assets")
+        XCTAssertEqual(snapshot.assetURL(named: "abc.png")?.path, "/tmp/assets/abc.png")
+        XCTAssertNil(snapshot.assetURL(named: "../abc.png"))
+        XCTAssertNil(ScreenSaverSnapshot(state: .active).assetURL(named: "abc.png"))
+    }
+}

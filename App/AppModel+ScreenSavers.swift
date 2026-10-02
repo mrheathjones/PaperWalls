@@ -131,7 +131,36 @@ extension AppModel {
         screenSavers = ScreenSaverSceneStore.loadAll()
         managedScreenSaver = ScreenSaverSceneStore.managedScene(
             defaultName: "\(prefs.companyDisplayName) Screen Saver")
+        screenSaversLoaded = true
+        publishScreenSaverSnapshot()
         refreshScreenSaverThumbnails()
+    }
+
+    /// Resolves what the saver should show and writes it where the saver
+    /// can read it (spec §10; see `ScreenSaverSnapshot`). Called whenever
+    /// an input changes — the library, the active scene, a gate, the lock
+    /// tier, or the wallpaper library. An unchanged outcome isn't rewritten.
+    func publishScreenSaverSnapshot() {
+        guard screenSaversLoaded else { return }
+        let library = self.library
+        let snapshot = ScreenSaverSnapshot.make(
+            policy: screenSaverPolicy,
+            scenes: allScreenSavers,
+            companyName: prefs.companyName.trimmingCharacters(in: .whitespaces),
+            assetsDirectory: ScreenSaverSceneStore.assetsDirectory().path,
+            wallpaperPath: { id in
+                library.wallpaper(withID: id).flatMap { library.fileURL(for: $0) }?.path
+            },
+            rotationPaths: {
+                self.rotationPool.compactMap { library.fileURL(for: $0)?.path }
+            })
+        do {
+            if try snapshot.write() {
+                ScreenSaverSnapshot.log.info("Published screen saver snapshot: \(snapshot.state.rawValue, privacy: .public)")
+            }
+        } catch {
+            ScreenSaverSnapshot.log.error("Could not publish screen saver snapshot: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     /// Saves a new scene (or a new version of `id`) and returns the entry.

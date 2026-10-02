@@ -68,6 +68,37 @@
 								<!-- daily "Featured today" hero on Browse -->
 								<key>showFeaturedWallpaper</key>
 								<true/>
+								<!-- Screen savers & Studio. The saver itself
+								     (/Library/Screen Savers/PaperWalls.saver)
+								     is selected with a separate profile — see
+								     com.herojoneslabs.paperwalls.screensaver.mobileconfig -->
+								<!-- false = the saver shows a solid color -->
+								<key>screenSaverEnabled</key>
+								<true/>
+								<!-- a scene UUID, or "managed" for the
+								     scene provisioned below -->
+								<key>activeScreenSaverSceneID</key>
+								<string>managed</string>
+								<!-- scene JSON: build it in Studio, then use
+								     the card's "Copy Scene for MDM" action -->
+								<key>managedScreenSaverScene</key>
+								<string>{"name":"Company Screen Saver","scene":{"background":{"source":{"kind":"currentDesktop"},"treatment":{"blur":0.25,"dim":0.45}},"layers":[{"content":{"kind":"clock"},"size":0.14,"motion":{"kind":"bounce","speed":0.3}}]}}</string>
+								<!-- optional allow-list for the active scene -->
+								<key>allowedScreenSaverSceneIDs</key>
+								<array>
+									<string>managed</string>
+								</array>
+								<!-- false = browse + Set Active only -->
+								<key>allowScreenSaverCreation</key>
+								<true/>
+								<key>showScreenSaversPage</key>
+								<true/>
+								<key>showStudio</key>
+								<true/>
+								<key>showStudioWallpapersTab</key>
+								<true/>
+								<key>showStudioScreenSaverTab</key>
+								<true/>
 							</dict>
 						</dict>
 					</array>

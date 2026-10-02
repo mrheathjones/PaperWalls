@@ -6,15 +6,17 @@
 # Name: uninstall.sh
 # Author: herojoneslabs
 # Date: 08-29-2026
-# Modified: 08-29-2026
+# Modified: 10-02-2026
 # Purpose: Remove everything the PaperWalls install .pkg deployed —
 #          /Applications/PaperWalls.app, /usr/local/bin/paperwallscli,
 #          the manage/watch LaunchAgents (booted out for every user),
-#          the pkg receipt, and (optionally) per-user runtime data.
+#          /Library/Screen Savers/PaperWalls.saver, the pkg receipt, and
+#          (optionally) per-user runtime data.
 #          Runs standalone (sudo ./uninstall.sh), as a Jamf policy
 #          script, or as the postinstall of PaperWalls-Uninstall.pkg —
 #          it ignores its arguments and always performs the removal.
 # Version: 1.0 - Initial Script
+#          1.1 - Remove the screen saver and its per-user data
 #
 #
 #
@@ -58,7 +60,7 @@ readonly ORG_PLIST_DOMAIN="com.herojoneslabs"
 
 # Script metadata
 readonly SCRIPT_NAME=$("${BASENAME}" "$0")
-readonly SCRIPT_VERSION="1.0"
+readonly SCRIPT_VERSION="1.1"
 readonly LOG_LABEL="${ORG_PLIST_DOMAIN}.paperwalls.uninstall"
 readonly TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 readonly JAMF_LOG="/var/log/jamf.log"
@@ -79,6 +81,8 @@ readonly APP_BUNDLE_ID="com.herojoneslabs.paperwalls"
 readonly PKG_RECEIPT_ID="com.herojoneslabs.paperwalls"          # pkgbuild --identifier
 readonly APP_PATH="/Applications/PaperWalls.app"
 readonly CLI_PATH="/usr/local/bin/paperwallscli"
+readonly SAVER_PATH="/Library/Screen Savers/PaperWalls.saver"
+readonly SAVER_HOST_PROCESS="legacyScreenSaver"
 readonly MANAGE_LABEL="com.herojoneslabs.paperwalls.manage"
 readonly WATCH_LABEL="com.herojoneslabs.paperwalls.watch"
 readonly MANAGE_PLIST="/Library/LaunchAgents/${MANAGE_LABEL}.plist"
@@ -91,11 +95,16 @@ readonly APP_SUPPORT_SUBPATH="Library/Application Support/PaperWalls"
 readonly SYSTEM_MANAGED_DIR="/Library/Application Support/PaperWalls"   # admin managed.json lives here
 
 # ==================== REMOVAL TOGGLES — edit these ==================
-# The app/CLI/agents/receipt are ALWAYS removed. These control the
-# per-user data the app created at runtime.
+# The app/CLI/agents/screen saver/receipt are ALWAYS removed. These control
+# the per-user data the app created at runtime.
 #
-#   REMOVE_USER_CACHES       Feed cache, downloaded Apple wallpapers, and the
-#                            folder-hash cache. Safe — the app rebuilds them.
+#   REMOVE_USER_CACHES       Feed cache, downloaded Apple wallpapers, the
+#                            folder-hash cache, screen saver thumbnails, and
+#                            the published screen saver snapshot. Safe — the
+#                            app rebuilds them.
+#   REMOVE_SCREEN_SAVERS     The user's OWN screen savers made in Studio
+#                            (…/PaperWalls/Studio). Off by default — this is
+#                            user data, not a cache. Turn on for a full wipe.
 #   REMOVE_PERSONAL_LIBRARY  The user's OWN imported wallpapers
 #                            (…/PaperWalls/Personal). Off by default — this is
 #                            user data, not a cache. Turn on for a full wipe.
@@ -107,6 +116,7 @@ readonly SYSTEM_MANAGED_DIR="/Library/Application Support/PaperWalls"   # admin 
 #                            likely manage that separately (or via a profile).
 # ===================================================================
 readonly REMOVE_USER_CACHES="true"
+readonly REMOVE_SCREEN_SAVERS="false"
 readonly REMOVE_PERSONAL_LIBRARY="false"
 readonly REMOVE_USER_PREFERENCES="false"
 readonly REMOVE_MANAGED_CONFIG="false"
@@ -267,6 +277,15 @@ remove_payload() {
         log_warn "CLI not found at ${CLI_PATH} (already removed?)"
     fi
 
+    if [[ -d "${SAVER_PATH}" ]]
+    then
+        log_info "Removing screen saver: ${SAVER_PATH}"
+        "${RM}" -rf "${SAVER_PATH}"
+        # The host keeps the bundle loaded; restart it so the removed saver
+        # stops running (the system relaunches the host on demand).
+        "${PKILL}" -x "${SAVER_HOST_PROCESS}" 2>/dev/null || true
+    fi
+
     if [[ -f "${MANAGE_TMP_LOG}" ]]
     then
         log_info "Removing agent log: ${MANAGE_TMP_LOG}"
@@ -310,6 +329,13 @@ remove_user_data() {
         then
             log_info "Removing caches for ${home}"
             "${RM}" -rf "${base}/RemoteCache" "${base}/SystemWallpapers" "${base}/content-id-cache.json"
+            "${RM}" -rf "${base}/Studio/ScreenSavers/Thumbnails" "${base}/Studio/ActiveScreenSaver.json"
+        fi
+
+        if [[ "${REMOVE_SCREEN_SAVERS}" == "true" && -d "${base}/Studio" ]]
+        then
+            log_warn "Removing the user's Studio screen savers for ${home}"
+            "${RM}" -rf "${base}/Studio"
         fi
 
         if [[ "${REMOVE_PERSONAL_LIBRARY}" == "true" && -d "${base}/Personal" ]]
@@ -375,8 +401,8 @@ remove_user_data
 remove_managed_config
 
 log_info "PaperWalls uninstall complete"
-log_info "  Removed: app, CLI, LaunchAgents, pkg receipt${REMOVE_USER_CACHES:+, user caches}"
-log_info "  Kept:    $([[ "${REMOVE_PERSONAL_LIBRARY}" == "true" ]] && echo -n "" || echo -n "personal library, ")$([[ "${REMOVE_USER_PREFERENCES}" == "true" ]] && echo -n "" || echo -n "user preferences ")(toggle REMOVE_* in the script for a full wipe)"
+log_info "  Removed: app, CLI, LaunchAgents, screen saver, pkg receipt${REMOVE_USER_CACHES:+, user caches}"
+log_info "  Kept:    $([[ "${REMOVE_PERSONAL_LIBRARY}" == "true" ]] && echo -n "" || echo -n "personal library, ")$([[ "${REMOVE_SCREEN_SAVERS}" == "true" ]] && echo -n "" || echo -n "Studio screen savers, ")$([[ "${REMOVE_USER_PREFERENCES}" == "true" ]] && echo -n "" || echo -n "user preferences ")(toggle REMOVE_* in the script for a full wipe)"
 
 log_info "${SCRIPT_NAME} completed successfully"
 

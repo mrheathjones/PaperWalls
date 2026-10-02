@@ -6,9 +6,13 @@ import os
 /// The .saver's principal class (spec §10). Hosts the same `SaverSceneView`
 /// the app previews with, inside the system's legacyScreenSaver process.
 ///
-/// PHASE 2 SPIKE: shows a hardcoded scene and runs `SaverProbe` so we can
-/// see, with evidence, what the sandboxed host can read. Scene delivery is
-/// decided from those findings.
+/// What to show comes from `ScreenSaverSnapshot` — the one file the app
+/// and `paperwallscli manage` publish for the saver. This sandboxed host
+/// can't see the preference domain, so it never evaluates policy itself:
+///   * active        → the snapshot's scene
+///   * none selected / no snapshot yet → the built-in Minimal Clock
+///   * disabled / hard lock → a solid color, nothing else
+/// The snapshot is re-read every time the saver starts.
 ///
 /// The explicit @objc name keeps `NSPrincipalClass` free of the Swift
 /// module prefix — and unique, since every installed saver is loaded into
@@ -23,6 +27,8 @@ final class PaperWallsSaverView: ScreenSaverView {
     private static let willStopNotification = Notification.Name("com.apple.screensaver.willstop")
 
     private var hostingView: NSHostingView<SaverSceneView>?
+    /// Solid color shown when there is no scene (disabled / hard lock).
+    private var fallbackColor = NSColor.black
     private var willStopObserver: NSObjectProtocol?
 
     override init?(frame: NSRect, isPreview: Bool) {
@@ -39,7 +45,6 @@ final class PaperWallsSaverView: ScreenSaverView {
         if let willStopObserver {
             DistributedNotificationCenter.default().removeObserver(willStopObserver)
         }
-        SaverProbe.event("deinit")
     }
 
     private func configure() {
@@ -48,11 +53,12 @@ final class PaperWallsSaverView: ScreenSaverView {
         animationTimeInterval = 1
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
+        #if DEBUG
         SaverProbe.event("init preview=\(isPreview) frame=\(Int(frame.width))x\(Int(frame.height))")
+        #endif
 
         willStopObserver = DistributedNotificationCenter.default().addObserver(
             forName: Self.willStopNotification, object: nil, queue: .main) { [weak self] _ in
-            SaverProbe.event("willstop notification")
             self?.tearDownScene()
         }
     }
@@ -64,14 +70,16 @@ final class PaperWallsSaverView: ScreenSaverView {
 
     override func startAnimation() {
         super.startAnimation()
-        SaverProbe.event("startAnimation preview=\(isPreview)")
         installScene()
+        #if DEBUG
+        // Sandbox probe for verifying new macOS versions (debug builds only).
+        SaverProbe.event("startAnimation preview=\(isPreview)")
         SaverProbe.runOnce(bundle: Bundle(for: PaperWallsSaverView.self), screen: window?.screen)
+        #endif
     }
 
     override func stopAnimation() {
         super.stopAnimation()
-        SaverProbe.event("stopAnimation preview=\(isPreview)")
         tearDownScene()
     }
 
@@ -80,7 +88,7 @@ final class PaperWallsSaverView: ScreenSaverView {
     }
 
     override func draw(_ rect: NSRect) {
-        NSColor.black.setFill()
+        fallbackColor.setFill()
         rect.fill()
     }
 
@@ -88,17 +96,42 @@ final class PaperWallsSaverView: ScreenSaverView {
 
     private func installScene() {
         guard hostingView == nil else { return }
+        let snapshot = ScreenSaverSnapshot.read()
+        let scene: ScreenSaverScene
+        switch snapshot?.state {
+        case .active?:
+            // An "active" snapshot always carries its scene; fall back to
+            // the default rather than a blank screen if one ever doesn't.
+            scene = snapshot?.scene ?? ScreenSaverPreset.minimalClock.scene
+        case .disabled?, .hardLock?:
+            // Policy says show nothing: just the solid color from draw(_:).
+            fallbackColor = snapshot.flatMap { NSColor(sceneHex: $0.fallbackColorHex) } ?? .black
+            layer?.backgroundColor = fallbackColor.cgColor
+            needsDisplay = true
+            Self.log.info("Showing a solid color (\(snapshot?.state.rawValue ?? "", privacy: .public))")
+            return
+        case .noneSelected?, nil:
+            scene = ScreenSaverPreset.minimalClock.scene
+        }
+
         let screen = window?.screen ?? NSScreen.main
         let resources = SceneResources(
+            wallpaperURL: { id in
+                snapshot?.wallpaperPaths[id].map { URL(fileURLWithPath: $0) }
+            },
             currentDesktopURL: {
                 screen.flatMap { NSWorkspace.shared.desktopImageURL(for: $0) }
             },
+            rotationURLs: {
+                (snapshot?.rotationPaths ?? []).map { URL(fileURLWithPath: $0) }
+            },
+            assetURL: { name in
+                snapshot?.assetURL(named: name)
+            },
             tokens: SceneTokenValues(
                 computerName: (SCDynamicStoreCopyComputerName(nil, nil) as String?) ?? "",
-                companyName: ManagedPreferences.string(.companyName) ?? ""))
-        // Spike: hardcoded scene.
-        let host = NSHostingView(rootView: SaverSceneView(scene: ScreenSaverPreset.bouncingClock.scene,
-                                                          resources: resources))
+                companyName: snapshot?.companyName ?? ""))
+        let host = NSHostingView(rootView: SaverSceneView(scene: scene, resources: resources))
         host.frame = bounds
         host.autoresizingMask = [.width, .height]
         addSubview(host)
@@ -109,5 +142,13 @@ final class PaperWallsSaverView: ScreenSaverView {
     private func tearDownScene() {
         hostingView?.removeFromSuperview()
         hostingView = nil
+    }
+}
+
+private extension NSColor {
+    /// "RRGGBB" scene color.
+    convenience init?(sceneHex hex: String) {
+        guard let parts = SceneColor.components(hex: hex) else { return nil }
+        self.init(srgbRed: parts.red, green: parts.green, blue: parts.blue, alpha: 1)
     }
 }

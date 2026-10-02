@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FF00000000000000000000A0 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
+		FF00000000000000000000A1 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
+		FF00000000000000000000A2 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
+		FF00000000000000000000A3 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
+		FF00000000000000000000A4 /* ScreenSaverScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000060 /* ScreenSaverScene.swift */; };
+		FF00000000000000000000A5 /* ScreenSaverSceneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000080 /* ScreenSaverSceneStore.swift */; };
+		FF00000000000000000000A6 /* ScreenSaverPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000081 /* ScreenSaverPolicy.swift */; };
 		FF0000000000000000000092 /* ComposerPickers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000092 /* ComposerPickers.swift */; };
 		FF0000000000000000000090 /* SceneComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000090 /* SceneComposer.swift */; };
 		FF0000000000000000000091 /* SceneLayerControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000091 /* SceneLayerControls.swift */; };
@@ -86,6 +93,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverSnapshot.swift; sourceTree = "<group>"; };
 		DD0000000000000000000092 /* ComposerPickers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerPickers.swift; sourceTree = "<group>"; };
 		DD0000000000000000000090 /* SceneComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneComposer.swift; sourceTree = "<group>"; };
 		DD0000000000000000000091 /* SceneLayerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneLayerControls.swift; sourceTree = "<group>"; };
@@ -100,7 +108,7 @@
 		DD0000000000000000000073 /* thumbnail@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "thumbnail@2x.png"; path = "Resources/thumbnail@2x.png"; sourceTree = "<group>"; };
 		DD0000000000000000000070 /* PaperWallsSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperWallsSaverView.swift; sourceTree = "<group>"; };
 		DD0000000000000000000071 /* SaverProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaverProbe.swift; sourceTree = "<group>"; };
-		HH0000000000000000000002 /* PaperWallsSaver.saver */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaperWallsSaver.saver; sourceTree = BUILT_PRODUCTS_DIR; };
+		HH0000000000000000000002 /* PaperWalls.saver */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaperWalls.saver; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0000000000000000000060 /* ScreenSaverScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverScene.swift; sourceTree = "<group>"; };
 		DD0000000000000000000061 /* SceneMotionMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneMotionMath.swift; sourceTree = "<group>"; };
 		DD0000000000000000000062 /* ScreenSaverPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverPresets.swift; sourceTree = "<group>"; };
@@ -190,7 +198,7 @@
 				BB0000000000000000000002 /* PaperWalls.app */,
 				CC0000000000000000000002 /* paperwallscli */,
 				GG0000000000000000000002 /* PaperWallsTests.xctest */,
-				HH0000000000000000000002 /* PaperWallsSaver.saver */,
+				HH0000000000000000000002 /* PaperWalls.saver */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -212,6 +220,7 @@
 				DD0000000000000000000064 /* SaverSceneView.swift */,
 				DD0000000000000000000080 /* ScreenSaverSceneStore.swift */,
 				DD0000000000000000000081 /* ScreenSaverPolicy.swift */,
+				DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -350,7 +359,7 @@
 			);
 			name = PaperWallsSaver;
 			productName = PaperWallsSaver;
-			productReference = HH0000000000000000000002 /* PaperWallsSaver.saver */;
+			productReference = HH0000000000000000000002 /* PaperWalls.saver */;
 			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
@@ -446,6 +455,7 @@
 				FF0000000000000000000090 /* SceneComposer.swift in Sources */,
 				FF0000000000000000000091 /* SceneLayerControls.swift in Sources */,
 				FF0000000000000000000092 /* ComposerPickers.swift in Sources */,
+				FF00000000000000000000A0 /* ScreenSaverSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -460,6 +470,10 @@
 				FF0000000000000000000015 /* WallpaperCatalog.swift in Sources */,
 				FF0000000000000000000021 /* WallpaperContentID.swift in Sources */,
 				FF0000000000000000000023 /* RotationPool.swift in Sources */,
+				FF00000000000000000000A3 /* ScreenSaverSnapshot.swift in Sources */,
+				FF00000000000000000000A4 /* ScreenSaverScene.swift in Sources */,
+				FF00000000000000000000A5 /* ScreenSaverSceneStore.swift in Sources */,
+				FF00000000000000000000A6 /* ScreenSaverPolicy.swift in Sources */,
 				FF0000000000000000000025 /* RemoteCatalog.swift in Sources */,
 				FF0000000000000000000027 /* SystemWallpapers.swift in Sources */,
 				FF000000000000000000001F /* WallpaperLock.swift in Sources */,
@@ -487,6 +501,7 @@
 				FF0000000000000000000081 /* ScreenSaverSceneStore.swift in Sources */,
 				FF0000000000000000000083 /* ScreenSaverPolicy.swift in Sources */,
 				FF0000000000000000000087 /* ScreenSaverStoreTests.swift in Sources */,
+				FF00000000000000000000A1 /* ScreenSaverSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,6 +517,7 @@
 				FF0000000000000000000075 /* SceneImageStore.swift in Sources */,
 				FF0000000000000000000076 /* SaverSceneView.swift in Sources */,
 				FF0000000000000000000077 /* ManagedPreferences.swift in Sources */,
+				FF00000000000000000000A2 /* ScreenSaverSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -674,7 +690,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.saver;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = PaperWallsSaver;
+				PRODUCT_NAME = PaperWalls;
 				SKIP_INSTALL = YES;
 				WRAPPER_EXTENSION = saver;
 			};
@@ -693,7 +710,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.saver;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = PaperWallsSaver;
+				PRODUCT_NAME = PaperWalls;
 				SKIP_INSTALL = YES;
 				WRAPPER_EXTENSION = saver;
 			};

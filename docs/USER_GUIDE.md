@@ -46,6 +46,34 @@ In **Settings → Auto-Rotate**:
   and offer **Next** / **Rotate** buttons. Closing the window keeps
   PaperWalls running in the menu bar.
 
+## Screen savers
+
+PaperWalls can also be your screen saver.
+
+**Make one.** Open **Studio** in the sidebar and choose the **ScreenSaver**
+tab. Start from a ready-made design — Bouncing Clock, Floating Message,
+Minimal Clock, Help Desk Contact — or from a blank one. Then:
+
+- Pick a **Background**: your current desktop picture, a specific wallpaper,
+  a rotating set, a color, or a gradient. Blur and dim it if you like.
+- **Add Layer** to put a clock, some text, or an icon on top. Select a layer
+  to change its font, color, size, position, and how it moves (bounce,
+  drift, float, pulse, fade, orbit).
+- In a text layer, the **+ Date**, **+ Computer name**, and **+ Company
+  name** buttons insert information that stays up to date.
+- The preview at the top shows your changes as you make them; **Test
+  Fullscreen** shows the real thing (press any key to leave).
+- **Save** puts it in your library.
+
+**Use one.** On the **ScreenSavers** page, click **Set Active** on the one
+you want. Click a card to preview it; the **…** button offers rename,
+duplicate, edit, and delete.
+
+**Turn it on (one time).** Open **System Settings → Screen Saver**, scroll
+to **Other**, and choose **PaperWalls**. From then on your Mac shows
+whichever screen saver is active in PaperWalls — change it any time without
+going back to System Settings.
+
 ## Appearance
 
 **Settings → Theme**: Light, Dark, or System (follows your Mac's appearance
@@ -64,6 +92,9 @@ case. That's your organization's configuration, not a malfunction.
 - Wallpaper won't set? Check for a lock notice (work Macs), then try another
   wallpaper.
 - A download fails? Check your internet connection and try again.
+- Screen saver shows a simple clock instead of yours? Make sure one is marked
+  **ACTIVE** on the ScreenSavers page. Shows a plain color? Screen savers
+  are turned off in Settings, or by your organization.
 - macOS may ask PaperWalls for permission to access a folder (like
   Downloads) — that's a standard privacy prompt; allowing it just lets the
   app recognize wallpapers stored there.

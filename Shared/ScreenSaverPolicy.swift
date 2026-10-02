@@ -84,6 +84,68 @@ struct ScreenSaverPolicy: Equatable {
     }
 }
 
+extension ScreenSaverSnapshot {
+    /// Pure resolution of what the saver should show (spec §10). `scenes`
+    /// is every scene that exists (library + managed). The lookups are
+    /// only consulted for the background the chosen scene actually uses.
+    static func make(policy: ScreenSaverPolicy,
+                     scenes: [StoredScreenSaver],
+                     companyName: String,
+                     assetsDirectory: String,
+                     wallpaperPath: (String) -> String?,
+                     rotationPaths: () -> [String]) -> ScreenSaverSnapshot {
+        var snapshot = ScreenSaverSnapshot(state: .noneSelected,
+                                           assetsDirectory: assetsDirectory,
+                                           companyName: companyName)
+        guard policy.enabled else {
+            snapshot.state = .disabled
+            return snapshot
+        }
+        guard policy.lockMode != .hard else {
+            snapshot.state = .hardLock
+            return snapshot
+        }
+        guard let activeID = policy.effectiveActiveID(availableIDs: scenes.map(\.id)),
+              let stored = scenes.first(where: { $0.id == activeID }) else {
+            return snapshot
+        }
+        snapshot.state = .active
+        snapshot.sceneID = stored.id
+        snapshot.sceneName = stored.name
+        snapshot.scene = stored.scene
+        switch stored.scene.background.source {
+        case .wallpaper(let id):
+            if let path = wallpaperPath(id) {
+                snapshot.wallpaperPaths[id] = path
+            }
+        case .rotatingPool:
+            snapshot.rotationPaths = rotationPaths()
+        case .currentDesktop, .solid, .gradient, .unsupported:
+            break
+        }
+        return snapshot
+    }
+
+    /// Headless resolution for the CLI (`manage`): every input read live
+    /// through the preference layers, wallpapers drawn from `library`.
+    static func makeFromPreferences(library: WallpaperLibrary, lockMode: LockMode) -> ScreenSaverSnapshot {
+        let company = (ManagedPreferences.string(.companyName) ?? "").trimmingCharacters(in: .whitespaces)
+        let managed = ScreenSaverSceneStore.managedScene(
+            defaultName: "\(company.isEmpty ? "Company" : company) Screen Saver")
+        return make(policy: .current(lockMode: lockMode),
+                    scenes: (managed.map { [$0] } ?? []) + ScreenSaverSceneStore.loadAll(),
+                    companyName: company,
+                    assetsDirectory: ScreenSaverSceneStore.assetsDirectory().path,
+                    wallpaperPath: { id in
+                        library.wallpaper(withID: id).flatMap { library.fileURL(for: $0) }?.path
+                    },
+                    rotationPaths: {
+                        RotationPool.resolveFromPreferences(library: library, lockMode: lockMode)
+                            .compactMap { library.fileURL(for: $0)?.path }
+                    })
+    }
+}
+
 /// The scene being composed in Studio (spec §10): a working copy plus the
 /// baseline it started from, so "unsaved changes" and Reset are exact.
 struct SceneDraft: Equatable {

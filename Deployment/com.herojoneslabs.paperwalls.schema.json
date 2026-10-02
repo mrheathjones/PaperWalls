@@ -337,6 +337,82 @@
       "options": {
         "infoText": "Key: gridColumns (default: 2)"
       }
+    },
+    "screenSaverEnabled": {
+      "type": "boolean",
+      "title": "Screen Saver Enabled",
+      "description": "Master switch for the PaperWalls screen saver. When disabled, the saver shows a solid color and nothing else.",
+      "options": {
+        "infoText": "Key: screenSaverEnabled (default: true)"
+      }
+    },
+    "activeScreenSaverSceneID": {
+      "type": "string",
+      "title": "Active Screen Saver",
+      "description": "The scene the PaperWalls screen saver runs: the ID of a scene in the user's library (a UUID), or 'managed' for the scene provisioned with Managed Screen Saver Scene. Forcing this key disables 'Set Active' in the app.",
+      "options": {
+        "infoText": "Key: activeScreenSaverSceneID"
+      }
+    },
+    "managedScreenSaverScene": {
+      "type": "string",
+      "title": "Managed Screen Saver Scene",
+      "description": "An organization-provided scene, as JSON. It appears in every user's ScreenSavers page as a read-only 'Managed' entry with the ID 'managed'. Build the scene in PaperWalls Studio, then use the card's 'Copy Scene for MDM' action and paste the result here.",
+      "options": {
+        "infoText": "Key: managedScreenSaverScene"
+      }
+    },
+    "allowedScreenSaverSceneIDs": {
+      "type": "array",
+      "title": "Allowed Screen Saver IDs",
+      "description": "Optional allow-list of scene IDs that may be the active screen saver (use 'managed' for the managed scene). Empty or omitted allows every scene. Scenes outside the list stay visible in the library but cannot be set active.",
+      "items": {
+        "type": "string",
+        "title": "Scene ID"
+      },
+      "options": {
+        "infoText": "Key: allowedScreenSaverSceneIDs"
+      }
+    },
+    "allowScreenSaverCreation": {
+      "type": "boolean",
+      "title": "Allow Creating Screen Savers",
+      "description": "When disabled, users cannot create, edit, rename, or delete screen savers, and Studio's ScreenSaver tab is unavailable. They can still browse, preview, and set active among the allowed scenes.",
+      "options": {
+        "infoText": "Key: allowScreenSaverCreation (default: true)"
+      }
+    },
+    "showScreenSaversPage": {
+      "type": "boolean",
+      "title": "Show ScreenSavers Page",
+      "description": "Shows or hides the ScreenSavers page in the sidebar's Library section.",
+      "options": {
+        "infoText": "Key: showScreenSaversPage (default: true)"
+      }
+    },
+    "showStudio": {
+      "type": "boolean",
+      "title": "Show Studio",
+      "description": "Shows or hides Studio (the sidebar's Tools section) entirely.",
+      "options": {
+        "infoText": "Key: showStudio (default: true)"
+      }
+    },
+    "showStudioWallpapersTab": {
+      "type": "boolean",
+      "title": "Show Studio Wallpapers Tab",
+      "description": "Shows or hides Studio's Wallpapers tab (currently a 'coming soon' placeholder). If both Studio tabs are hidden, Studio is hidden.",
+      "options": {
+        "infoText": "Key: showStudioWallpapersTab (default: true)"
+      }
+    },
+    "showStudioScreenSaverTab": {
+      "type": "boolean",
+      "title": "Show Studio ScreenSaver Tab",
+      "description": "Shows or hides Studio's ScreenSaver tab (the Scene Composer). If both Studio tabs are hidden, Studio is hidden.",
+      "options": {
+        "infoText": "Key: showStudioScreenSaverTab (default: true)"
+      }
     }
   }
 }

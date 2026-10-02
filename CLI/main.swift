@@ -57,6 +57,9 @@ func printUsage(toStandardError: Bool) {
           to an approved wallpaper. Idles in every other mode. Intended to be
           run by the watch LaunchAgent; default interval 15s.
 
+      \(toolName) screensaver
+          Print what the PaperWalls screen saver is set to show (read-only).
+
       \(toolName) version
       \(toolName) help
 
@@ -177,10 +180,54 @@ func loadFullLibrary() -> WallpaperLibrary {
     return library
 }
 
+// MARK: - screen saver (spec §10)
+
+/// Resolves the screen saver policy and publishes the outcome for the
+/// saver to read. The saver's sandbox hides this domain's preferences from
+/// it, so `manage` keeps the snapshot current on Macs where the app is
+/// never opened (MDM-only deployments).
+func publishScreenSaverSnapshot(library: WallpaperLibrary, lockMode: LockMode) {
+    let snapshot = ScreenSaverSnapshot.makeFromPreferences(library: library, lockMode: lockMode)
+    do {
+        if try snapshot.write() {
+            print("\(toolName): screen saver → \(describe(snapshot))")
+        }
+    } catch {
+        stderrPrint("\(toolName): could not publish the screen saver snapshot: \(error.localizedDescription)")
+    }
+}
+
+func describe(_ snapshot: ScreenSaverSnapshot) -> String {
+    switch snapshot.state {
+    case .active: return "'\(snapshot.sceneName ?? "")' (\(snapshot.sceneID ?? ""))"
+    case .noneSelected: return "none selected (built-in default)"
+    case .disabled: return "disabled (solid color)"
+    case .hardLock: return "hard lock (solid color)"
+    }
+}
+
+/// Read-only: what the saver would show for the current preferences, and
+/// whether the published snapshot matches.
+func runScreenSaver() -> Never {
+    let resolved = ScreenSaverSnapshot.makeFromPreferences(library: loadFullLibrary(),
+                                                           lockMode: LockState.current().mode)
+    print("state: \(resolved.state.rawValue)")
+    print("active: \(describe(resolved))")
+    if let published = ScreenSaverSnapshot.read() {
+        print("published: \(published.hasSameContent(as: resolved) ? "up to date" : "stale — run '\(toolName) manage' or open PaperWalls")")
+    } else {
+        print("published: not yet — run '\(toolName) manage' or open PaperWalls")
+    }
+    exit(ExitCode.ok)
+}
+
 func runManage() -> Never {
     // Under a hard lock the OS profile (or configured hard tier) owns the
     // desktop — manage must not fight it.
     let lockState = LockState.current()
+    // The screen saver snapshot is independent of the wallpaper outcome,
+    // so publish it before any of the early exits below.
+    publishScreenSaverSnapshot(library: loadFullLibrary(), lockMode: lockState.mode)
     if lockState.mode == .hard {
         fail("the wallpaper is locked (\(lockState.osEnforced ? "enforced by configuration profile" : "hard lock configured")); manage will not modify it",
              code: ExitCode.selectionLocked)
@@ -368,6 +415,11 @@ case "manage":
     runManage()
 case "watch":
     runWatch(Array(argumentList.dropFirst()))
+case "screensaver":
+    guard argumentList.count == 1 else {
+        fail("screensaver takes no arguments", code: ExitCode.usage)
+    }
+    runScreenSaver()
 case "version", "--version", "-v":
     print(toolVersion)
     exit(ExitCode.ok)

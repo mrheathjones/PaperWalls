@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "HH0000000000000000000001"
-               BuildableName = "PaperWallsSaver.saver"
+               BuildableName = "PaperWalls.saver"
                BlueprintName = "PaperWallsSaver"
                ReferencedContainer = "container:PaperWalls.xcodeproj">
             </BuildableReference>
