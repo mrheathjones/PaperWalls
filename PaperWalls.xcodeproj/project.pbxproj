@@ -7,6 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FF000000000000000000007A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000074 /* Assets.xcassets */; };
+		FF0000000000000000000078 /* thumbnail.png in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000072 /* thumbnail.png */; };
+		FF0000000000000000000079 /* thumbnail@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000073 /* thumbnail@2x.png */; };
+		FF0000000000000000000070 /* PaperWallsSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000070 /* PaperWallsSaverView.swift */; };
+		FF0000000000000000000071 /* SaverProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000071 /* SaverProbe.swift */; };
+		FF0000000000000000000072 /* ScreenSaverScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000060 /* ScreenSaverScene.swift */; };
+		FF0000000000000000000073 /* SceneMotionMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000061 /* SceneMotionMath.swift */; };
+		FF0000000000000000000074 /* ScreenSaverPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000062 /* ScreenSaverPresets.swift */; };
+		FF0000000000000000000075 /* SceneImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000063 /* SceneImageStore.swift */; };
+		FF0000000000000000000076 /* SaverSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000064 /* SaverSceneView.swift */; };
+		FF0000000000000000000077 /* ManagedPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000003 /* ManagedPreferences.swift */; };
+		FF0000000000000000000060 /* ScreenSaverScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000060 /* ScreenSaverScene.swift */; };
+		FF0000000000000000000061 /* ScreenSaverScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000060 /* ScreenSaverScene.swift */; };
+		FF0000000000000000000062 /* SceneMotionMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000061 /* SceneMotionMath.swift */; };
+		FF0000000000000000000063 /* SceneMotionMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000061 /* SceneMotionMath.swift */; };
+		FF0000000000000000000064 /* ScreenSaverPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000062 /* ScreenSaverPresets.swift */; };
+		FF0000000000000000000065 /* ScreenSaverPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000062 /* ScreenSaverPresets.swift */; };
+		FF0000000000000000000066 /* SceneImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000063 /* SceneImageStore.swift */; };
+		FF0000000000000000000067 /* SaverSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000064 /* SaverSceneView.swift */; };
+		FF0000000000000000000068 /* ScenePreviewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000065 /* ScenePreviewPresenter.swift */; };
+		FF0000000000000000000069 /* SceneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000066 /* SceneTests.swift */; };
 		FF0000000000000000000001 /* WallpaperEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000001 /* WallpaperEngine.swift */; };
 		FF0000000000000000000002 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000002 /* PreferencesStore.swift */; };
 		FF0000000000000000000003 /* ManagedPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000003 /* ManagedPreferences.swift */; };
@@ -54,6 +75,19 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DD0000000000000000000074 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DD0000000000000000000072 /* thumbnail.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "thumbnail.png"; path = "Resources/thumbnail.png"; sourceTree = "<group>"; };
+		DD0000000000000000000073 /* thumbnail@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "thumbnail@2x.png"; path = "Resources/thumbnail@2x.png"; sourceTree = "<group>"; };
+		DD0000000000000000000070 /* PaperWallsSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperWallsSaverView.swift; sourceTree = "<group>"; };
+		DD0000000000000000000071 /* SaverProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaverProbe.swift; sourceTree = "<group>"; };
+		HH0000000000000000000002 /* PaperWallsSaver.saver */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaperWallsSaver.saver; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD0000000000000000000060 /* ScreenSaverScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverScene.swift; sourceTree = "<group>"; };
+		DD0000000000000000000061 /* SceneMotionMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneMotionMath.swift; sourceTree = "<group>"; };
+		DD0000000000000000000062 /* ScreenSaverPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverPresets.swift; sourceTree = "<group>"; };
+		DD0000000000000000000063 /* SceneImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneImageStore.swift; sourceTree = "<group>"; };
+		DD0000000000000000000064 /* SaverSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaverSceneView.swift; sourceTree = "<group>"; };
+		DD0000000000000000000065 /* ScenePreviewPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenePreviewPresenter.swift; sourceTree = "<group>"; };
+		DD0000000000000000000066 /* SceneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneTests.swift; sourceTree = "<group>"; };
 		BB0000000000000000000002 /* PaperWalls.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaperWalls.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC0000000000000000000002 /* paperwallscli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = paperwallscli; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0000000000000000000001 /* WallpaperEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperEngine.swift; sourceTree = "<group>"; };
@@ -107,6 +141,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		HH0000000000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -116,6 +157,7 @@
 				EE0000000000000000000002 /* App */,
 				EE0000000000000000000003 /* CLI */,
 				EE0000000000000000000001 /* Shared */,
+				EE0000000000000000000006 /* Saver */,
 				EE0000000000000000000004 /* Resources */,
 				EE0000000000000000000005 /* Tests */,
 				AA0000000000000000000003 /* Products */,
@@ -128,6 +170,7 @@
 				BB0000000000000000000002 /* PaperWalls.app */,
 				CC0000000000000000000002 /* paperwallscli */,
 				GG0000000000000000000002 /* PaperWallsTests.xctest */,
+				HH0000000000000000000002 /* PaperWallsSaver.saver */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -142,6 +185,11 @@
 				DD0000000000000000000005 /* WallpaperLock.swift */,
 				DD0000000000000000000006 /* WallpaperContentID.swift */,
 				DD0000000000000000000007 /* RotationPool.swift */,
+				DD0000000000000000000060 /* ScreenSaverScene.swift */,
+				DD0000000000000000000061 /* SceneMotionMath.swift */,
+				DD0000000000000000000062 /* ScreenSaverPresets.swift */,
+				DD0000000000000000000063 /* SceneImageStore.swift */,
+				DD0000000000000000000064 /* SaverSceneView.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -152,6 +200,7 @@
 			isa = PBXGroup;
 			children = (
 				DD0000000000000000000051 /* PaperWallsTests.swift */,
+				DD0000000000000000000066 /* SceneTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -168,6 +217,7 @@
 				DD000000000000000000001C /* WallpaperDetailSheet.swift */,
 				DD000000000000000000001D /* MenuBarPanel.swift */,
 				DD000000000000000000001E /* Diagnostics.swift */,
+				DD0000000000000000000065 /* ScenePreviewPresenter.swift */,
 				DD0000000000000000000014 /* SettingsView.swift */,
 				DD0000000000000000000018 /* Components.swift */,
 				DD0000000000000000000017 /* Theme.swift */,
@@ -191,6 +241,18 @@
 				DD0000000000000000000031 /* Wallpapers */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		EE0000000000000000000006 /* Saver */ = {
+			isa = PBXGroup;
+			children = (
+				DD0000000000000000000070 /* PaperWallsSaverView.swift */,
+				DD0000000000000000000071 /* SaverProbe.swift */,
+				DD0000000000000000000074 /* Assets.xcassets */,
+				DD0000000000000000000072 /* thumbnail.png */,
+				DD0000000000000000000073 /* thumbnail@2x.png */,
+			);
+			path = Saver;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -245,6 +307,23 @@
 			productReference = GG0000000000000000000002 /* PaperWallsTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		HH0000000000000000000001 /* PaperWallsSaver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = HH0000000000000000000003 /* Build configuration list for PBXNativeTarget "PaperWallsSaver" */;
+			buildPhases = (
+				HH0000000000000000000006 /* Sources */,
+				HH0000000000000000000007 /* Frameworks */,
+				HH0000000000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PaperWallsSaver;
+			productName = PaperWallsSaver;
+			productReference = HH0000000000000000000002 /* PaperWallsSaver.saver */;
+			productType = "com.apple.product-type.bundle";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -270,6 +349,7 @@
 				BB0000000000000000000001 /* PaperWalls */,
 				CC0000000000000000000001 /* paperwallscli */,
 				GG0000000000000000000001 /* PaperWallsTests */,
+				HH0000000000000000000001 /* PaperWallsSaver */,
 			);
 		};
 /* End PBXProject section */
@@ -281,6 +361,16 @@
 			files = (
 				FF0000000000000000000010 /* Wallpapers in Resources */,
 				FF0000000000000000000016 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		HH0000000000000000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF0000000000000000000078 /* thumbnail.png in Resources */,
+				FF0000000000000000000079 /* thumbnail@2x.png in Resources */,
+				FF000000000000000000007A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -313,6 +403,12 @@
 				FF000000000000000000001C /* WallpaperDetailSheet.swift in Sources */,
 				FF000000000000000000001D /* MenuBarPanel.swift in Sources */,
 				FF0000000000000000000028 /* Diagnostics.swift in Sources */,
+				FF0000000000000000000060 /* ScreenSaverScene.swift in Sources */,
+				FF0000000000000000000062 /* SceneMotionMath.swift in Sources */,
+				FF0000000000000000000064 /* ScreenSaverPresets.swift in Sources */,
+				FF0000000000000000000066 /* SceneImageStore.swift in Sources */,
+				FF0000000000000000000067 /* SaverSceneView.swift in Sources */,
+				FF0000000000000000000068 /* ScenePreviewPresenter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,6 +443,25 @@
 				FF000000000000000000003A /* SystemWallpapers.swift in Sources */,
 				FF0000000000000000000035 /* WallpaperLock.swift in Sources */,
 				FF0000000000000000000036 /* PaperWallsTests.swift in Sources */,
+				FF0000000000000000000061 /* ScreenSaverScene.swift in Sources */,
+				FF0000000000000000000063 /* SceneMotionMath.swift in Sources */,
+				FF0000000000000000000065 /* ScreenSaverPresets.swift in Sources */,
+				FF0000000000000000000069 /* SceneTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		HH0000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF0000000000000000000070 /* PaperWallsSaverView.swift in Sources */,
+				FF0000000000000000000071 /* SaverProbe.swift in Sources */,
+				FF0000000000000000000072 /* ScreenSaverScene.swift in Sources */,
+				FF0000000000000000000073 /* SceneMotionMath.swift in Sources */,
+				FF0000000000000000000074 /* ScreenSaverPresets.swift in Sources */,
+				FF0000000000000000000075 /* SceneImageStore.swift in Sources */,
+				FF0000000000000000000076 /* SaverSceneView.swift in Sources */,
+				FF0000000000000000000077 /* ManagedPreferences.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,6 +621,44 @@
 			};
 			name = Release;
 		};
+		HH0000000000000000000004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = NO;
+				CURRENT_PROJECT_VERSION = 17;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = PaperWallsSaverView;
+				INSTALL_PATH = "$(HOME)/Library/Screen Savers";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.saver;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Debug;
+		};
+		HH0000000000000000000005 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = NO;
+				CURRENT_PROJECT_VERSION = 17;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = PaperWallsSaverView;
+				INSTALL_PATH = "$(HOME)/Library/Screen Savers";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.saver;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -541,6 +694,15 @@
 			buildConfigurations = (
 				GG0000000000000000000004 /* Debug */,
 				GG0000000000000000000005 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		HH0000000000000000000003 /* Build configuration list for PBXNativeTarget "PaperWallsSaver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				HH0000000000000000000004 /* Debug */,
+				HH0000000000000000000005 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -22,6 +22,11 @@ struct PaperWallsApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1240, height: 840)
+        .commands {
+            #if DEBUG
+            ScenePreviewCommands(model: model)
+            #endif
+        }
 
         MenuBarExtra {
             MenuBarPanel()
