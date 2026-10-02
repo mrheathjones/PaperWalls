@@ -39,6 +39,17 @@ enum ManagedPreferenceKey: String, CaseIterable {
     case appearanceTheme
     case gridColumns            // wallpaper grid density (2–4 columns)
 
+    // Screen savers & Studio (spec §10).
+    case screenSaverEnabled             // master switch; off = saver shows a solid color
+    case showScreenSaversPage           // ScreenSavers page in the Library section
+    case showStudio                     // Tools section / Studio
+    case showStudioWallpapersTab
+    case showStudioScreenSaverTab
+    case allowScreenSaverCreation       // false = browse + Set Active only
+    case activeScreenSaverSceneID       // scene the saver runs (UUID or "managed")
+    case managedScreenSaverScene        // admin-provisioned scene (JSON string or inline object)
+    case allowedScreenSaverSceneIDs     // optional allow-list for the active scene
+
     // Legacy rotation keys — read ONLY by RotationPoolMigration (spec §4).
     case autoRotateSource
     case rotateIncludeBundled

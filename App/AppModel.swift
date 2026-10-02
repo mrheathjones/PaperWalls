@@ -10,9 +10,42 @@ enum LibraryPage: String, CaseIterable, Identifiable {
     case system = "macOS"
     case managed = "Managed"
     case personal = "Personal"
+    case screenSavers = "ScreenSavers"
+    case studio = "Studio"
     case settings = "Settings"
 
     var id: String { rawValue }
+
+    /// Sidebar grouping (spec §10). Settings is always the last row.
+    var section: SidebarSection {
+        switch self {
+        case .studio: return .tools
+        case .settings: return .settings
+        default: return .library
+        }
+    }
+}
+
+enum SidebarSection: CaseIterable {
+    case library
+    case tools
+    case settings
+
+    /// Header label; Settings sits alone at the bottom without one.
+    var title: String? {
+        switch self {
+        case .library: return "LIBRARY"
+        case .tools: return "TOOLS"
+        case .settings: return nil
+        }
+    }
+}
+
+/// What Studio's ScreenSaver tab should open with (spec §10) — set by
+/// `AppModel.openStudio` from the ScreenSavers page, consumed by Studio.
+enum StudioRequest: Equatable {
+    case new
+    case edit(sceneID: String)
 }
 
 /// Which pill is active on the Browse page.
@@ -75,6 +108,17 @@ final class AppModel: ObservableObject {
     }
     @Published private(set) var now = Date()
 
+    // MARK: Screen savers & Studio (spec §10; logic in AppModel+ScreenSavers)
+
+    /// User-created scenes, newest first (the managed entry is separate).
+    @Published var screenSavers: [StoredScreenSaver] = []
+    /// The admin-provisioned read-only scene, when configured.
+    @Published var managedScreenSaver: StoredScreenSaver?
+    /// Rendered card thumbnails by scene ID.
+    @Published var screenSaverThumbnails: [String: NSImage] = [:]
+    @Published var studioTab: StudioTab = .screenSaver
+    @Published var studioRequest: StudioRequest?
+
     private var pixelSizeCache: [URL: CGSize] = [:]
     private var cancellables: Set<AnyCancellable> = []
 
@@ -96,6 +140,15 @@ final class AppModel: ObservableObject {
         syncRemoteFeedsIfNeeded()
         refreshScreens()
         restorePersistedRotationClock()
+        reloadScreenSavers()
+
+        // Never strand the user on a page whose gate just flipped off
+        // (spec §10). Published values land after this fires, so check on
+        // the next main-queue turn.
+        prefs.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.enforcePageVisibility() }
+            .store(in: &cancellables)
 
         // Feed toggles: sync immediately when a feed turns on or its config
         // changes (spec §4).
@@ -329,6 +382,8 @@ final class AppModel: ObservableObject {
             if next.showsLockedView && !previous.showsLockedView {
                 lockOverlayDismissed = false
             }
+            // A hard lock disables Studio's composer (spec §10).
+            enforcePageVisibility()
         }
     }
 
@@ -338,6 +393,8 @@ final class AppModel: ObservableObject {
         prefs.reload()
         refreshLockState()
         rescan()
+        reloadScreenSavers()
+        enforcePageVisibility()
         checkPersonalFolderSourceSwitch()
         syncRemoteFeedsIfNeeded()
     }

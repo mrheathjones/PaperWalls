@@ -226,6 +226,75 @@ struct SettingsContent: View {
                 }
             }
 
+            SettingsSection(label: "Screen Savers & Studio") {
+                SettingsCard {
+                    SettingsRow(title: "Screen savers",
+                                subtitle: "Turn off to have the PaperWalls screen saver show a plain color",
+                                managedKey: .screenSaverEnabled) {
+                        SettingsToggle(isOn: $prefs.screenSaverEnabled,
+                                       disabled: prefs.isForced(.screenSaverEnabled))
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Active screen saver",
+                                subtitle: activeScreenSaverSubtitle,
+                                managedKey: .activeScreenSaverSceneID) {
+                        if prefs.showScreenSaversPage {
+                            Button("Choose…") {
+                                model.page = .screenSavers
+                            }
+                        }
+                    }
+                    if model.managedScreenSaver != nil {
+                        SettingsDivider()
+                        SettingsRow(title: "Managed screen saver",
+                                    subtitle: "“\(model.managedScreenSaver?.name ?? "")” is provided by your organization",
+                                    managedKey: .managedScreenSaverScene) {
+                            EmptyView()
+                        }
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Show ScreenSavers page",
+                                subtitle: "Your screen saver library, in the sidebar's Library section",
+                                managedKey: .showScreenSaversPage) {
+                        SettingsToggle(isOn: $prefs.showScreenSaversPage,
+                                       disabled: prefs.isForced(.showScreenSaversPage))
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Show Studio",
+                                subtitle: "The composing tools, in the sidebar's Tools section",
+                                managedKey: .showStudio) {
+                        SettingsToggle(isOn: $prefs.showStudio,
+                                       disabled: prefs.isForced(.showStudio))
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Studio: Wallpapers tab",
+                                subtitle: "Coming soon",
+                                managedKey: .showStudioWallpapersTab) {
+                        SettingsToggle(isOn: $prefs.showStudioWallpapersTab,
+                                       disabled: prefs.isForced(.showStudioWallpapersTab) || !prefs.showStudio)
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Studio: ScreenSaver tab",
+                                subtitle: "The Scene Composer for building screen savers",
+                                managedKey: .showStudioScreenSaverTab) {
+                        SettingsToggle(isOn: $prefs.showStudioScreenSaverTab,
+                                       disabled: prefs.isForced(.showStudioScreenSaverTab) || !prefs.showStudio)
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Allow creating screen savers",
+                                subtitle: "Turn off to keep the library browse-only: no new, edited, or deleted screen savers",
+                                managedKey: .allowScreenSaverCreation) {
+                        SettingsToggle(isOn: $prefs.allowScreenSaverCreation,
+                                       disabled: prefs.isForced(.allowScreenSaverCreation))
+                    }
+                    SettingsDivider()
+                    SettingsFieldRow(title: "Allowed screen saver IDs",
+                                     prompt: "Comma-separated; empty allows all",
+                                     text: allowedSceneIDsBinding,
+                                     managedKey: .allowedScreenSaverSceneIDs)
+                }
+            }
+
             SettingsSection(label: "Restrictions") {
                 SettingsCard {
                     SettingsChipsRow(title: "Lock mode",
@@ -284,6 +353,30 @@ struct SettingsContent: View {
         if prefs.orgFeed != nil { members.append(.orgRemote) }
         members += [.personal, .orgFolder]
         return members.map { (model.poolMemberLabel($0), $0.rawValue) }
+    }
+
+    /// Names the scene the saver runs right now (after lock tiers and the
+    /// allow-list), or explains why there isn't one.
+    private var activeScreenSaverSubtitle: String {
+        if !prefs.screenSaverEnabled { return "Screen savers are turned off" }
+        if model.lockState.mode == .hard { return "Locked by your organization — showing a plain color" }
+        if let id = model.activeScreenSaverID, let saver = model.screenSaver(withID: id) {
+            return saver.name
+        }
+        return "None selected"
+    }
+
+    private var allowedSceneIDsBinding: Binding<String> {
+        Binding(
+            get: { prefs.allowedScreenSaverSceneIDs?.joined(separator: ", ") ?? "" },
+            set: { newValue in
+                let ids = newValue
+                    .split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+                prefs.allowedScreenSaverSceneIDs = ids.isEmpty ? nil : ids
+            }
+        )
     }
 
     private var allowedIDsBinding: Binding<String> {

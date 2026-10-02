@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FF0000000000000000000080 /* ScreenSaverSceneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000080 /* ScreenSaverSceneStore.swift */; };
+		FF0000000000000000000081 /* ScreenSaverSceneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000080 /* ScreenSaverSceneStore.swift */; };
+		FF0000000000000000000082 /* ScreenSaverPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000081 /* ScreenSaverPolicy.swift */; };
+		FF0000000000000000000083 /* ScreenSaverPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000081 /* ScreenSaverPolicy.swift */; };
+		FF0000000000000000000084 /* AppModel+ScreenSavers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000082 /* AppModel+ScreenSavers.swift */; };
+		FF0000000000000000000085 /* ScreenSaversPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000083 /* ScreenSaversPage.swift */; };
+		FF0000000000000000000086 /* StudioPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000084 /* StudioPage.swift */; };
+		FF0000000000000000000087 /* ScreenSaverStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000085 /* ScreenSaverStoreTests.swift */; };
 		FF000000000000000000007A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000074 /* Assets.xcassets */; };
 		FF0000000000000000000078 /* thumbnail.png in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000072 /* thumbnail.png */; };
 		FF0000000000000000000079 /* thumbnail@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000073 /* thumbnail@2x.png */; };
@@ -75,6 +83,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DD0000000000000000000080 /* ScreenSaverSceneStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverSceneStore.swift; sourceTree = "<group>"; };
+		DD0000000000000000000081 /* ScreenSaverPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverPolicy.swift; sourceTree = "<group>"; };
+		DD0000000000000000000082 /* AppModel+ScreenSavers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+ScreenSavers.swift"; sourceTree = "<group>"; };
+		DD0000000000000000000083 /* ScreenSaversPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaversPage.swift; sourceTree = "<group>"; };
+		DD0000000000000000000084 /* StudioPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioPage.swift; sourceTree = "<group>"; };
+		DD0000000000000000000085 /* ScreenSaverStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverStoreTests.swift; sourceTree = "<group>"; };
 		DD0000000000000000000074 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DD0000000000000000000072 /* thumbnail.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "thumbnail.png"; path = "Resources/thumbnail.png"; sourceTree = "<group>"; };
 		DD0000000000000000000073 /* thumbnail@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "thumbnail@2x.png"; path = "Resources/thumbnail@2x.png"; sourceTree = "<group>"; };
@@ -190,6 +204,8 @@
 				DD0000000000000000000062 /* ScreenSaverPresets.swift */,
 				DD0000000000000000000063 /* SceneImageStore.swift */,
 				DD0000000000000000000064 /* SaverSceneView.swift */,
+				DD0000000000000000000080 /* ScreenSaverSceneStore.swift */,
+				DD0000000000000000000081 /* ScreenSaverPolicy.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -201,6 +217,7 @@
 			children = (
 				DD0000000000000000000051 /* PaperWallsTests.swift */,
 				DD0000000000000000000066 /* SceneTests.swift */,
+				DD0000000000000000000085 /* ScreenSaverStoreTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -218,6 +235,9 @@
 				DD000000000000000000001D /* MenuBarPanel.swift */,
 				DD000000000000000000001E /* Diagnostics.swift */,
 				DD0000000000000000000065 /* ScenePreviewPresenter.swift */,
+				DD0000000000000000000082 /* AppModel+ScreenSavers.swift */,
+				DD0000000000000000000083 /* ScreenSaversPage.swift */,
+				DD0000000000000000000084 /* StudioPage.swift */,
 				DD0000000000000000000014 /* SettingsView.swift */,
 				DD0000000000000000000018 /* Components.swift */,
 				DD0000000000000000000017 /* Theme.swift */,
@@ -409,6 +429,11 @@
 				FF0000000000000000000066 /* SceneImageStore.swift in Sources */,
 				FF0000000000000000000067 /* SaverSceneView.swift in Sources */,
 				FF0000000000000000000068 /* ScenePreviewPresenter.swift in Sources */,
+				FF0000000000000000000080 /* ScreenSaverSceneStore.swift in Sources */,
+				FF0000000000000000000082 /* ScreenSaverPolicy.swift in Sources */,
+				FF0000000000000000000084 /* AppModel+ScreenSavers.swift in Sources */,
+				FF0000000000000000000085 /* ScreenSaversPage.swift in Sources */,
+				FF0000000000000000000086 /* StudioPage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -447,6 +472,9 @@
 				FF0000000000000000000063 /* SceneMotionMath.swift in Sources */,
 				FF0000000000000000000065 /* ScreenSaverPresets.swift in Sources */,
 				FF0000000000000000000069 /* SceneTests.swift in Sources */,
+				FF0000000000000000000081 /* ScreenSaverSceneStore.swift in Sources */,
+				FF0000000000000000000083 /* ScreenSaverPolicy.swift in Sources */,
+				FF0000000000000000000087 /* ScreenSaverStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -92,6 +92,17 @@ final class PreferencesStore: ObservableObject {
     /// Wallpaper grid density (2–4 columns; header "view" control).
     @Published var gridColumns: Int = 2
 
+    // Screen savers & Studio (spec §10). `managedScreenSaverScene` is
+    // admin-only and read through ScreenSaverSceneStore, not mirrored here.
+    @Published var screenSaverEnabled: Bool = true
+    @Published var showScreenSaversPage: Bool = true
+    @Published var showStudio: Bool = true
+    @Published var showStudioWallpapersTab: Bool = true
+    @Published var showStudioScreenSaverTab: Bool = true
+    @Published var allowScreenSaverCreation: Bool = true
+    @Published var activeScreenSaverSceneID: String?
+    @Published var allowedScreenSaverSceneIDs: [String]?
+
     private var isReloading = false
     private var cancellables: Set<AnyCancellable> = []
 
@@ -144,6 +155,15 @@ final class PreferencesStore: ObservableObject {
         (rotationPool, rotationPoolForced) = RotationPool.effectiveConfiguredPool()
         appearanceTheme = ManagedPreferences.string(.appearanceTheme).flatMap(AppearanceTheme.init(rawValue:)) ?? .light
         gridColumns = min(4, max(2, ManagedPreferences.int(.gridColumns) ?? 2))
+
+        screenSaverEnabled = ManagedPreferences.bool(.screenSaverEnabled) ?? true
+        showScreenSaversPage = ManagedPreferences.bool(.showScreenSaversPage) ?? true
+        showStudio = ManagedPreferences.bool(.showStudio) ?? true
+        showStudioWallpapersTab = ManagedPreferences.bool(.showStudioWallpapersTab) ?? true
+        showStudioScreenSaverTab = ManagedPreferences.bool(.showStudioScreenSaverTab) ?? true
+        allowScreenSaverCreation = ManagedPreferences.bool(.allowScreenSaverCreation) ?? true
+        activeScreenSaverSceneID = ManagedPreferences.string(.activeScreenSaverSceneID)
+        allowedScreenSaverSceneIDs = ManagedPreferences.stringArray(.allowedScreenSaverSceneIDs)
     }
 
     /// Persists each published property back to CFPreferences when it changes
@@ -179,6 +199,15 @@ final class PreferencesStore: ObservableObject {
         persist($rotationPool, .rotationPool) { $0 }
         persist($appearanceTheme, .appearanceTheme) { $0.rawValue }
         persist($gridColumns, .gridColumns) { $0 }
+
+        persist($screenSaverEnabled, .screenSaverEnabled) { $0 }
+        persist($showScreenSaversPage, .showScreenSaversPage) { $0 }
+        persist($showStudio, .showStudio) { $0 }
+        persist($showStudioWallpapersTab, .showStudioWallpapersTab) { $0 }
+        persist($showStudioScreenSaverTab, .showStudioScreenSaverTab) { $0 }
+        persist($allowScreenSaverCreation, .allowScreenSaverCreation) { $0 }
+        persist($activeScreenSaverSceneID, .activeScreenSaverSceneID) { $0 }
+        persist($allowedScreenSaverSceneIDs, .allowedScreenSaverSceneIDs) { ($0?.isEmpty ?? true) ? nil : $0 }
     }
 
     private func persist<Value: Equatable>(_ publisher: Published<Value>.Publisher,

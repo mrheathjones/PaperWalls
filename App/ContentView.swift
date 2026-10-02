@@ -67,7 +67,8 @@ struct ContentView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
-            TextField("Search wallpapers", text: $model.searchText)
+            TextField(model.page == .screenSavers ? "Search screen savers" : "Search wallpapers",
+                      text: $model.searchText)
                 .textFieldStyle(.plain)
                 .font(Theme.body)
         }
@@ -95,6 +96,10 @@ struct ContentView: View {
             PersonalPage()
         case .managed:
             ManagedPage()
+        case .screenSavers:
+            ScreenSaversPage()
+        case .studio:
+            StudioPage()
         case .settings:
             SettingsPage()
         }
@@ -116,21 +121,28 @@ struct SidebarView: View {
             }
             .padding(.bottom, 26)
 
-            Text("LIBRARY")
-                .font(Theme.sectionLabel)
-                .tracking(1.5)
-                .foregroundStyle(.secondary)
-                .padding(.leading, 12)
-                .padding(.bottom, 8)
+            // Sections (spec §10): Library, Tools, then Settings alone
+            // as the last row. A section with no visible page disappears.
+            ForEach(visibleSections, id: \.self) { section in
+                if let title = section.title {
+                    Text(title)
+                        .font(Theme.sectionLabel)
+                        .tracking(1.5)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 12)
+                        .padding(.bottom, 8)
+                }
 
-            VStack(spacing: 2) {
-                ForEach(visiblePages) { page in
-                    SidebarRow(title: model.sidebarTitle(for: page),
-                               count: count(for: page),
-                               isSelected: model.page == page) {
-                        model.page = page
+                VStack(spacing: 2) {
+                    ForEach(visiblePages(in: section)) { page in
+                        SidebarRow(title: model.sidebarTitle(for: page),
+                                   count: count(for: page),
+                                   isSelected: model.page == page) {
+                            model.page = page
+                        }
                     }
                 }
+                .padding(.bottom, 22)
             }
 
             Spacer()
@@ -155,16 +167,13 @@ struct SidebarView: View {
         }
     }
 
-    /// Source-specific pages hide when their source is off: Collections is
-    /// bundled-only, macOS follows showSystemWallpapers.
-    private var visiblePages: [LibraryPage] {
-        LibraryPage.allCases.filter { page in
-            switch page {
-            case .collections: return prefs.showBundledWallpapers
-            case .system: return prefs.showSystemWallpapers
-            default: return true
-            }
-        }
+    /// Pages hide when their gate is off (see `AppModel.isPageVisible`).
+    private func visiblePages(in section: SidebarSection) -> [LibraryPage] {
+        LibraryPage.allCases.filter { $0.section == section && model.isPageVisible($0) }
+    }
+
+    private var visibleSections: [SidebarSection] {
+        SidebarSection.allCases.filter { !visiblePages(in: $0).isEmpty }
     }
 
     private func count(for page: LibraryPage) -> Int? {
@@ -174,7 +183,8 @@ struct SidebarView: View {
         case .system: return model.visibleSystem.count
         case .personal: return model.visiblePersonal.count
         case .managed: return model.visibleManaged.count
-        case .settings: return nil
+        case .screenSavers: return model.allScreenSavers.count
+        case .studio, .settings: return nil
         }
     }
 
