@@ -10,6 +10,10 @@ configurability via MDM configuration profiles.
 | --- | --- |
 | ![Collections page](docs/screenshots/collections.png) | ![Settings page](docs/screenshots/settings.png) |
 
+| Detail sheet | Menu bar panel |
+| --- | --- |
+| ![Wallpaper detail sheet with display and target options](docs/screenshots/detail.png) | ![Menu bar panel with auto-rotate controls](docs/screenshots/menubar.png) |
+
 ## Project layout
 
 Single plain Xcode project (`PaperWalls.xcodeproj`), no SPM packages. Three
