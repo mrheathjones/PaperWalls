@@ -30,7 +30,7 @@ struct StudioPage: View {
                 case .wallpapers:
                     StudioWallpapersTab()
                 case .screenSaver:
-                    StudioScreenSaverTab()
+                    StudioScreenSaverTab(studio: model.studio)
                 case nil:
                     EmptyView()
                 }
@@ -70,17 +70,13 @@ struct StudioWallpapersTab: View {
 
 // MARK: - ScreenSaver tab
 
-/// "New Screen Saver": start blank or from a built-in preset.
-///
-/// PHASE 3: the Scene Composer editor is not built yet, so a template is
-/// saved straight to the library and an "Edit" request shows a notice.
-/// Phase 4 replaces both with the editor.
+/// The composing plane for screen savers: the "New Screen Saver" chooser
+/// (blank or a built-in preset) until something is being composed, then
+/// the Scene Composer.
 struct StudioScreenSaverTab: View {
     @EnvironmentObject private var model: AppModel
-    @EnvironmentObject private var prefs: PreferencesStore
 
-    @State private var errorMessage: String?
-    @State private var savedName: String?
+    @ObservedObject var studio: StudioSession
 
     private let columns = [GridItem(.flexible(), spacing: 20),
                            GridItem(.flexible(), spacing: 20),
@@ -90,115 +86,102 @@ struct StudioScreenSaverTab: View {
         let id: String
         let name: String
         let scene: ScreenSaverScene
+        var isPreset: Bool { id != "blank" }
     }
 
     // Built once per view so the paused previews keep stable layer IDs.
+    // Presets are read-only templates — nothing reaches the library until
+    // the user saves from the composer.
     @State private var templates: [Template] =
         [Template(id: "blank", name: "Blank", scene: ScreenSaverScene())]
         + ScreenSaverPreset.allCases.map { Template(id: $0.rawValue, name: $0.displayName, scene: $0.scene) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            if case .edit(let sceneID) = model.studioRequest,
-               let saver = model.screenSaver(withID: sceneID) {
-                editNotice(for: saver)
-            }
-
-            SettingsSection(label: "New Screen Saver") {
-                LazyVGrid(columns: columns, spacing: 20) {
-                    ForEach(templates) { template in
-                        templateCard(template)
+        Group {
+            if studio.draft != nil {
+                SceneComposer(draft: draftBinding)
+            } else {
+                SettingsSection(label: "New Screen Saver") {
+                    LazyVGrid(columns: columns, spacing: 20) {
+                        ForEach(templates) { template in
+                            templateCard(template)
+                        }
                     }
                 }
             }
         }
-        .alert("Couldn’t Save Screen Saver", isPresented: errorPresented) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        .alert("Saved to ScreenSavers", isPresented: savedPresented) {
-            if prefs.showScreenSaversPage {
-                Button("Go to ScreenSavers") {
-                    model.studioRequest = nil
-                    model.page = .screenSavers
+        // "Edit" on another screen saver arrived while this draft has
+        // unsaved changes.
+        .confirmationDialog("Discard your changes to “\(studio.draft?.name ?? "")”?",
+                            isPresented: pendingPresented, titleVisibility: .visible) {
+            Button("Discard Changes", role: .destructive) {
+                if let request = studio.pendingRequest {
+                    model.applyStudioRequest(request)
                 }
             }
-            Button("Stay in Studio", role: .cancel) {}
-        } message: {
-            Text("“\(savedName ?? "")” is now in your library.")
+            Button("Keep Editing", role: .cancel) {
+                studio.pendingRequest = nil
+            }
         }
+    }
+
+    /// Non-optional view of the draft for the composer. Writes after the
+    /// draft is closed (a late text-field commit) are dropped rather than
+    /// resurrecting it.
+    private var draftBinding: Binding<SceneDraft> {
+        Binding(
+            get: { studio.draft ?? SceneDraft(newNamed: "", scene: ScreenSaverScene()) },
+            set: { newValue in
+                if studio.draft != nil {
+                    studio.draft = newValue
+                }
+            })
+    }
+
+    private var pendingPresented: Binding<Bool> {
+        Binding(get: { studio.pendingRequest != nil },
+                set: { if !$0 { studio.pendingRequest = nil } })
     }
 
     private func templateCard(_ template: Template) -> some View {
-        ZStack(alignment: .bottom) {
-            SaverSceneView(scene: template.scene, resources: model.sceneResources, isPaused: true)
-                .allowsHitTesting(false)
-            LinearGradient(stops: [.init(color: .black.opacity(0.55), location: 0),
-                                   .init(color: .clear, location: 0.6)],
-                           startPoint: .bottom, endPoint: .top)
-            HStack(spacing: 10) {
-                Text(template.name)
-                    .font(Theme.cardName)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .shadow(color: .black.opacity(0.4), radius: 3)
-                Spacer(minLength: 8)
-                SetButton(label: "Add", systemImage: "plus") {
-                    add(template)
+        Button {
+            start(template)
+        } label: {
+            ZStack(alignment: .bottom) {
+                SaverSceneView(scene: template.scene, resources: model.sceneResources, isPaused: true)
+                LinearGradient(stops: [.init(color: .black.opacity(0.55), location: 0),
+                                       .init(color: .clear, location: 0.6)],
+                               startPoint: .bottom, endPoint: .top)
+                HStack(spacing: 10) {
+                    Text(template.name)
+                        .font(Theme.cardName)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .shadow(color: .black.opacity(0.4), radius: 3)
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 3)
                 }
-                .help("Save this to your ScreenSavers library")
+                .padding(14)
             }
-            .padding(14)
+            .aspectRatio(16.0 / 10.0, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         }
-        .aspectRatio(16.0 / 10.0, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(template.name)
+        .buttonStyle(.plain)
+        .help("Start from \(template.name)")
+        .accessibilityLabel("Start from \(template.name)")
     }
 
-    private func editNotice(for saver: StoredScreenSaver) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: "slider.horizontal.3")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(Theme.accent)
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Editing “\(saver.name)”")
-                    .font(.system(size: 15, weight: .semibold))
-                Text("The Scene Composer editor isn’t available in this build yet.")
-                    .font(Theme.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 12)
-            Button("Done") {
-                model.studioRequest = nil
-            }
-        }
-        .padding(18)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous)
-                .strokeBorder(Theme.hairline)
-        }
-    }
-
-    private func add(_ template: Template) {
-        do {
-            // A fresh copy of the template, so each saved entry gets its
-            // own layer IDs.
-            let scene = ScreenSaverPreset(rawValue: template.id)?.scene ?? ScreenSaverScene()
-            let name = template.id == "blank" ? "Untitled" : template.name
-            savedName = try model.saveScreenSaver(name: name, scene: scene).name
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private var errorPresented: Binding<Bool> {
-        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
-    }
-
-    private var savedPresented: Binding<Bool> {
-        Binding(get: { savedName != nil }, set: { if !$0 { savedName = nil } })
+    private func start(_ template: Template) {
+        // A fresh copy of the template, so every draft gets its own
+        // layer IDs.
+        let scene = ScreenSaverPreset(rawValue: template.id)?.scene ?? ScreenSaverScene()
+        let name = ScreenSaverSceneStore.uniqueName(template.isPreset ? template.name : "Untitled",
+                                                    existing: model.allScreenSavers.map(\.name))
+        studio.draft = SceneDraft(newNamed: name, scene: scene,
+                                  presetName: template.isPreset ? template.name : nil)
     }
 }

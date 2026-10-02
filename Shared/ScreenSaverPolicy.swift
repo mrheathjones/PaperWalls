@@ -84,6 +84,62 @@ struct ScreenSaverPolicy: Equatable {
     }
 }
 
+/// The scene being composed in Studio (spec §10): a working copy plus the
+/// baseline it started from, so "unsaved changes" and Reset are exact.
+struct SceneDraft: Equatable {
+    /// The library entry being edited; nil until the draft is first saved.
+    var sceneID: String?
+    var name: String
+    var scene: ScreenSaverScene
+
+    private(set) var baselineName: String
+    private(set) var baselineScene: ScreenSaverScene
+    /// Set when the draft started from a built-in preset.
+    private(set) var presetName: String?
+
+    /// A new, not-yet-saved screen saver (blank or from a preset).
+    init(newNamed name: String, scene: ScreenSaverScene, presetName: String? = nil) {
+        self.sceneID = nil
+        self.name = name
+        self.scene = scene
+        self.baselineName = name
+        self.baselineScene = scene
+        self.presetName = presetName
+    }
+
+    /// An existing library entry opened for editing.
+    init(editing stored: StoredScreenSaver) {
+        self.sceneID = stored.id
+        self.name = stored.name
+        self.scene = stored.scene
+        self.baselineName = stored.name
+        self.baselineScene = stored.scene
+        self.presetName = nil
+    }
+
+    var isNew: Bool { sceneID == nil }
+
+    /// Differs from what it started as (the preset, or the saved entry).
+    var isDirty: Bool {
+        name != baselineName || scene != baselineScene
+    }
+
+    /// A new draft can always be saved; an existing one only when changed.
+    var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (isNew || isDirty)
+    }
+
+    /// "Reset to Preset" for a preset-based draft, else "Revert to Saved".
+    var resetLabel: String {
+        isNew ? (presetName == nil ? "Reset" : "Reset to Preset") : "Revert to Saved"
+    }
+
+    mutating func reset() {
+        name = baselineName
+        scene = baselineScene
+    }
+}
+
 /// Which Studio tabs exist (spec §10).
 enum StudioTab: String, CaseIterable, Identifiable {
     case wallpapers

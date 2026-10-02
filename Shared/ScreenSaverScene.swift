@@ -378,6 +378,28 @@ extension SceneTextSegment: Codable {
     }
 }
 
+extension Array where Element == SceneTextSegment {
+    /// Merges neighbouring text runs and drops empty ones — the tidy form
+    /// saved to disk after editing.
+    var normalized: [SceneTextSegment] {
+        var result: [SceneTextSegment] = []
+        for segment in self {
+            switch segment {
+            case .text(let text):
+                guard !text.isEmpty else { continue }
+                if case .text(let previous)? = result.last {
+                    result[result.count - 1] = .text(previous + text)
+                } else {
+                    result.append(segment)
+                }
+            case .token:
+                result.append(segment)
+            }
+        }
+        return result
+    }
+}
+
 struct TextLayer: Codable, Equatable {
     var segments: [SceneTextSegment] = []
     var font = SceneFont()

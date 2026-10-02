@@ -94,6 +94,9 @@ extension AppModel {
             rotationURLs: {
                 pool.compactMap { library.fileURL(for: $0) }
             },
+            assetURL: { name in
+                ScreenSaverSceneStore.assetURL(named: name)
+            },
             tokens: SceneTokenValues(
                 computerName: (SCDynamicStoreCopyComputerName(nil, nil) as String?) ?? "",
                 companyName: prefs.companyName.trimmingCharacters(in: .whitespaces)))

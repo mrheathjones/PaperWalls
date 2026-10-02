@@ -76,11 +76,53 @@ extension AppModel {
     /// Opens Studio's ScreenSaver tab with a request ("Edit" on a library
     /// card, "Create in Studio"). A no-op when the composer is hidden or
     /// creation is disabled — callers hide those controls in that case.
+    /// If the composer holds unsaved changes to something else, the
+    /// request waits for the user to confirm discarding them.
     func openStudio(_ request: StudioRequest) {
         guard canOpenComposer else { return }
         studioTab = .screenSaver
-        studioRequest = request
         page = .studio
+        if let draft = studio.draft, draft.isDirty, !request.targets(draft) {
+            studio.pendingRequest = request
+        } else {
+            applyStudioRequest(request)
+        }
+    }
+
+    /// Carries out a request, replacing whatever the composer holds.
+    func applyStudioRequest(_ request: StudioRequest) {
+        studio.pendingRequest = nil
+        switch request {
+        case .new:
+            studio.draft = nil   // back to the "New Screen Saver" chooser
+        case .edit(let sceneID):
+            guard studio.draft?.sceneID != sceneID else { return }
+            // Only the user's own scenes are editable; the managed entry
+            // must be duplicated first.
+            if let stored = screenSavers.first(where: { $0.id == sceneID }) {
+                studio.draft = SceneDraft(editing: stored)
+            }
+        }
+    }
+
+    /// Writes the composer's draft to the library and re-bases the draft
+    /// on the saved entry, so further edits are tracked against it.
+    @discardableResult
+    func saveStudioDraft() throws -> StoredScreenSaver? {
+        guard var draft = studio.draft else { return nil }
+        // Tidy text layers into their stored form.
+        for index in draft.scene.layers.indices {
+            if case .text(var text) = draft.scene.layers[index].content {
+                text.segments = text.segments.normalized
+                draft.scene.layers[index].content = .text(text)
+            }
+        }
+        let stored = try saveScreenSaver(
+            name: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
+            scene: draft.scene,
+            replacing: draft.sceneID)
+        studio.draft = SceneDraft(editing: stored)
+        return stored
     }
 
     // MARK: - Library
@@ -186,6 +228,26 @@ extension AppModel {
                     cgImage: image, size: ScreenSaverThumbnailer.size)
             }
         }
+    }
+}
+
+/// Studio's Scene Composer state (spec §10).
+final class StudioSession: ObservableObject {
+    /// The scene being composed; nil shows the "New Screen Saver" chooser.
+    /// Lives here (not in the view) so leaving the Studio page and coming
+    /// back keeps the work in progress.
+    @Published var draft: SceneDraft?
+    /// A request held back because the draft has unsaved changes.
+    @Published var pendingRequest: StudioRequest?
+}
+
+extension StudioRequest {
+    /// True when the request is for the scene the draft already holds.
+    func targets(_ draft: SceneDraft) -> Bool {
+        if case .edit(let sceneID) = self {
+            return draft.sceneID == sceneID
+        }
+        return false
     }
 }
 

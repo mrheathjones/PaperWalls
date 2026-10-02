@@ -117,7 +117,9 @@ final class AppModel: ObservableObject {
     /// Rendered card thumbnails by scene ID.
     @Published var screenSaverThumbnails: [String: NSImage] = [:]
     @Published var studioTab: StudioTab = .screenSaver
-    @Published var studioRequest: StudioRequest?
+    /// The Scene Composer's working state. A separate object so editing
+    /// (every slider tick) doesn't republish the whole app model.
+    let studio = StudioSession()
 
     private var pixelSizeCache: [URL: CGSize] = [:]
     private var cancellables: Set<AnyCancellable> = []

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FF0000000000000000000090 /* SceneComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000090 /* SceneComposer.swift */; };
+		FF0000000000000000000091 /* SceneLayerControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000091 /* SceneLayerControls.swift */; };
 		FF0000000000000000000080 /* ScreenSaverSceneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000080 /* ScreenSaverSceneStore.swift */; };
 		FF0000000000000000000081 /* ScreenSaverSceneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000080 /* ScreenSaverSceneStore.swift */; };
 		FF0000000000000000000082 /* ScreenSaverPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000081 /* ScreenSaverPolicy.swift */; };
@@ -83,6 +85,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DD0000000000000000000090 /* SceneComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneComposer.swift; sourceTree = "<group>"; };
+		DD0000000000000000000091 /* SceneLayerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneLayerControls.swift; sourceTree = "<group>"; };
 		DD0000000000000000000080 /* ScreenSaverSceneStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverSceneStore.swift; sourceTree = "<group>"; };
 		DD0000000000000000000081 /* ScreenSaverPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverPolicy.swift; sourceTree = "<group>"; };
 		DD0000000000000000000082 /* AppModel+ScreenSavers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+ScreenSavers.swift"; sourceTree = "<group>"; };
@@ -238,6 +242,8 @@
 				DD0000000000000000000082 /* AppModel+ScreenSavers.swift */,
 				DD0000000000000000000083 /* ScreenSaversPage.swift */,
 				DD0000000000000000000084 /* StudioPage.swift */,
+				DD0000000000000000000090 /* SceneComposer.swift */,
+				DD0000000000000000000091 /* SceneLayerControls.swift */,
 				DD0000000000000000000014 /* SettingsView.swift */,
 				DD0000000000000000000018 /* Components.swift */,
 				DD0000000000000000000017 /* Theme.swift */,
@@ -434,6 +440,8 @@
 				FF0000000000000000000084 /* AppModel+ScreenSavers.swift in Sources */,
 				FF0000000000000000000085 /* ScreenSaversPage.swift in Sources */,
 				FF0000000000000000000086 /* StudioPage.swift in Sources */,
+				FF0000000000000000000090 /* SceneComposer.swift in Sources */,
+				FF0000000000000000000091 /* SceneLayerControls.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

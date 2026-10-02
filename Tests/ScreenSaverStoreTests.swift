@@ -119,6 +119,41 @@ final class ScreenSaverSceneStoreTests: XCTestCase {
         XCTAssertEqual(ScreenSaverSceneStore.uniqueName("   ", existing: []), "Untitled")
     }
 
+    // MARK: Image assets
+
+    func testImportAssetCopiesOnceByContent() throws {
+        let source = directory.appendingPathComponent("logo.PNG")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data("not really a png".utf8).write(to: source)
+
+        let name = try ScreenSaverSceneStore.importAsset(from: source, in: directory)
+        XCTAssertTrue(name.hasSuffix(".png"))
+        let stored = try XCTUnwrap(ScreenSaverSceneStore.assetURL(named: name, in: directory))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: stored.path))
+
+        // Same bytes under another filename → same asset; the original
+        // can go away without breaking the scene.
+        let copy = directory.appendingPathComponent("renamed.png")
+        try FileManager.default.copyItem(at: source, to: copy)
+        XCTAssertEqual(try ScreenSaverSceneStore.importAsset(from: copy, in: directory), name)
+        try FileManager.default.removeItem(at: source)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: stored.path))
+    }
+
+    func testImportAssetRejectsNonImages() throws {
+        let source = directory.appendingPathComponent("notes.txt")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data("hello".utf8).write(to: source)
+        XCTAssertThrowsError(try ScreenSaverSceneStore.importAsset(from: source, in: directory))
+    }
+
+    func testAssetNamesCannotEscapeTheAssetsFolder() {
+        XCTAssertNil(ScreenSaverSceneStore.assetURL(named: "../secret.png", in: directory))
+        XCTAssertNil(ScreenSaverSceneStore.assetURL(named: "/etc/hosts", in: directory))
+        XCTAssertNil(ScreenSaverSceneStore.assetURL(named: "", in: directory))
+        XCTAssertNotNil(ScreenSaverSceneStore.assetURL(named: "abc123.png", in: directory))
+    }
+
     // MARK: Managed scene
 
     func testManagedSceneFromJSONString() throws {
@@ -261,5 +296,62 @@ final class StudioTabVisibilityTests: XCTestCase {
     func testComposerTabNeedsCreation() {
         XCTAssertEqual(tabs(canCreate: false), [.wallpapers])
         XCTAssertTrue(tabs(wallpapers: false, canCreate: false).isEmpty)
+    }
+}
+
+// MARK: - Composer draft (spec §10)
+
+final class SceneDraftTests: XCTestCase {
+    func testNewDraftIsCleanButSavable() {
+        let draft = SceneDraft(newNamed: "Bouncing Clock",
+                               scene: ScreenSaverPreset.bouncingClock.scene,
+                               presetName: "Bouncing Clock")
+        XCTAssertTrue(draft.isNew)
+        XCTAssertFalse(draft.isDirty)
+        XCTAssertTrue(draft.canSave)
+        XCTAssertEqual(draft.resetLabel, "Reset to Preset")
+    }
+
+    func testEditingDraftSavesOnlyWhenChanged() {
+        let stored = StoredScreenSaver(name: "Lobby", scene: ScreenSaverPreset.minimalClock.scene)
+        var draft = SceneDraft(editing: stored)
+        XCTAssertFalse(draft.isNew)
+        XCTAssertFalse(draft.isDirty)
+        XCTAssertFalse(draft.canSave)
+        XCTAssertEqual(draft.resetLabel, "Revert to Saved")
+
+        draft.scene.background.treatment.dim = 0.7
+        XCTAssertTrue(draft.isDirty)
+        XCTAssertTrue(draft.canSave)
+    }
+
+    func testRenameAloneIsAChange() {
+        var draft = SceneDraft(editing: StoredScreenSaver(name: "Lobby", scene: ScreenSaverScene()))
+        draft.name = "Front Desk"
+        XCTAssertTrue(draft.isDirty)
+    }
+
+    func testBlankNameCannotBeSaved() {
+        var draft = SceneDraft(newNamed: "Untitled", scene: ScreenSaverScene())
+        draft.name = "   "
+        XCTAssertFalse(draft.canSave)
+    }
+
+    func testResetRestoresTheBaseline() {
+        let scene = ScreenSaverPreset.floatingMessage.scene
+        var draft = SceneDraft(newNamed: "Message", scene: scene, presetName: "Floating Message")
+        draft.name = "Changed"
+        draft.scene.layers.removeAll()
+        draft.reset()
+        XCTAssertEqual(draft.name, "Message")
+        XCTAssertEqual(draft.scene, scene)
+        XCTAssertFalse(draft.isDirty)
+    }
+
+    func testTextSegmentsNormalize() {
+        let segments: [SceneTextSegment] = [.text("Hi "), .text(""), .text("there "), .token(.date), .text(""), .token(.computerName), .text("!")]
+        XCTAssertEqual(segments.normalized,
+                       [.text("Hi there "), .token(.date), .token(.computerName), .text("!")])
+        XCTAssertTrue([SceneTextSegment.text("")].normalized.isEmpty)
     }
 }

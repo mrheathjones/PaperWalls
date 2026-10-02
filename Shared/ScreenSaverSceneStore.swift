@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import os
 
@@ -32,6 +33,8 @@ enum ScreenSaverSceneStore {
     static let managedSceneID = "managed"
     static let fileExtension = "json"
     static let thumbnailsFolderName = "Thumbnails"
+    static let assetsFolderName = "Assets"
+    static let assetExtensions: Set<String> = ["png", "jpg", "jpeg", "heic", "tiff", "gif"]
 
     static var defaultDirectory: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -150,6 +153,41 @@ enum ScreenSaverSceneStore {
         }
         try FileManager.default.removeItem(at: fileURL(forID: id, in: directory))
         try? FileManager.default.removeItem(at: thumbnailURL(forID: id, in: directory))
+    }
+
+    // MARK: - Image assets
+
+    /// File for an imported icon image (`IconLayer.imageAssetName`), or nil
+    /// for a name that isn't a plain filename.
+    static func assetURL(named name: String, in directory: URL = defaultDirectory) -> URL? {
+        guard !name.isEmpty, name == (name as NSString).lastPathComponent, !name.hasPrefix(".") else {
+            return nil
+        }
+        return directory.appendingPathComponent(assetsFolderName, isDirectory: true)
+            .appendingPathComponent(name)
+    }
+
+    /// Copies an image into the library and returns its asset name. The
+    /// name is derived from the file's contents, so the scene keeps working
+    /// when the original is moved or deleted, and importing the same image
+    /// twice stores it once.
+    static func importAsset(from source: URL, in directory: URL = defaultDirectory) throws -> String {
+        let fileExtension = source.pathExtension.lowercased()
+        guard assetExtensions.contains(fileExtension) else {
+            throw CocoaError(.fileReadUnsupportedScheme)
+        }
+        let data = try Data(contentsOf: source)
+        let hash = SHA256.hash(data: data).prefix(12).map { String(format: "%02x", $0) }.joined()
+        let name = "\(hash).\(fileExtension)"
+        guard let destination = assetURL(named: name, in: directory) else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        if !FileManager.default.fileExists(atPath: destination.path) {
+            try data.write(to: destination, options: .atomic)
+        }
+        return name
     }
 
     // MARK: - Naming
