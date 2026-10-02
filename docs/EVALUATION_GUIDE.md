@@ -1,6 +1,6 @@
 # PaperWalls — Setup & Evaluation Guide
 
-A short path from "I have the .pkg" to "it's working as a managed app on my
+A short path from "I built the .pkg" to "it's working as a managed app on my
 test Mac." Aimed at an admin evaluating PaperWalls at their organization.
 
 For the full key reference, lock tiers, feed hosting, logging, and
@@ -10,26 +10,36 @@ troubleshooting, see **`ADMIN_GUIDE.md`** — this guide only gets you running.
   a `desktoppr`-style CLI, and one MDM preference domain.
 - **You supply:** a test Mac (macOS 13+) and, ideally, your MDM (Jamf or any
   profile-delivery tool). It also runs fully standalone on an unmanaged Mac.
-- **You do NOT rebuild or rebrand anything.** The app ships signed, with a fixed
-  vendor bundle ID (`com.herojoneslabs.paperwalls`) — exactly like Nudge
+- **You do NOT rebrand anything.** The app has a fixed bundle ID
+  (`com.herojoneslabs.paperwalls`) — exactly like Nudge
   (`com.github.macadmins.Nudge`) or Root3's SupportApp (`nl.root3.support`). You
-  consume it and target that domain from a config profile. Nothing gets forked.
+  build it once and target that domain from a config profile.
+- **No prebuilt installer is published.** You build the pkg from source with
+  `Deployment/build-pkg.sh` (step 1) — Xcode is required on the build Mac.
 
 ---
 
 ## 1. Install (2 min)
 
-Install the pkg with your MDM, or by hand on a test Mac:
+Build the pkg from a clone of the repository (settings are in the CONFIG block
+at the top of the script — signing is off unless you set `APP_IDENTITY`):
 
 ```bash
-sudo installer -pkg PaperWalls-1.0-d.16.pkg -target /
+./Deployment/build-pkg.sh
+```
+
+The pkg lands in `dist/` as `PaperWalls-<version>.pkg`. Install it with your
+MDM, or by hand on a test Mac:
+
+```bash
+sudo installer -pkg dist/PaperWalls-<version>.pkg -target /
 ```
 
 What lands:
 
 | Path | What |
 | --- | --- |
-| `/Applications/PaperWalls.app` | The app (Developer ID signed, hardened runtime — runs on any Mac) |
+| `/Applications/PaperWalls.app` | The app (ad-hoc signed by default; Developer ID signed with hardened runtime if you set `APP_IDENTITY`) |
 | `/usr/local/bin/paperwallscli` | CLI, same rules and preferences as the app |
 | `/Library/LaunchAgents/com.herojoneslabs.paperwalls.manage.plist` | Optional agent that converges managed selections without the app open |
 
@@ -144,7 +154,7 @@ defaults in `ADMIN_GUIDE.md` §3.
 | **Your own remote feed** | `orgCatalogEnabled` + `orgCatalogURL` + `orgCatalogPublicKey` | Host your own signed catalog — see `ADMIN_GUIDE.md` §6 |
 
 Two defaults to know going in: the app's own **curated feed is off by default**
-(`appCuratedEnabled=false`), so you never touch the vendor's feed unless you opt
+(`appCuratedEnabled=false`), so you never touch a curated feed unless you opt
 in; and Apple built-in wallpaper **downloads** hit `mesu.apple.com` /
 `updates.cdn-apple.com` — allow-list those or set
 `allowSystemWallpaperDownloads=false` on restricted networks.
@@ -173,4 +183,4 @@ rm -rf ~/Library/Application\ Support/PaperWalls
   the lock (`.lock.mobileconfig`) reference profile, and `build-pkg.sh`.
 - Questions or something behaving oddly: grab
   `log show --last 30m --predicate 'subsystem == "com.herojoneslabs.paperwalls"' --style compact`
-  and send it over — it says exactly what the app resolved and why.
+  and attach it to a GitHub issue — it says exactly what the app resolved and why.
