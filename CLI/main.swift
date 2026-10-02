@@ -1,0 +1,379 @@
+import AppKit
+import Foundation
+
+// paperwallscli — desktoppr-style CLI for the PaperWalls wallpaper manager.
+//
+// Exit codes (script-friendly):
+//   0  success
+//   1  usage error / unknown command
+//   2  invalid or missing image file
+//   3  no such screen / no displays available
+//   4  setting the wallpaper failed
+//   5  refused to run as root
+//   6  wallpaper selection is locked (lockSelection)
+
+let toolName = "paperwallscli"
+let toolVersion = "1.0.0"
+
+enum ExitCode {
+    static let ok: Int32 = 0
+    static let usage: Int32 = 1
+    static let invalidFile: Int32 = 2
+    static let noSuchScreen: Int32 = 3
+    static let applyFailed: Int32 = 4
+    static let refusedRoot: Int32 = 5
+    static let selectionLocked: Int32 = 6
+}
+
+func stderrPrint(_ message: String) {
+    FileHandle.standardError.write(Data((message + "\n").utf8))
+}
+
+func fail(_ message: String, code: Int32) -> Never {
+    stderrPrint("\(toolName): \(message)")
+    exit(code)
+}
+
+func printUsage(toStandardError: Bool) {
+    let usage = """
+    \(toolName) \(toolVersion) — manage the desktop picture (desktoppr-compatible verbs)
+
+    USAGE:
+      \(toolName) get [screen-index]
+          Print the current desktop picture path for every screen, or for
+          the given zero-based screen index.
+
+      \(toolName) set <path> [screen-index] [--scale fill|fit|stretch|center] [--color RRGGBB] [--all-screens]
+          Set the desktop picture. Applies to all screens unless a
+          screen index is given. --all-screens forces all screens.
+
+      \(toolName) manage
+          Read managed/user preferences from the \(ManagedPreferences.domain)
+          domain and apply them. Intended to be run by a LaunchAgent.
+
+      \(toolName) watch [--interval seconds]
+          Long-running desktop watcher (Tier 3). Under
+          lockMode=enforcedRotation, reverts any out-of-pool desktop picture
+          to an approved wallpaper. Idles in every other mode. Intended to be
+          run by the watch LaunchAgent; default interval 15s.
+
+      \(toolName) version
+      \(toolName) help
+
+    EXIT CODES:
+      0 success, 1 usage, 2 bad file, 3 bad screen, 4 set failed,
+      5 ran as root, 6 selection locked by policy
+
+    NOTE: run as the logged-in user. The desktop picture is a per-user,
+    per-session setting; running as root will not work.
+    """
+    if toStandardError {
+        stderrPrint(usage)
+    } else {
+        print(usage)
+    }
+}
+
+func parseScreenList(indexArgument: String?) -> [NSScreen] {
+    let screens = NSScreen.screens
+    guard !screens.isEmpty else {
+        fail(WallpaperError.noScreens.localizedDescription, code: ExitCode.noSuchScreen)
+    }
+    guard let indexArgument else { return screens }
+    guard let index = Int(indexArgument) else {
+        fail("screen index must be a number, got '\(indexArgument)'", code: ExitCode.usage)
+    }
+    guard screens.indices.contains(index) else {
+        fail("no display at index \(index) (\(screens.count) display(s) attached)", code: ExitCode.noSuchScreen)
+    }
+    return [screens[index]]
+}
+
+func runGet(_ arguments: [String]) -> Never {
+    guard arguments.count <= 1 else {
+        fail("get takes at most one argument (a screen index)", code: ExitCode.usage)
+    }
+    let screens = parseScreenList(indexArgument: arguments.first)
+    for screen in screens {
+        print(WallpaperEngine.currentWallpaperURL(for: screen)?.path ?? "")
+    }
+    exit(ExitCode.ok)
+}
+
+func runSet(_ arguments: [String]) -> Never {
+    var scale = WallpaperScale.fill
+    var fillColor: NSColor?
+    var allScreens = false
+    var positional: [String] = []
+
+    var index = 0
+    while index < arguments.count {
+        let argument = arguments[index]
+        switch argument {
+        case "--scale":
+            index += 1
+            guard index < arguments.count, let parsed = WallpaperScale(rawValue: arguments[index]) else {
+                fail("--scale requires one of: fill, fit, stretch, center", code: ExitCode.usage)
+            }
+            scale = parsed
+        case "--color":
+            index += 1
+            guard index < arguments.count, let parsed = NSColor(hexString: arguments[index]) else {
+                fail("--color requires a 6-digit hex value, e.g. 1D2E3F", code: ExitCode.usage)
+            }
+            fillColor = parsed
+        case "--all-screens":
+            allScreens = true
+        default:
+            guard !argument.hasPrefix("--") else {
+                fail("unknown option '\(argument)'", code: ExitCode.usage)
+            }
+            positional.append(argument)
+        }
+        index += 1
+    }
+
+    guard let pathArgument = positional.first, positional.count <= 2 else {
+        fail("usage: \(toolName) set <path> [screen-index] [--scale ...] [--color ...] [--all-screens]",
+             code: ExitCode.usage)
+    }
+
+    // Shared pre-apply guard (spec §1) — the CLI is never a bypass. Arbitrary
+    // paths have no wallpaper ID, so any restrictive tier refuses them.
+    if let refusal = WallpaperApplyGuard.refusalReason(forApplying: nil,
+                                                       lockState: LockState.current()) {
+        fail("\(refusal) Use '\(toolName) manage'.", code: ExitCode.selectionLocked)
+    }
+
+    let url = URL(fileURLWithPath: (pathArgument as NSString).expandingTildeInPath).standardizedFileURL
+    let screenIndexArgument = allScreens ? nil : (positional.count == 2 ? positional[1] : nil)
+    let screens = parseScreenList(indexArgument: screenIndexArgument)
+
+    applyOrExit(url: url, screens: screens, scale: scale, fillColor: fillColor)
+    print("set \(url.path) on \(screens.count) display(s)")
+    exit(ExitCode.ok)
+}
+
+/// Everything the CLI can see: bundled + folders + the app's last-good
+/// verified feed caches. The CLI NEVER syncs feeds — network stays in the
+/// app (spec §4).
+func loadFullLibrary() -> WallpaperLibrary {
+    var library = WallpaperCatalog.load(
+        managedFolderPath: ManagedPreferences.string(.externalWallpaperFolderPath),
+        personalFolderPath: PersonalFolder.effectivePathFromPreferences(),
+        includeSystemWallpapers: ManagedPreferences.bool(.showSystemWallpapers) ?? true)
+    if ManagedPreferences.bool(.appCuratedEnabled) == true {
+        let cached = RemoteCatalog.loadCached(feed: .appCurated)
+        library.appCurated = cached.wallpapers
+        library.appCuratedFolderURL = cached.folderURL
+    }
+    if ManagedPreferences.bool(.orgCatalogEnabled) == true,
+       let orgFeed = RemoteFeed.org(urlString: ManagedPreferences.string(.orgCatalogURL),
+                                    publicKeyBase64: ManagedPreferences.string(.orgCatalogPublicKey)) {
+        let cached = RemoteCatalog.loadCached(feed: orgFeed)
+        library.orgRemote = cached.wallpapers
+        library.orgRemoteFolderURL = cached.folderURL
+    }
+    return library
+}
+
+func runManage() -> Never {
+    // Under a hard lock the OS profile (or configured hard tier) owns the
+    // desktop — manage must not fight it.
+    let lockState = LockState.current()
+    if lockState.mode == .hard {
+        fail("the wallpaper is locked (\(lockState.osEnforced ? "enforced by configuration profile" : "hard lock configured")); manage will not modify it",
+             code: ExitCode.selectionLocked)
+    }
+
+    // One-time upgrades (also done by the app; whichever runs first wins):
+    // path-derived folder IDs → content IDs (spec §6) and legacy rotation
+    // keys → rotationPool (spec §4).
+    ContentIDMigration.migrateIfNeeded()
+    RotationPoolMigration.migrateIfNeeded()
+
+    guard let selectedID = ManagedPreferences.string(.selectedWallpaperID), !selectedID.isEmpty else {
+        print("\(toolName): no selectedWallpaperID configured in \(ManagedPreferences.domain); nothing to do")
+        exit(ExitCode.ok)
+    }
+
+    let library = loadFullLibrary()
+
+    let url: URL
+    var resolvedName = selectedID
+    if let wallpaper = library.wallpaper(withID: selectedID),
+       let resolved = library.fileURL(for: wallpaper) {
+        url = resolved
+        resolvedName = wallpaper.displayName
+    } else if selectedID.hasPrefix("/") || selectedID.hasPrefix("~") {
+        // Convenience: allow a plain filesystem path in selectedWallpaperID.
+        url = URL(fileURLWithPath: (selectedID as NSString).expandingTildeInPath).standardizedFileURL
+    } else {
+        fail("selectedWallpaperID '\(selectedID)' not found in the bundled catalog or external folder",
+             code: ExitCode.invalidFile)
+    }
+
+    let scale = ManagedPreferences.string(.scale).flatMap(WallpaperScale.init(rawValue:)) ?? .fill
+    let fillColor = ManagedPreferences.string(.fillColor).flatMap(NSColor.init(hexString:))
+    let applyToAll = ManagedPreferences.bool(.applyToAllScreens) ?? true
+
+    let allScreens = NSScreen.screens
+    guard !allScreens.isEmpty else {
+        fail(WallpaperError.noScreens.localizedDescription, code: ExitCode.noSuchScreen)
+    }
+    let screens = applyToAll ? allScreens : [allScreens[0]]
+
+    applyOrExit(url: url, screens: screens, scale: scale, fillColor: fillColor)
+    print("applied '\(resolvedName)' (\(selectedID)) to \(screens.count) display(s) [scale: \(scale.rawValue)]")
+    exit(ExitCode.ok)
+}
+
+// MARK: - watch (spec §7 — Tier 3)
+
+/// Long-running desktop watcher: when `lockMode == enforcedRotation` and the
+/// current desktop picture is outside the approved rotation pool, re-apply
+/// the last-approved (or first pool) wallpaper. Reversion, not prevention —
+/// there is no OS hook to block a change, only to observe and restore.
+/// Idles cheaply in every other lock mode so the LaunchAgent can stay
+/// resident fleet-wide. Under a hard/OS lock (Tier 2) it deliberately does
+/// nothing: the profile owns the desktop (mutual exclusion, spec §7).
+final class DesktopWatcher {
+    private let interval: TimeInterval
+    private var timer: Timer?
+
+    init(interval: TimeInterval) {
+        self.interval = interval
+    }
+
+    func start() {
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.check()
+        }
+        // Space switches and display changes are the moments a drifted
+        // desktop becomes visible — check immediately instead of waiting
+        // out the poll interval.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil, queue: .main) { [weak self] _ in self?.check() }
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil, queue: .main) { [weak self] _ in self?.check() }
+        check()
+    }
+
+    private func check() {
+        // Admin config can change under a long-lived process — re-read the
+        // local config file layer every evaluation.
+        ManagedPreferences.invalidateLocalConfigCache()
+        let lockState = LockState.current()
+        guard lockState.mode == .enforcedRotation else { return }
+
+        let library = loadFullLibrary()
+        let pool = RotationPool.resolveFromPreferences(library: library, lockMode: lockState.mode)
+        guard !pool.isEmpty else { return }   // defined no-op: nothing approved
+
+        let approvedPaths = Set(pool.compactMap { library.fileURL(for: $0)?.standardizedFileURL.path })
+        let screens = NSScreen.screens
+        let offenders = screens.filter { screen in
+            !WatchPolicy.isCompliant(
+                currentPath: WallpaperEngine.currentWallpaperURL(for: screen)?.standardizedFileURL.path,
+                approvedPaths: approvedPaths)
+        }
+        guard !offenders.isEmpty else { return }
+
+        guard let target = WatchPolicy.revertTarget(pool: pool,
+                                                    selectedID: ManagedPreferences.string(.selectedWallpaperID)),
+              let url = library.fileURL(for: target) else {
+            return
+        }
+        let scale = ManagedPreferences.string(.scale).flatMap(WallpaperScale.init(rawValue:)) ?? .fill
+        let fillColor = ManagedPreferences.string(.fillColor).flatMap(NSColor.init(hexString:))
+        do {
+            try WallpaperEngine.setWallpaper(url: url, on: offenders, scale: scale, fillColor: fillColor)
+            print("\(toolName): reverted \(offenders.count) display(s) to '\(target.displayName)' (\(target.id))")
+        } catch {
+            stderrPrint("\(toolName): revert failed: \(error.localizedDescription)")
+        }
+    }
+}
+
+func runWatch(_ arguments: [String]) -> Never {
+    var interval: TimeInterval = 15
+    var index = 0
+    while index < arguments.count {
+        switch arguments[index] {
+        case "--interval":
+            index += 1
+            guard index < arguments.count, let seconds = TimeInterval(arguments[index]), seconds >= 5 else {
+                fail("--interval requires a number of seconds (minimum 5)", code: ExitCode.usage)
+            }
+            interval = seconds
+        default:
+            fail("unknown option '\(arguments[index])' — usage: \(toolName) watch [--interval seconds]",
+                 code: ExitCode.usage)
+        }
+        index += 1
+    }
+
+    // Line-buffer stdout: under a LaunchAgent it's a file, and block
+    // buffering would hold revert log lines back indefinitely.
+    setvbuf(stdout, nil, _IOLBF, 0)
+    print("\(toolName): watching the desktop every \(Int(interval))s (enforces only under lockMode=enforcedRotation; Ctrl-C to stop)")
+    let watcher = DesktopWatcher(interval: interval)
+    watcher.start()
+    RunLoop.main.run()
+    exit(ExitCode.ok)
+}
+
+func applyOrExit(url: URL, screens: [NSScreen], scale: WallpaperScale, fillColor: NSColor?) {
+    do {
+        try WallpaperEngine.setWallpaper(url: url, on: screens, scale: scale, fillColor: fillColor)
+    } catch let error as WallpaperError {
+        switch error {
+        case .invalidFile:
+            fail(error.localizedDescription, code: ExitCode.invalidFile)
+        case .noScreens, .noSuchScreen:
+            fail(error.localizedDescription, code: ExitCode.noSuchScreen)
+        case .setFailed:
+            fail(error.localizedDescription, code: ExitCode.applyFailed)
+        }
+    } catch {
+        fail(error.localizedDescription, code: ExitCode.applyFailed)
+    }
+}
+
+// MARK: - Entry point
+
+let argumentList = Array(CommandLine.arguments.dropFirst())
+
+guard let command = argumentList.first else {
+    printUsage(toStandardError: true)
+    exit(ExitCode.usage)
+}
+
+if getuid() == 0 && (command == "set" || command == "manage" || command == "watch") {
+    fail("refusing to run as root — the desktop picture is a per-user session setting",
+         code: ExitCode.refusedRoot)
+}
+
+switch command {
+case "get":
+    runGet(Array(argumentList.dropFirst()))
+case "set":
+    runSet(Array(argumentList.dropFirst()))
+case "manage":
+    guard argumentList.count == 1 else {
+        fail("manage takes no arguments", code: ExitCode.usage)
+    }
+    runManage()
+case "watch":
+    runWatch(Array(argumentList.dropFirst()))
+case "version", "--version", "-v":
+    print(toolVersion)
+    exit(ExitCode.ok)
+case "help", "--help", "-h":
+    printUsage(toStandardError: false)
+    exit(ExitCode.ok)
+default:
+    fail("unknown command '\(command)' — run '\(toolName) help'", code: ExitCode.usage)
+}

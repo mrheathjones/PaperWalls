@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadType</key>
+			<string>com.apple.ManagedClient.preferences</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadIdentifier</key>
+			<string>com.herojoneslabs.paperwalls.mcx.01</string>
+			<key>PayloadUUID</key>
+			<string>7C1E2F14-9A32-4E6B-B58D-2A6E9D4C1A01</string>
+			<key>PayloadDisplayName</key>
+			<string>Wallpaper Manager Preferences</string>
+			<key>PayloadContent</key>
+			<dict>
+				<key>com.herojoneslabs.paperwalls</key>
+				<dict>
+					<key>Forced</key>
+					<array>
+						<dict>
+							<key>mcx_preference_settings</key>
+							<dict>
+								<!-- CuratedWallpaper.id from catalog.json, a
+								     file:... content ID (legacy external-...
+								     IDs still resolve), or an absolute path -->
+								<key>selectedWallpaperID</key>
+								<string>bundled-aurora-veil</string>
+								<!-- fill | fit | stretch | center -->
+								<key>scale</key>
+								<string>fill</string>
+								<!-- optional letterbox color, 6-digit hex -->
+								<key>fillColor</key>
+								<string>1D2E3F</string>
+								<key>applyToAllScreens</key>
+								<true/>
+								<!-- true hides the picker grid entirely -->
+								<key>lockSelection</key>
+								<false/>
+								<!-- with lockSelection: false = hard lock
+								     (no exit from the locked screen);
+								     true = user may browse read-only -->
+								<key>allowLockExit</key>
+								<true/>
+								<!-- optional; restricts the picker to these IDs -->
+								<key>allowedWallpaperIDs</key>
+								<array>
+									<string>bundled-aurora-veil</string>
+									<string>bundled-nebula</string>
+								</array>
+								<!-- optional folder scanned for extra wallpapers -->
+								<key>externalWallpaperFolderPath</key>
+								<string>/Library/CompanyWallpapers</string>
+								<!-- org branding: replaces "Company"/"Managed"
+								     wording in the app's sidebar and filters -->
+								<key>companyName</key>
+								<string>Acme Corp</string>
+								<key>showBundledWallpapers</key>
+								<true/>
+								<!-- Apple's built-in wallpapers
+								     (/System/Library/Desktop Pictures) as
+								     the "macOS" source -->
+								<key>showSystemWallpapers</key>
+								<true/>
+								<!-- daily "Featured today" hero on Browse -->
+								<key>showFeaturedWallpaper</key>
+								<true/>
+							</dict>
+						</dict>
+					</array>
+				</dict>
+			</dict>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Managed preferences for the PaperWalls wallpaper manager. Remove keys you do not want to force; unforced keys stay user-editable.</string>
+	<key>PayloadDisplayName</key>
+	<string>Wallpaper Manager</string>
+	<key>PayloadIdentifier</key>
+	<string>com.herojoneslabs.paperwalls.profile</string>
+	<key>PayloadOrganization</key>
+	<string>YourOrg</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>0A4B8C1D-3E5F-4A6B-8C9D-1E2F3A4B5C02</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>

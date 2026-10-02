@@ -1,0 +1,551 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FF0000000000000000000001 /* WallpaperEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000001 /* WallpaperEngine.swift */; };
+		FF0000000000000000000002 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000002 /* PreferencesStore.swift */; };
+		FF0000000000000000000003 /* ManagedPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000003 /* ManagedPreferences.swift */; };
+		FF0000000000000000000004 /* WallpaperCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000004 /* WallpaperCatalog.swift */; };
+		FF0000000000000000000005 /* PaperWallsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000011 /* PaperWallsApp.swift */; };
+		FF0000000000000000000006 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000012 /* AppModel.swift */; };
+		FF0000000000000000000007 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000013 /* ContentView.swift */; };
+		FF0000000000000000000008 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000014 /* SettingsView.swift */; };
+		FF0000000000000000000009 /* ThumbnailLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000015 /* ThumbnailLoader.swift */; };
+		FF0000000000000000000010 /* Wallpapers in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000031 /* Wallpapers */; };
+		FF0000000000000000000011 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000021 /* main.swift */; };
+		FF0000000000000000000012 /* WallpaperEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000001 /* WallpaperEngine.swift */; };
+		FF0000000000000000000013 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000002 /* PreferencesStore.swift */; };
+		FF0000000000000000000014 /* ManagedPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000003 /* ManagedPreferences.swift */; };
+		FF0000000000000000000015 /* WallpaperCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000004 /* WallpaperCatalog.swift */; };
+		FF0000000000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000016 /* Assets.xcassets */; };
+		FF0000000000000000000017 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000017 /* Theme.swift */; };
+		FF0000000000000000000018 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000018 /* Components.swift */; };
+		FF0000000000000000000019 /* BrowsePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000019 /* BrowsePage.swift */; };
+		FF000000000000000000001A /* CollectionsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000000000000000001A /* CollectionsPage.swift */; };
+		FF000000000000000000001B /* SourcePages.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000000000000000001B /* SourcePages.swift */; };
+		FF000000000000000000001C /* WallpaperDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000000000000000001C /* WallpaperDetailSheet.swift */; };
+		FF000000000000000000001D /* MenuBarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000000000000000001D /* MenuBarPanel.swift */; };
+		FF000000000000000000001E /* WallpaperLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000005 /* WallpaperLock.swift */; };
+		FF000000000000000000001F /* WallpaperLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000005 /* WallpaperLock.swift */; };
+		FF0000000000000000000031 /* WallpaperEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000001 /* WallpaperEngine.swift */; };
+		FF0000000000000000000032 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000002 /* PreferencesStore.swift */; };
+		FF0000000000000000000033 /* ManagedPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000003 /* ManagedPreferences.swift */; };
+		FF0000000000000000000034 /* WallpaperCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000004 /* WallpaperCatalog.swift */; };
+		FF0000000000000000000035 /* WallpaperLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000005 /* WallpaperLock.swift */; };
+		FF0000000000000000000036 /* PaperWallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000051 /* PaperWallsTests.swift */; };
+		FF0000000000000000000020 /* WallpaperContentID.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000006 /* WallpaperContentID.swift */; };
+		FF0000000000000000000021 /* WallpaperContentID.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000006 /* WallpaperContentID.swift */; };
+		FF0000000000000000000037 /* WallpaperContentID.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000006 /* WallpaperContentID.swift */; };
+		FF0000000000000000000022 /* RotationPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000007 /* RotationPool.swift */; };
+		FF0000000000000000000023 /* RotationPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000007 /* RotationPool.swift */; };
+		FF0000000000000000000038 /* RotationPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000007 /* RotationPool.swift */; };
+		FF0000000000000000000024 /* RemoteCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000008 /* RemoteCatalog.swift */; };
+		FF0000000000000000000025 /* RemoteCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000008 /* RemoteCatalog.swift */; };
+		FF0000000000000000000039 /* RemoteCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000008 /* RemoteCatalog.swift */; };
+		FF0000000000000000000026 /* SystemWallpapers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000009 /* SystemWallpapers.swift */; };
+		FF0000000000000000000027 /* SystemWallpapers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000009 /* SystemWallpapers.swift */; };
+		FF000000000000000000003A /* SystemWallpapers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000009 /* SystemWallpapers.swift */; };
+		FF0000000000000000000028 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000000000000000001E /* Diagnostics.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		BB0000000000000000000002 /* PaperWalls.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaperWalls.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC0000000000000000000002 /* paperwallscli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = paperwallscli; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD0000000000000000000001 /* WallpaperEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperEngine.swift; sourceTree = "<group>"; };
+		DD0000000000000000000002 /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
+		DD0000000000000000000003 /* ManagedPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedPreferences.swift; sourceTree = "<group>"; };
+		DD0000000000000000000004 /* WallpaperCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperCatalog.swift; sourceTree = "<group>"; };
+		DD0000000000000000000005 /* WallpaperLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperLock.swift; sourceTree = "<group>"; };
+		DD0000000000000000000006 /* WallpaperContentID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperContentID.swift; sourceTree = "<group>"; };
+		DD0000000000000000000007 /* RotationPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationPool.swift; sourceTree = "<group>"; };
+		DD0000000000000000000008 /* RemoteCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCatalog.swift; sourceTree = "<group>"; };
+		DD0000000000000000000009 /* SystemWallpapers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemWallpapers.swift; sourceTree = "<group>"; };
+		DD0000000000000000000051 /* PaperWallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperWallsTests.swift; sourceTree = "<group>"; };
+		GG0000000000000000000002 /* PaperWallsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaperWallsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD0000000000000000000011 /* PaperWallsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperWallsApp.swift; sourceTree = "<group>"; };
+		DD0000000000000000000012 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		DD0000000000000000000013 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		DD0000000000000000000014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DD0000000000000000000015 /* ThumbnailLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailLoader.swift; sourceTree = "<group>"; };
+		DD0000000000000000000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DD0000000000000000000017 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		DD0000000000000000000018 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		DD0000000000000000000019 /* BrowsePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowsePage.swift; sourceTree = "<group>"; };
+		DD000000000000000000001A /* CollectionsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsPage.swift; sourceTree = "<group>"; };
+		DD000000000000000000001B /* SourcePages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcePages.swift; sourceTree = "<group>"; };
+		DD000000000000000000001C /* WallpaperDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperDetailSheet.swift; sourceTree = "<group>"; };
+		DD000000000000000000001D /* MenuBarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPanel.swift; sourceTree = "<group>"; };
+		DD000000000000000000001E /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
+		DD0000000000000000000021 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		DD0000000000000000000031 /* Wallpapers */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Wallpapers; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BB0000000000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC0000000000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		GG0000000000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				EE0000000000000000000002 /* App */,
+				EE0000000000000000000003 /* CLI */,
+				EE0000000000000000000001 /* Shared */,
+				EE0000000000000000000004 /* Resources */,
+				EE0000000000000000000005 /* Tests */,
+				AA0000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000000000000000000002 /* PaperWalls.app */,
+				CC0000000000000000000002 /* paperwallscli */,
+				GG0000000000000000000002 /* PaperWallsTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EE0000000000000000000001 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				DD0000000000000000000001 /* WallpaperEngine.swift */,
+				DD0000000000000000000002 /* PreferencesStore.swift */,
+				DD0000000000000000000003 /* ManagedPreferences.swift */,
+				DD0000000000000000000004 /* WallpaperCatalog.swift */,
+				DD0000000000000000000005 /* WallpaperLock.swift */,
+				DD0000000000000000000006 /* WallpaperContentID.swift */,
+				DD0000000000000000000007 /* RotationPool.swift */,
+				DD0000000000000000000008 /* RemoteCatalog.swift */,
+				DD0000000000000000000009 /* SystemWallpapers.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		EE0000000000000000000005 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				DD0000000000000000000051 /* PaperWallsTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		EE0000000000000000000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				DD0000000000000000000011 /* PaperWallsApp.swift */,
+				DD0000000000000000000012 /* AppModel.swift */,
+				DD0000000000000000000013 /* ContentView.swift */,
+				DD0000000000000000000019 /* BrowsePage.swift */,
+				DD000000000000000000001A /* CollectionsPage.swift */,
+				DD000000000000000000001B /* SourcePages.swift */,
+				DD000000000000000000001C /* WallpaperDetailSheet.swift */,
+				DD000000000000000000001D /* MenuBarPanel.swift */,
+				DD000000000000000000001E /* Diagnostics.swift */,
+				DD0000000000000000000014 /* SettingsView.swift */,
+				DD0000000000000000000018 /* Components.swift */,
+				DD0000000000000000000017 /* Theme.swift */,
+				DD0000000000000000000015 /* ThumbnailLoader.swift */,
+				DD0000000000000000000016 /* Assets.xcassets */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		EE0000000000000000000003 /* CLI */ = {
+			isa = PBXGroup;
+			children = (
+				DD0000000000000000000021 /* main.swift */,
+			);
+			path = CLI;
+			sourceTree = "<group>";
+		};
+		EE0000000000000000000004 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				DD0000000000000000000031 /* Wallpapers */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BB0000000000000000000001 /* PaperWalls */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000000000000000000003 /* Build configuration list for PBXNativeTarget "PaperWalls" */;
+			buildPhases = (
+				BB0000000000000000000006 /* Sources */,
+				BB0000000000000000000007 /* Frameworks */,
+				BB0000000000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PaperWalls;
+			productName = PaperWalls;
+			productReference = BB0000000000000000000002 /* PaperWalls.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CC0000000000000000000001 /* paperwallscli */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CC0000000000000000000003 /* Build configuration list for PBXNativeTarget "paperwallscli" */;
+			buildPhases = (
+				CC0000000000000000000006 /* Sources */,
+				CC0000000000000000000007 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = paperwallscli;
+			productName = paperwallscli;
+			productReference = CC0000000000000000000002 /* paperwallscli */;
+			productType = "com.apple.product-type.tool";
+		};
+		GG0000000000000000000001 /* PaperWallsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = GG0000000000000000000003 /* Build configuration list for PBXNativeTarget "PaperWallsTests" */;
+			buildPhases = (
+				GG0000000000000000000006 /* Sources */,
+				GG0000000000000000000007 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PaperWallsTests;
+			productName = PaperWallsTests;
+			productReference = GG0000000000000000000002 /* PaperWallsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = AA0000000000000000000004 /* Build configuration list for PBXProject "PaperWalls" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA0000000000000000000002;
+			productRefGroup = AA0000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BB0000000000000000000001 /* PaperWalls */,
+				CC0000000000000000000001 /* paperwallscli */,
+				GG0000000000000000000001 /* PaperWallsTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BB0000000000000000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF0000000000000000000010 /* Wallpapers in Resources */,
+				FF0000000000000000000016 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BB0000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF0000000000000000000001 /* WallpaperEngine.swift in Sources */,
+				FF0000000000000000000002 /* PreferencesStore.swift in Sources */,
+				FF0000000000000000000003 /* ManagedPreferences.swift in Sources */,
+				FF0000000000000000000004 /* WallpaperCatalog.swift in Sources */,
+				FF0000000000000000000020 /* WallpaperContentID.swift in Sources */,
+				FF0000000000000000000022 /* RotationPool.swift in Sources */,
+				FF0000000000000000000024 /* RemoteCatalog.swift in Sources */,
+				FF0000000000000000000026 /* SystemWallpapers.swift in Sources */,
+				FF0000000000000000000005 /* PaperWallsApp.swift in Sources */,
+				FF0000000000000000000006 /* AppModel.swift in Sources */,
+				FF0000000000000000000007 /* ContentView.swift in Sources */,
+				FF0000000000000000000008 /* SettingsView.swift in Sources */,
+				FF0000000000000000000009 /* ThumbnailLoader.swift in Sources */,
+				FF000000000000000000001E /* WallpaperLock.swift in Sources */,
+				FF0000000000000000000017 /* Theme.swift in Sources */,
+				FF0000000000000000000018 /* Components.swift in Sources */,
+				FF0000000000000000000019 /* BrowsePage.swift in Sources */,
+				FF000000000000000000001A /* CollectionsPage.swift in Sources */,
+				FF000000000000000000001B /* SourcePages.swift in Sources */,
+				FF000000000000000000001C /* WallpaperDetailSheet.swift in Sources */,
+				FF000000000000000000001D /* MenuBarPanel.swift in Sources */,
+				FF0000000000000000000028 /* Diagnostics.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC0000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF0000000000000000000011 /* main.swift in Sources */,
+				FF0000000000000000000012 /* WallpaperEngine.swift in Sources */,
+				FF0000000000000000000013 /* PreferencesStore.swift in Sources */,
+				FF0000000000000000000014 /* ManagedPreferences.swift in Sources */,
+				FF0000000000000000000015 /* WallpaperCatalog.swift in Sources */,
+				FF0000000000000000000021 /* WallpaperContentID.swift in Sources */,
+				FF0000000000000000000023 /* RotationPool.swift in Sources */,
+				FF0000000000000000000025 /* RemoteCatalog.swift in Sources */,
+				FF0000000000000000000027 /* SystemWallpapers.swift in Sources */,
+				FF000000000000000000001F /* WallpaperLock.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		GG0000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF0000000000000000000031 /* WallpaperEngine.swift in Sources */,
+				FF0000000000000000000032 /* PreferencesStore.swift in Sources */,
+				FF0000000000000000000033 /* ManagedPreferences.swift in Sources */,
+				FF0000000000000000000034 /* WallpaperCatalog.swift in Sources */,
+				FF0000000000000000000037 /* WallpaperContentID.swift in Sources */,
+				FF0000000000000000000038 /* RotationPool.swift in Sources */,
+				FF0000000000000000000039 /* RemoteCatalog.swift in Sources */,
+				FF000000000000000000003A /* SystemWallpapers.swift in Sources */,
+				FF0000000000000000000035 /* WallpaperLock.swift in Sources */,
+				FF0000000000000000000036 /* PaperWallsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA0000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		BB0000000000000000000004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 17;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		BB0000000000000000000005 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 17;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		CC0000000000000000000004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 17;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.cli;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		CC0000000000000000000005 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 17;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.cli;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		GG0000000000000000000004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		GG0000000000000000000005 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA0000000000000000000004 /* Build configuration list for PBXProject "PaperWalls" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000005 /* Debug */,
+				AA0000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB0000000000000000000003 /* Build configuration list for PBXNativeTarget "PaperWalls" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB0000000000000000000004 /* Debug */,
+				BB0000000000000000000005 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CC0000000000000000000003 /* Build configuration list for PBXNativeTarget "paperwallscli" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CC0000000000000000000004 /* Debug */,
+				CC0000000000000000000005 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		GG0000000000000000000003 /* Build configuration list for PBXNativeTarget "PaperWallsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				GG0000000000000000000004 /* Debug */,
+				GG0000000000000000000005 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AA0000000000000000000001 /* Project object */;
+}

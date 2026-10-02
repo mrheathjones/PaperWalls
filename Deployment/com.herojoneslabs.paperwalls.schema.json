@@ -1,0 +1,342 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "title": "PaperWalls (com.herojoneslabs.paperwalls)",
+  "description": "Managed preferences for the PaperWalls wallpaper manager. Only keys you add to the payload are forced; every omitted key stays user-editable in the app. Forced keys appear disabled in the app with a 'Managed by your organization' badge.",
+  "properties": {
+    "selectedWallpaperID": {
+      "type": "string",
+      "title": "Selected Wallpaper",
+      "description": "Wallpaper ID to pin: a bundled ID (e.g. bundled-aurora-veil), a folder-wallpaper content ID (file:<hash>, shown in the app's Settings as 'Selected Wallpaper ID'; identical on every Mac with the same image file \u2014 legacy external-<hash> IDs still resolve), or an absolute file path.",
+      "options": {
+        "infoText": "Key: selectedWallpaperID"
+      }
+    },
+    "scale": {
+      "type": "string",
+      "title": "Scaling Mode",
+      "description": "How the wallpaper is fitted to the screen.",
+      "enum": [
+        "fill",
+        "fit",
+        "stretch",
+        "center"
+      ],
+      "options": {
+        "enum_titles": [
+          "Fill Screen",
+          "Fit to Screen",
+          "Stretch",
+          "Center"
+        ],
+        "infoText": "Key: scale (default: fill)"
+      }
+    },
+    "fillColor": {
+      "type": "string",
+      "title": "Fill Color",
+      "description": "Optional letterbox color as a 6-digit hex value (e.g. 1D2E3F), used with Fit and Center scaling.",
+      "pattern": "^#?[0-9A-Fa-f]{6}$",
+      "options": {
+        "infoText": "Key: fillColor"
+      }
+    },
+    "applyToAllScreens": {
+      "type": "boolean",
+      "title": "Apply to All Displays",
+      "description": "When enabled, 'manage' and the app set every attached display; when disabled, only the primary display.",
+      "options": {
+        "infoText": "Key: applyToAllScreens (default: true)"
+      }
+    },
+    "lockMode": {
+      "type": "string",
+      "title": "Lock Mode",
+      "description": "Lock tier. off: no lock. soft: only the Selected Wallpaper can be applied; Set/Next/Rotate grey out; paperwallscli set refuses (exit 6). hard: nothing can be applied, no exit from the locked view \u2014 pair with the Tier-2 OS lock profile (the app detects and reports whether the OS restriction is present). enforcedRotation: rotation continues within Allowed Wallpaper IDs only.",
+      "enum": [
+        "off",
+        "soft",
+        "hard",
+        "enforcedRotation"
+      ],
+      "options": {
+        "enum_titles": [
+          "Off",
+          "Soft Lock",
+          "Hard Lock",
+          "Enforced Rotation"
+        ],
+        "infoText": "Key: lockMode (default: off). Supersedes the legacy lockSelection bool, which still maps to soft/hard."
+      }
+    },
+    "lockSelection": {
+      "type": "boolean",
+      "title": "Lock Wallpaper Selection (Legacy)",
+      "description": "Legacy single-tier lock; superseded by Lock Mode. true maps to soft (or hard when a forced allowLockExit=false is also present). Prefer Lock Mode for new profiles.",
+      "options": {
+        "infoText": "Key: lockSelection (default: false) \u2014 legacy"
+      }
+    },
+    "allowLockExit": {
+      "type": "boolean",
+      "title": "Allow Exiting the Locked View",
+      "description": "Only relevant with Lock Wallpaper Selection. Enabled: users may leave the locked screen and browse the library read-only. Disabled: hard lock \u2014 the full-screen locked view cannot be exited.",
+      "options": {
+        "infoText": "Key: allowLockExit (default: true)"
+      }
+    },
+    "allowedWallpaperIDs": {
+      "type": "array",
+      "title": "Allowed Wallpaper IDs",
+      "description": "Optional allow-list. When present and non-empty, the app only shows (and rotation only uses) wallpapers with these IDs, across all sources.",
+      "items": {
+        "type": "string",
+        "title": "Wallpaper ID"
+      },
+      "options": {
+        "infoText": "Key: allowedWallpaperIDs"
+      }
+    },
+    "externalWallpaperFolderPath": {
+      "type": "string",
+      "title": "Managed Wallpaper Folder",
+      "description": "Absolute path to the organization's wallpaper folder (e.g. /Library/CompanyWallpapers), scanned non-recursively for .jpg/.jpeg/.png/.heic/.tiff. Surfaces as the read-only 'Managed' source. Deploy the images separately.",
+      "options": {
+        "infoText": "Key: externalWallpaperFolderPath"
+      }
+    },
+    "companyName": {
+      "type": "string",
+      "title": "Company Name",
+      "description": "Organization branding. Replaces the generic 'Company'/'Managed' wording: the sidebar shows '<Name> (Managed)', the Browse filter shows '<Name>', the org feed shows '<Name> Feed'.",
+      "options": {
+        "infoText": "Key: companyName"
+      }
+    },
+    "showBundledWallpapers": {
+      "type": "boolean",
+      "title": "Show Bundled Wallpapers",
+      "description": "When disabled, the app-bundled curated set (and the Collections page) is hidden; only folder sources appear.",
+      "options": {
+        "infoText": "Key: showBundledWallpapers (default: true)"
+      }
+    },
+    "showSystemWallpapers": {
+      "type": "boolean",
+      "title": "Show macOS Wallpapers",
+      "description": "Shows Apple's built-in wallpapers (/System/Library/Desktop Pictures, flat images only) as the 'macOS' source in the app.",
+      "options": {
+        "infoText": "Key: showSystemWallpapers (default: true)"
+      }
+    },
+    "allowSystemWallpaperDownloads": {
+      "type": "boolean",
+      "title": "Allow macOS Wallpaper Downloads",
+      "description": "Permits fetching not-yet-downloaded Apple built-in wallpapers on demand from Apple's CDN (updates.cdn-apple.com) when the user clicks Download. Force false on network-restricted fleets \u2014 the 'Available to download' section disappears.",
+      "options": {
+        "infoText": "Key: allowSystemWallpaperDownloads (default: true)"
+      }
+    },
+    "showFeaturedWallpaper": {
+      "type": "boolean",
+      "title": "Show 'Featured Today' Hero",
+      "description": "Shows or hides the daily featured wallpaper banner at the top of Browse.",
+      "options": {
+        "infoText": "Key: showFeaturedWallpaper (default: true)"
+      }
+    },
+    "appCuratedEnabled": {
+      "type": "boolean",
+      "title": "Enable PaperWalls Curated Feed",
+      "description": "Downloads the PaperWalls-curated wallpaper feed (Ed25519-signed manifest, sha256-verified assets, cached locally). When false the app makes no network requests for this source.",
+      "options": {
+        "infoText": "Key: appCuratedEnabled (default: false)"
+      }
+    },
+    "orgCatalogEnabled": {
+      "type": "boolean",
+      "title": "Enable Organization Feed",
+      "description": "Enables a remote wallpaper feed hosted by your organization. Requires Organization Feed URL and Organization Feed Public Key; the feed stays off until both are set.",
+      "options": {
+        "infoText": "Key: orgCatalogEnabled (default: false)"
+      }
+    },
+    "orgCatalogURL": {
+      "type": "string",
+      "title": "Organization Feed URL",
+      "description": "HTTPS URL of the organization's catalog.json (manifest v2). The Ed25519 signature is fetched from the same URL with .sig appended.",
+      "options": {
+        "infoText": "Key: orgCatalogURL"
+      }
+    },
+    "orgCatalogPublicKey": {
+      "type": "string",
+      "title": "Organization Feed Public Key",
+      "description": "Base64-encoded raw 32-byte Ed25519 public key used to verify the organization feed's manifest signature.",
+      "options": {
+        "infoText": "Key: orgCatalogPublicKey"
+      }
+    },
+    "personalFolderSource": {
+      "type": "string",
+      "title": "Personal Folder Mode",
+      "description": "Where the Personal source draws from: the fixed app-managed library (~/Library/Application Support/PaperWalls/Personal/, images added by drag-and-drop) or a user-defined folder path (personalWallpaperFolderPath). Unset: Macs with a personal folder path already configured stay user-defined; fresh Macs get app-managed.",
+      "enum": [
+        "appManaged",
+        "userDefined"
+      ],
+      "options": {
+        "enum_titles": [
+          "App-managed library",
+          "User-defined folder"
+        ],
+        "infoText": "Key: personalFolderSource (default: appManaged, with legacy fallback)"
+      }
+    },
+    "personalWallpaperFolderPath": {
+      "type": "string",
+      "title": "Personal Wallpaper Folder",
+      "description": "The user's own wallpaper folder ('Personal' source). Usually left to the user; force it only to standardize or disable the personal source.",
+      "options": {
+        "infoText": "Key: personalWallpaperFolderPath"
+      }
+    },
+    "favoriteWallpaperIDs": {
+      "type": "array",
+      "title": "Favorite Wallpaper IDs",
+      "description": "The user's hearted wallpapers. Usually left to the user; forcing this pins the Favorites list.",
+      "items": {
+        "type": "string",
+        "title": "Wallpaper ID"
+      },
+      "options": {
+        "infoText": "Key: favoriteWallpaperIDs"
+      }
+    },
+    "autoRotateEnabled": {
+      "type": "boolean",
+      "title": "Auto-Rotate Wallpaper",
+      "description": "Automatically cycle the desktop through a source while the app or its menu bar item is running.",
+      "options": {
+        "infoText": "Key: autoRotateEnabled (default: false)"
+      }
+    },
+    "autoRotateIntervalMinutes": {
+      "type": "integer",
+      "title": "Rotation Interval (Minutes)",
+      "description": "Minutes between automatic changes. The app's Settings offers 5, 15, 30, 60, and 1440 (daily); any positive integer works.",
+      "minimum": 1,
+      "options": {
+        "infoText": "Key: autoRotateIntervalMinutes (default: 30)"
+      }
+    },
+    "rotationPool": {
+      "type": "array",
+      "title": "Rotation Pool",
+      "description": "Sources auto-rotate draws from. Members: favorites, bundled, system, appCurated, orgRemote, orgFolder, personal. 'favorites' narrows the pick to hearted wallpapers; an empty array means nothing rotates (current wallpaper is kept). Replaces the legacy autoRotateSource and rotateInclude* keys (still honored and translated when this key is absent).",
+      "items": {
+        "type": "string",
+        "enum": [
+          "favorites",
+          "bundled",
+          "system",
+          "appCurated",
+          "orgRemote",
+          "orgFolder",
+          "personal"
+        ]
+      },
+      "options": {
+        "infoText": "Key: rotationPool (default: all real sources)"
+      }
+    },
+    "autoRotateSource": {
+      "type": "string",
+      "title": "Rotation Source (Legacy)",
+      "description": "LEGACY - migrated into rotationPool; still honored when rotationPool is not set. What auto-rotate draws from: the user's favorites, all enabled sources, or only the managed company folder.",
+      "enum": [
+        "favorites",
+        "all",
+        "managed"
+      ],
+      "options": {
+        "enum_titles": [
+          "Favorites",
+          "All wallpapers",
+          "Company folder"
+        ],
+        "infoText": "Key: autoRotateSource (default: all)"
+      }
+    },
+    "autoRotateShuffle": {
+      "type": "boolean",
+      "title": "Shuffle Order",
+      "description": "Pick randomly instead of cycling in order.",
+      "options": {
+        "infoText": "Key: autoRotateShuffle (default: true)"
+      }
+    },
+    "autoRotateOnWake": {
+      "type": "boolean",
+      "title": "Change on Wake",
+      "description": "Apply a new wallpaper each time the Mac wakes.",
+      "options": {
+        "infoText": "Key: autoRotateOnWake (default: false)"
+      }
+    },
+    "rotateIncludeBundled": {
+      "type": "boolean",
+      "title": "Rotation Includes Bundled Wallpapers (Legacy)",
+      "description": "LEGACY - migrated into rotationPool; still honored when rotationPool is not set. Bundled set participates when Rotation Source is 'All wallpapers'.",
+      "options": {
+        "infoText": "Key: rotateIncludeBundled (default: true)"
+      }
+    },
+    "rotateIncludePersonal": {
+      "type": "boolean",
+      "title": "Rotation Includes Personal Folder (Legacy)",
+      "description": "LEGACY - migrated into rotationPool; still honored when rotationPool is not set. Personal folder participates when Rotation Source is 'All wallpapers'.",
+      "options": {
+        "infoText": "Key: rotateIncludePersonal (default: true)"
+      }
+    },
+    "rotateIncludeManaged": {
+      "type": "boolean",
+      "title": "Rotation Includes Managed Folder (Legacy)",
+      "description": "LEGACY - migrated into rotationPool; still honored when rotationPool is not set. Managed folder participates when Rotation Source is 'All wallpapers'.",
+      "options": {
+        "infoText": "Key: rotateIncludeManaged (default: true)"
+      }
+    },
+    "appearanceTheme": {
+      "type": "string",
+      "title": "Window Theme",
+      "description": "Appearance for the PaperWalls window and menu bar panel: light, dark, or follow the macOS system setting.",
+      "enum": [
+        "light",
+        "dark",
+        "system"
+      ],
+      "options": {
+        "enum_titles": [
+          "Light",
+          "Dark",
+          "System"
+        ],
+        "infoText": "Key: appearanceTheme (default: light)"
+      }
+    },
+    "gridColumns": {
+      "type": "integer",
+      "title": "Grid Columns",
+      "description": "Wallpaper grid density: 2, 3, or 4 columns. Usually a user choice via the header view control; forceable like any key.",
+      "enum": [
+        2,
+        3,
+        4
+      ],
+      "options": {
+        "infoText": "Key: gridColumns (default: 2)"
+      }
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "wallpapers": [
+    {
+      "id": "bundled-aurora-veil",
+      "filename": "01-aurora-veil.png",
+      "displayName": "Aurora Veil",
+      "thumbnailFilename": "01-aurora-veil-thumb.png",
+      "source": "bundled",
+      "collection": "Aurora"
+    },
+    {
+      "id": "bundled-dune",
+      "filename": "02-dune.png",
+      "displayName": "Dune",
+      "thumbnailFilename": "02-dune-thumb.png",
+      "source": "bundled",
+      "collection": "Sunset"
+    },
+    {
+      "id": "bundled-silk",
+      "filename": "03-silk.png",
+      "displayName": "Silk",
+      "thumbnailFilename": "03-silk-thumb.png",
+      "source": "bundled",
+      "collection": "Pastel"
+    },
+    {
+      "id": "bundled-liquid",
+      "filename": "04-liquid.png",
+      "displayName": "Liquid",
+      "thumbnailFilename": "04-liquid-thumb.png",
+      "source": "bundled",
+      "collection": "Ocean"
+    },
+    {
+      "id": "bundled-retrowave",
+      "filename": "05-retrowave.png",
+      "displayName": "Retrowave",
+      "thumbnailFilename": "05-retrowave-thumb.png",
+      "source": "bundled",
+      "collection": "Neon"
+    },
+    {
+      "id": "bundled-mesh",
+      "filename": "06-mesh.png",
+      "displayName": "Mesh",
+      "thumbnailFilename": "06-mesh-thumb.png",
+      "source": "bundled",
+      "collection": "Pastel"
+    },
+    {
+      "id": "bundled-orbit",
+      "filename": "07-orbit.png",
+      "displayName": "Orbit",
+      "thumbnailFilename": "07-orbit-thumb.png",
+      "source": "bundled",
+      "collection": "Ocean"
+    },
+    {
+      "id": "bundled-ember",
+      "filename": "08-ember.png",
+      "displayName": "Ember",
+      "thumbnailFilename": "08-ember-thumb.png",
+      "source": "bundled",
+      "collection": "Sunset"
+    },
+    {
+      "id": "bundled-nebula",
+      "filename": "09-nebula.png",
+      "displayName": "Nebula",
+      "thumbnailFilename": "09-nebula-thumb.png",
+      "source": "bundled",
+      "collection": "Aurora"
+    },
+    {
+      "id": "bundled-prism",
+      "filename": "10-prism.png",
+      "displayName": "Prism",
+      "thumbnailFilename": "10-prism-thumb.png",
+      "source": "bundled",
+      "collection": "Neon"
+    }
+  ]
+}

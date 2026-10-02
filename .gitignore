@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+._*
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcresult
+
+# Build output
+dist/
+/PaperWalls.app
+*.pkg
+*.dmg
+*.zip
+
+# Local signing / secrets
+*.p12
+*.p8
+*.pem
+*.cer
+*.mobileprovision
+.env
+.env.*
+
+# Feed publishing (local feed source + wrangler cache)
+FeedSource/
+.wrangler/
+node_modules/

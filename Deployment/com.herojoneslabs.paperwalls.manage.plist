@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Per-user LaunchAgent. Install to /Library/LaunchAgents/ (all users)
+	     or ~/Library/LaunchAgents/ (one user). Runs at login and hourly.
+	     Must run as the logged-in user — never convert this to a LaunchDaemon;
+	     the desktop picture is a per-user session setting. -->
+	<key>Label</key>
+	<string>com.herojoneslabs.paperwalls.manage</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/paperwallscli</string>
+		<string>manage</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StartInterval</key>
+	<integer>3600</integer>
+	<!-- Sample log paths; /tmp is shared, so on multi-user Macs point these
+	     somewhere per-user or remove them and rely on the unified log. -->
+	<key>StandardOutPath</key>
+	<string>/tmp/com.herojoneslabs.paperwalls.manage.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/com.herojoneslabs.paperwalls.manage.log</string>
+</dict>
+</plist>

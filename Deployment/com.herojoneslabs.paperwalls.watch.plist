@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Tier-3 watcher (spec §7). Per-user LaunchAgent — install to
+	     /Library/LaunchAgents/. Must run as the logged-in user; never a
+	     LaunchDaemon. Deploy for fleets using lockMode=enforcedRotation;
+	     the watcher idles cheaply under every other lock mode, so leaving
+	     it resident fleet-wide is safe.
+	     Do NOT combine with the Tier-2 desktop-override profile: the OS
+	     override forces hard lock, and the watcher deliberately stands
+	     down (mutual exclusion). -->
+	<key>Label</key>
+	<string>com.herojoneslabs.paperwalls.watch</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/paperwallscli</string>
+		<string>watch</string>
+		<string>--interval</string>
+		<string>15</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ProcessType</key>
+	<string>Background</string>
+</dict>
+</plist>

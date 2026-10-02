@@ -1,0 +1,12 @@
+{
+  "_comment": "PaperWalls local admin config — for fleets without MDM (or air-gapped Macs). Install as /Library/Application Support/PaperWalls/managed.json (admin-writable, world-readable; managed.plist with the same shape also works). Keys are ManagedPreferenceKey raw values. 'forced' behaves exactly like an MDM-forced key (managed badge, blocks user writes); 'defaults' seeds a value the user may still override. Precedence, highest wins: MDM forced > local forced > user value > local defaults > built-in default.",
+  "forced": {
+    "lockMode": "soft",
+    "selectedWallpaperID": "bundled-aurora-veil",
+    "externalWallpaperFolderPath": "/Library/CompanyWallpapers"
+  },
+  "defaults": {
+    "autoRotateIntervalMinutes": 30,
+    "showFeaturedWallpaper": true
+  }
+}

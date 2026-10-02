@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Tier-2 (hard lock) reference profile. PaperWalls DETECTS this OS
+	     restriction and shows "Enforced by configuration profile"; the app
+	     never installs it — the admin deploys it via MDM.
+
+	     ⚠️ Whether allowWallpaperModification blocks the setDesktopImageURL
+	     API or only the System Settings UI is UNVERIFIED per macOS version —
+	     test on each target release. PaperWalls self-refuses either way.
+
+	     ⚠️ Mutual exclusion: never deploy the com.apple.desktop
+	     override-picture-path on a Mac running lockMode=enforcedRotation —
+	     the OS override wins and the watcher fights a losing battle. -->
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadType</key>
+			<string>com.apple.applicationaccess</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadIdentifier</key>
+			<string>com.herojoneslabs.paperwalls.lock.restrictions</string>
+			<key>PayloadUUID</key>
+			<string>3D8A1F52-7B4C-4E2A-9C6D-5F1E8A2B4C01</string>
+			<key>PayloadDisplayName</key>
+			<string>Wallpaper Modification Restriction</string>
+			<key>allowWallpaperModification</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>PayloadType</key>
+			<string>com.apple.ManagedClient.preferences</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadIdentifier</key>
+			<string>com.herojoneslabs.paperwalls.lock.desktop</string>
+			<key>PayloadUUID</key>
+			<string>3D8A1F52-7B4C-4E2A-9C6D-5F1E8A2B4C02</string>
+			<key>PayloadDisplayName</key>
+			<string>Forced Desktop Picture</string>
+			<key>PayloadContent</key>
+			<dict>
+				<key>com.apple.desktop</key>
+				<dict>
+					<key>Forced</key>
+					<array>
+						<dict>
+							<key>mcx_preference_settings</key>
+							<dict>
+								<!-- Deploy this image separately (pkg/policy) -->
+								<key>override-picture-path</key>
+								<string>/Library/CompanyWallpapers/locked-wallpaper.png</string>
+							</dict>
+						</dict>
+					</array>
+				</dict>
+			</dict>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Hard-locks the desktop picture at the OS level. Pair with PaperWalls lockMode=hard for a consistent in-app experience.</string>
+	<key>PayloadDisplayName</key>
+	<string>PaperWalls — Wallpaper Hard Lock (Tier 2)</string>
+	<key>PayloadIdentifier</key>
+	<string>com.herojoneslabs.paperwalls.lock</string>
+	<key>PayloadOrganization</key>
+	<string>Hero Jones Labs</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>3D8A1F52-7B4C-4E2A-9C6D-5F1E8A2B4C00</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>

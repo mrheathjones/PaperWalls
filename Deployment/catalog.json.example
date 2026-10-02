@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "wallpapers": [
+    {
+      "id": "midnight-harbor",
+      "displayName": "Midnight Harbor",
+      "collection": "Seasons",
+      "image": "assets/9f0c1c2d3e4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c.jpg",
+      "thumbnail": "thumbs/9f0c1c2d3e4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c.jpg",
+      "sha256": "9f0c1c2d3e4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c",
+      "size": 8388608,
+      "minAppVersion": "1.0"
+    }
+  ]
+}
