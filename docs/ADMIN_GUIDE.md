@@ -450,9 +450,11 @@ savers (selection moved into the wallpaper system's own per-user store, and
 some fleets fall back to a scripted approach). Test on every macOS version you
 deploy to. The idle time is unaffected by that caveat.
 
-The saver's tile in System Settings shows macOS's generic thumbnail: on
-macOS 27 (where this was tested) the system ignores a third-party saver's own
-thumbnail image.
+The saver's tile in System Settings is a fixed image shipped inside the
+bundle (a clock on a coral gradient), not a live view of the active scene.
+macOS caches a saver's tile by bundle: after replacing the saver with a
+build whose thumbnail changed, the old tile can persist until the bundle is
+renamed or the Mac restarts.
 
 ### Verifying a new macOS version
 
