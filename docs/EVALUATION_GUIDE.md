@@ -14,7 +14,10 @@ troubleshooting, see **`ADMIN_GUIDE.md`** — this guide only gets you running.
   (`com.herojoneslabs.paperwalls`) — exactly like Nudge
   (`com.github.macadmins.Nudge`) or Root3's SupportApp (`nl.root3.support`). You
   build it once and target that domain from a config profile.
-- **No prebuilt installer is published.** You build the pkg from source with
+- **A prebuilt installer is attached to each GitHub release** (signed with a
+  Developer ID, not notarized — Gatekeeper warns on a direct download, so
+  right-click → Open, or install it through your MDM, which doesn't care).
+  You can also build the pkg yourself from source with
   `Deployment/build-pkg.sh` (step 1) — Xcode is required on the build Mac.
 
 ---
