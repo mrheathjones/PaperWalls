@@ -375,6 +375,11 @@ then
 fi
 
 /usr/bin/xattr -cr "$STAGING" 2>/dev/null || true   # strip detritus so pkg/notarization don't choke
+# Belt and braces: never ship literal AppleDouble files. (The ._ entries that
+# `pkgutil --payload-files` still lists are pkgbuild's encoding of extended
+# attributes it couldn't strip — com.apple.provenance — which Installer
+# re-applies as attributes, not files.)
+/usr/bin/find "$STAGING" -name '._*' -type f -delete
 
 # Postinstall: bootstrap the LaunchAgent for the console user (if present) so
 # managed preferences converge immediately instead of at next login.
