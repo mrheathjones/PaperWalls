@@ -59,6 +59,9 @@ struct ScreenSaverSnapshot: Codable, Equatable {
         return FileManager.default.homeDirectoryForCurrentUser
     }
 
+    /// Filename of the snapshot a scene bundle carries in its Resources.
+    static let bundledFilename = "PaperWallsScene.json"
+
     static var defaultURL: URL {
         realHomeDirectory
             .appendingPathComponent("Library/Application Support/PaperWalls/Studio/ActiveScreenSaver.json")

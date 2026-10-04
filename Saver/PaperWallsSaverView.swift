@@ -94,9 +94,28 @@ final class PaperWallsSaverView: ScreenSaverView {
 
     // MARK: - Scene hosting
 
+    /// For a scene bundle (a renamed copy standing for one scene) the
+    /// per-copy identity hook answers with the copy's own path; the main
+    /// saver has no such method.
+    private var sceneBundlePath: String? {
+        let selector = NSSelectorFromString("paperwallsBundlePath")
+        guard let cls = type(of: self) as AnyObject as? NSObject.Type, cls.responds(to: selector) else {
+            return nil
+        }
+        return cls.perform(selector)?.takeUnretainedValue() as? String
+    }
+
     private func installScene() {
         guard hostingView == nil else { return }
-        let snapshot = ScreenSaverSnapshot.read()
+        let snapshot: ScreenSaverSnapshot?
+        if let path = sceneBundlePath {
+            // A scene bundle carries its own resolved snapshot.
+            let url = URL(fileURLWithPath: path).appendingPathComponent("Contents/Resources/\(ScreenSaverSnapshot.bundledFilename)")
+            snapshot = ScreenSaverSnapshot.read(from: url)
+            Self.log.info("Scene bundle \(path, privacy: .public) → \(snapshot?.sceneName ?? "no snapshot", privacy: .public)")
+        } else {
+            snapshot = ScreenSaverSnapshot.read()
+        }
         let scene: ScreenSaverScene
         switch snapshot?.state {
         case .active?:

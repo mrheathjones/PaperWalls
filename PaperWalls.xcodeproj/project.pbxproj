@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FF00000000000000000000A7 /* SceneBundleIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A1 /* SceneBundleIdentity.m */; };
 		FF00000000000000000000A0 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
 		FF00000000000000000000A1 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
 		FF00000000000000000000A2 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
@@ -93,6 +94,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DD00000000000000000000A1 /* SceneBundleIdentity.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneBundleIdentity.m; sourceTree = "<group>"; };
 		DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverSnapshot.swift; sourceTree = "<group>"; };
 		DD0000000000000000000092 /* ComposerPickers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerPickers.swift; sourceTree = "<group>"; };
 		DD0000000000000000000090 /* SceneComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneComposer.swift; sourceTree = "<group>"; };
@@ -286,6 +288,7 @@
 			children = (
 				DD0000000000000000000070 /* PaperWallsSaverView.swift */,
 				DD0000000000000000000071 /* SaverProbe.swift */,
+				DD00000000000000000000A1 /* SceneBundleIdentity.m */,
 				DD0000000000000000000074 /* Assets.xcassets */,
 				DD0000000000000000000072 /* thumbnail.png */,
 				DD0000000000000000000073 /* thumbnail@2x.png */,
@@ -511,6 +514,7 @@
 			files = (
 				FF0000000000000000000070 /* PaperWallsSaverView.swift in Sources */,
 				FF0000000000000000000071 /* SaverProbe.swift in Sources */,
+				FF00000000000000000000A7 /* SceneBundleIdentity.m in Sources */,
 				FF0000000000000000000072 /* ScreenSaverScene.swift in Sources */,
 				FF0000000000000000000073 /* SceneMotionMath.swift in Sources */,
 				FF0000000000000000000074 /* ScreenSaverPresets.swift in Sources */,
