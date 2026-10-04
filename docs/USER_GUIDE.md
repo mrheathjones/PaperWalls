@@ -69,6 +69,11 @@ Minimal Clock, Help Desk Contact — or from a blank one. Then:
 you want. Click a card to preview it; the **…** button offers rename,
 duplicate, edit, and delete.
 
+**Give it its own tile (optional).** In a card's **…** menu, turn on **Show
+in System Settings**. That screen saver then appears by name under System
+Settings → Screen Saver → Other, with its own picture, so you can choose it
+there like any other screen saver.
+
 **Turn it on (one time).** Open **System Settings → Screen Saver**, scroll
 to **Other**, and choose **PaperWalls**. From then on your Mac shows
 whichever screen saver is active in PaperWalls — change it any time without

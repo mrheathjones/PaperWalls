@@ -109,10 +109,23 @@ extension ScreenSaverSnapshot {
               let stored = scenes.first(where: { $0.id == activeID }) else {
             return snapshot
         }
-        snapshot.state = .active
-        snapshot.sceneID = stored.id
-        snapshot.sceneName = stored.name
-        snapshot.scene = stored.scene
+        return forScene(stored, companyName: companyName, assetsDirectory: assetsDirectory,
+                        wallpaperPath: wallpaperPath, rotationPaths: rotationPaths)
+    }
+
+    /// An "active" snapshot for one specific scene, policy already decided —
+    /// what a scene bundle carries, and what the active snapshot becomes.
+    static func forScene(_ stored: StoredScreenSaver,
+                         companyName: String,
+                         assetsDirectory: String,
+                         wallpaperPath: (String) -> String?,
+                         rotationPaths: () -> [String]) -> ScreenSaverSnapshot {
+        var snapshot = ScreenSaverSnapshot(state: .active,
+                                           sceneID: stored.id,
+                                           sceneName: stored.name,
+                                           scene: stored.scene,
+                                           assetsDirectory: assetsDirectory,
+                                           companyName: companyName)
         switch stored.scene.background.source {
         case .wallpaper(let id):
             if let path = wallpaperPath(id) {

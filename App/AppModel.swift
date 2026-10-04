@@ -120,6 +120,8 @@ final class AppModel: ObservableObject {
     /// The Scene Composer's working state. A separate object so editing
     /// (every slider tick) doesn't republish the whole app model.
     let studio = StudioSession()
+    /// Per-scene saver bundles in ~/Library/Screen Savers (spec §10).
+    let sceneBundles = SceneBundleManager()
     /// False until the scene library has been read once — nothing is
     /// published to the saver before then.
     var screenSaversLoaded = false

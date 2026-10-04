@@ -36,6 +36,7 @@ quick-hits version.
 | Screen saver shows a simple clock, not the user's scene | Nothing is ACTIVE, or the chosen scene isn't allowed/doesn't exist on this Mac | Have the user click **Set Active** on a card. `paperwallscli screensaver` shows `noneSelected` |
 | Screen saver shows an out-of-date scene | The saver reads a published snapshot when it starts | Open PaperWalls once, or run `paperwallscli manage` as the user; `paperwallscli screensaver` should then say `published: up to date` |
 | A different screen saver runs | "PaperWalls" isn't selected in macOS | System Settings → Screen Saver → Other → PaperWalls (a macOS setting, not a PaperWalls one) |
+| A scene's own tile ("PaperWalls – <name>") is missing | Not opted in, or blocked by policy (feature off, hard lock, allow-list); tiles are generated when the app runs | Card's **…** menu → "Show in System Settings"; open PaperWalls once; quit and reopen System Settings |
 | "Set Active" is greyed | Active scene forced by the organization, a soft/hard lock, or the scene isn't on the allow-list | Hover the button — the tooltip states the reason |
 | App asks for access to Downloads/Desktop etc. at launch | macOS privacy (TCC) prompt: the current desktop picture lives in that folder and the app checks what's on screen | Either answer is safe; "Don't Allow" only hides the ACTIVE badge for wallpapers stored there |
 | Theme looks wrong after switching to System | Fixed in current versions (applies instantly and tracks macOS) | Update the app if older than 1.0 build 14 |
@@ -77,7 +78,7 @@ Categories: `preferences` (config resolution), `catalog` (folder scans),
 `engine` (setting the wallpaper), `enforcement` (lock detection),
 `remotecatalog` (feed sync/signature), `systemwallpapers` (Apple downloads),
 `scenestore` (screen saver library), `screensaver` (publishing to the
-saver), `saver` (the screen saver itself).
+saver), `saver` (the screen saver itself), `scenebundles` (per-scene tiles).
 
 **Screen saver state:**
 

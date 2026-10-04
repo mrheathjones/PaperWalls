@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FF00000000000000000000A9 /* SceneBundleSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A2 /* SceneBundleSpec.swift */; };
+		FF00000000000000000000AA /* SceneBundleSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A2 /* SceneBundleSpec.swift */; };
+		FF00000000000000000000AB /* SceneBundles.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A3 /* SceneBundles.swift */; };
+		FF00000000000000000000AC /* SceneBundleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A4 /* SceneBundleTests.swift */; };
+		FF00000000000000000000AD /* PaperWalls.saver in Embed Screen Saver */ = {isa = PBXBuildFile; fileRef = HH0000000000000000000002 /* PaperWalls.saver */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FF00000000000000000000A7 /* SceneBundleIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A1 /* SceneBundleIdentity.m */; };
 		FF00000000000000000000A0 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
 		FF00000000000000000000A1 /* ScreenSaverSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */; };
@@ -93,7 +98,34 @@
 		FF0000000000000000000028 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000000000000000001E /* Diagnostics.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		HH000000000000000000000B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = HH0000000000000000000001;
+			remoteInfo = PaperWallsSaver;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		HH0000000000000000000009 /* Embed Screen Saver */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				FF00000000000000000000AD /* PaperWalls.saver in Embed Screen Saver */,
+			);
+			name = "Embed Screen Saver";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		DD00000000000000000000A2 /* SceneBundleSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneBundleSpec.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A3 /* SceneBundles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneBundles.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A4 /* SceneBundleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneBundleTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000A1 /* SceneBundleIdentity.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneBundleIdentity.m; sourceTree = "<group>"; };
 		DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSaverSnapshot.swift; sourceTree = "<group>"; };
 		DD0000000000000000000092 /* ComposerPickers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerPickers.swift; sourceTree = "<group>"; };
@@ -223,6 +255,7 @@
 				DD0000000000000000000080 /* ScreenSaverSceneStore.swift */,
 				DD0000000000000000000081 /* ScreenSaverPolicy.swift */,
 				DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */,
+				DD00000000000000000000A2 /* SceneBundleSpec.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -235,6 +268,7 @@
 				DD0000000000000000000051 /* PaperWallsTests.swift */,
 				DD0000000000000000000066 /* SceneTests.swift */,
 				DD0000000000000000000085 /* ScreenSaverStoreTests.swift */,
+				DD00000000000000000000A4 /* SceneBundleTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -258,6 +292,7 @@
 				DD0000000000000000000090 /* SceneComposer.swift */,
 				DD0000000000000000000091 /* SceneLayerControls.swift */,
 				DD0000000000000000000092 /* ComposerPickers.swift */,
+				DD00000000000000000000A3 /* SceneBundles.swift */,
 				DD0000000000000000000014 /* SettingsView.swift */,
 				DD0000000000000000000018 /* Components.swift */,
 				DD0000000000000000000017 /* Theme.swift */,
@@ -306,10 +341,12 @@
 				BB0000000000000000000006 /* Sources */,
 				BB0000000000000000000007 /* Frameworks */,
 				BB0000000000000000000008 /* Resources */,
+				HH0000000000000000000009 /* Embed Screen Saver */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				HH000000000000000000000A /* PBXTargetDependency */,
 			);
 			name = PaperWalls;
 			productName = PaperWalls;
@@ -459,6 +496,8 @@
 				FF0000000000000000000091 /* SceneLayerControls.swift in Sources */,
 				FF0000000000000000000092 /* ComposerPickers.swift in Sources */,
 				FF00000000000000000000A0 /* ScreenSaverSnapshot.swift in Sources */,
+				FF00000000000000000000A9 /* SceneBundleSpec.swift in Sources */,
+				FF00000000000000000000AB /* SceneBundles.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -505,6 +544,8 @@
 				FF0000000000000000000083 /* ScreenSaverPolicy.swift in Sources */,
 				FF0000000000000000000087 /* ScreenSaverStoreTests.swift in Sources */,
 				FF00000000000000000000A1 /* ScreenSaverSnapshot.swift in Sources */,
+				FF00000000000000000000AA /* SceneBundleSpec.swift in Sources */,
+				FF00000000000000000000AC /* SceneBundleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -526,6 +567,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		HH000000000000000000000A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = HH0000000000000000000001 /* PaperWallsSaver */;
+			targetProxy = HH000000000000000000000B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AA0000000000000000000005 /* Debug */ = {

@@ -244,6 +244,20 @@ struct SettingsContent: View {
                             }
                         }
                     }
+                    SettingsDivider()
+                    SettingsRow(title: "Screen saver module",
+                                subtitle: screenSaverInstallSubtitle) {
+                        if SceneBundleManager.installStatus == .notInstalled {
+                            Button("Install for Me") {
+                                installSaverForCurrentUser()
+                            }
+                        }
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Tiles in System Settings",
+                                subtitle: sceneBundleSubtitle) {
+                        EmptyView()
+                    }
                     if model.managedScreenSaver != nil {
                         SettingsDivider()
                         SettingsRow(title: "Managed screen saver",
@@ -364,6 +378,32 @@ struct SettingsContent: View {
             return saver.name
         }
         return "None selected"
+    }
+
+    private var screenSaverInstallSubtitle: String {
+        switch SceneBundleManager.installStatus {
+        case .system: return "Installed for everyone (/Library/Screen Savers). Choose “PaperWalls” under System Settings › Screen Saver › Other"
+        case .user: return "Installed for you (~/Library/Screen Savers). Choose “PaperWalls” under System Settings › Screen Saver › Other"
+        case .notInstalled: return "Not installed on this Mac — install it to use your scenes as the screen saver"
+        }
+    }
+
+    private var sceneBundleSubtitle: String {
+        let count = model.sceneBundleCount
+        switch count {
+        case 0: return "Use “Show in System Settings” on a screen saver's card to give it its own tile"
+        case 1: return "1 screen saver has its own tile under System Settings › Screen Saver › Other"
+        default: return "\(count) screen savers have their own tiles under System Settings › Screen Saver › Other"
+        }
+    }
+
+    private func installSaverForCurrentUser() {
+        do {
+            try SceneBundleManager.installForCurrentUser()
+            model.objectWillChange.send()
+        } catch {
+            model.errorMessage = "Couldn't install the screen saver: \(error.localizedDescription)"
+        }
     }
 
     private var allowedSceneIDsBinding: Binding<String> {

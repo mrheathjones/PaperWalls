@@ -48,6 +48,7 @@ readonly MKTEMP=$(which mktemp)
 readonly RM=$(which rm)
 readonly RMDIR=$(which rmdir)
 readonly DSCL=$(which dscl)
+readonly FIND=$(which find)
 readonly PKGUTIL=$(which pkgutil)
 readonly PKILL=$(which pkill)
 readonly PGREP=$(which pgrep)
@@ -324,6 +325,14 @@ remove_user_data() {
     do
         [[ -n "${home}" ]] || continue
         base="${home}/${APP_SUPPORT_SUBPATH}"
+
+        # Generated per-scene saver bundles and a user-installed copy of the
+        # saver are derived from the app — always removed.
+        if [[ -d "${home}/Library/Screen Savers" ]]
+        then
+            "${FIND}" "${home}/Library/Screen Savers" -maxdepth 1 -name 'PaperWalls – *.saver' -exec "${RM}" -rf {} + 2>/dev/null || true
+            "${RM}" -rf "${home}/Library/Screen Savers/PaperWalls.saver"
+        fi
 
         if [[ "${REMOVE_USER_CACHES}" == "true" && -d "${base}" ]]
         then

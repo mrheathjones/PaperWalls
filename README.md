@@ -22,7 +22,7 @@ pieces, three product targets (plus the unit-test target):
 | Path | Target(s) | Purpose |
 | --- | --- | --- |
 | `App/` | PaperWalls | SwiftUI app: the library pages (Browse/Collections/macOS/Managed/Personal/ScreenSavers), Studio, and Settings |
-| `Saver/` | PaperWallsSaver | `PaperWalls.saver` — a real macOS screen saver that plays the scene chosen in the app |
+| `Saver/` | PaperWallsSaver | `PaperWalls.saver` — a real macOS screen saver that plays the scene chosen in the app; also embedded in the app as the template for per-scene copies |
 | `CLI/` | paperwallscli | Command-line tool (`get`/`set`/`manage`/`version`/`help`) |
 | `Shared/` | several | Engine, catalog, preference, and scene logic shared via target membership |
 | `Tests/` | PaperWallsTests | Unit tests for the pure logic in `Shared/` |
@@ -48,7 +48,10 @@ or a blank scene, then add clock, text, and icon layers over a background
 (the current desktop picture, a specific wallpaper, a rotating pool, a color,
 or a gradient) with a live preview. **Set Active** on a card makes that scene
 what `PaperWalls.saver` shows; pick the saver itself once in System Settings
-› Screen Saver › Other. Settings is always the last sidebar item.
+› Screen Saver › Other. A scene can also get **its own tile** there ("Show in
+System Settings" on its card): the app generates a per-scene copy of the saver
+in `~/Library/Screen Savers`, with that scene's thumbnail. Settings is always
+the last sidebar item.
 
 Shared sources (`WallpaperEngine.swift`, `PreferencesStore.swift`,
 `ManagedPreferences.swift`, `WallpaperCatalog.swift`) are compiled into **both**

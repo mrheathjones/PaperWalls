@@ -161,6 +161,52 @@ extension AppModel {
         } catch {
             ScreenSaverSnapshot.log.error("Could not publish screen saver snapshot: \(error.localizedDescription, privacy: .public)")
         }
+        syncSceneBundles()
+    }
+
+    // MARK: - Scene bundles (own tiles in System Settings)
+
+    /// Whether a scene may have its own tile right now: the feature is on,
+    /// no hard lock, and the allow-list permits it.
+    func canListInSystemSettings(_ id: String) -> Bool {
+        let policy = screenSaverPolicy
+        return policy.enabled && policy.lockMode != .hard && policy.isAllowed(id)
+    }
+
+    /// The scenes that should exist as bundles, with their snapshots, handed
+    /// to the manager (debounced). Managed is always listed; users opt in.
+    func syncSceneBundles() {
+        let library = self.library
+        let company = prefs.companyName.trimmingCharacters(in: .whitespaces)
+        let desired = allScreenSavers
+            .filter { $0.isListedInSystemSettings && canListInSystemSettings($0.id) }
+            .map { stored in
+                SceneBundleManager.Desired(
+                    spec: SceneBundleSpec(sceneID: stored.id, name: stored.name, isManaged: stored.isManaged),
+                    snapshot: ScreenSaverSnapshot.forScene(
+                        stored, companyName: company,
+                        assetsDirectory: ScreenSaverSceneStore.assetsDirectory().path,
+                        wallpaperPath: { id in
+                            library.wallpaper(withID: id).flatMap { library.fileURL(for: $0) }?.path
+                        },
+                        rotationPaths: {
+                            self.rotationPool.compactMap { library.fileURL(for: $0)?.path }
+                        }))
+            }
+        sceneBundles.schedule(desired)
+    }
+
+    /// Opt a user scene in or out of its own tile. Not a scene edit, so the
+    /// modification date is left alone.
+    func setScreenSaverListed(id: String, _ listed: Bool) throws {
+        guard var stored = screenSavers.first(where: { $0.id == id }), stored.listedInSystemSettings != listed else { return }
+        stored.listedInSystemSettings = listed
+        try ScreenSaverSceneStore.save(stored)
+        reloadScreenSavers()
+    }
+
+    var sceneBundleCount: Int {
+        allScreenSavers.filter { $0.isListedInSystemSettings && canListInSystemSettings($0.id) }.count
     }
 
     /// Saves a new scene (or a new version of `id`) and returns the entry.
@@ -302,7 +348,7 @@ enum ScreenSaverThumbnailer {
         let image: CGImage?
     }
 
-    static func render(_ scene: ScreenSaverScene, resources: SceneResources) async -> CGImage? {
+    static func render(_ scene: ScreenSaverScene, resources: SceneResources, scale: CGFloat = 2) async -> CGImage? {
         var background = SceneFrameBackground()
         if let url = backgroundURL(for: scene, resources: resources) {
             background.current = await Task.detached(priority: .utility) {
@@ -315,8 +361,17 @@ enum ScreenSaverThumbnailer {
                                                              size: size,
                                                              background: background,
                                                              tokens: resources.tokens))
-        renderer.scale = 2
+        renderer.scale = scale
         return renderer.cgImage
+    }
+
+    static func pngData(_ image: CGImage) -> Data? {
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else {
+            return nil
+        }
+        CGImageDestinationAddImage(destination, image, nil)
+        return CGImageDestinationFinalize(destination) ? data as Data : nil
     }
 
     /// The image a thumbnail stands on: the scene's own background, or the

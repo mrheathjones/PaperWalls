@@ -202,6 +202,9 @@ struct ScreenSaverCard: View {
                 if saver.isManaged {
                     SceneManagedBadge()
                 }
+                if saver.isListedInSystemSettings && model.canListInSystemSettings(saver.id) {
+                    SceneListedBadge()
+                }
             }
             .padding(12)
             VStack {
@@ -239,6 +242,14 @@ struct ScreenSaverCard: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(saver.name)
         .accessibilityHint("Previews the screen saver")
+    }
+
+    private var listedBinding: Binding<Bool> {
+        Binding(get: { saver.listedInSystemSettings },
+                set: { listed in
+                    // Failures surface in the log; the card simply doesn't flip.
+                    try? model.setScreenSaverListed(id: saver.id, listed)
+                })
     }
 
     private var subtitle: String {
@@ -298,6 +309,13 @@ struct ScreenSaverCard: View {
         if canModify {
             Button("Rename…", action: onRename)
         }
+        if !saver.isManaged {
+            Toggle("Show in System Settings", isOn: listedBinding)
+                .disabled(!model.canListInSystemSettings(saver.id))
+                .help(model.canListInSystemSettings(saver.id)
+                      ? "Give this screen saver its own tile under System Settings › Screen Saver"
+                      : "Not allowed by your organization's settings")
+        }
         if policy.canCreate {
             // For the managed entry this makes a personal, editable copy.
             Button(saver.isManaged ? "Duplicate as My Own" : "Duplicate", action: onDuplicate)
@@ -311,6 +329,24 @@ struct ScreenSaverCard: View {
             Divider()
             Button("Delete…", role: .destructive, action: onDelete)
         }
+    }
+}
+
+/// Marks a scene that has its own tile in System Settings.
+struct SceneListedBadge: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "tv")
+                .font(.system(size: 9, weight: .bold))
+            Text("IN SETTINGS")
+                .font(Theme.badge)
+                .tracking(0.5)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(.black.opacity(0.55), in: Capsule())
+        .help("Has its own tile under System Settings › Screen Saver")
     }
 }
 

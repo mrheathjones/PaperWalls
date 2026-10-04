@@ -15,9 +15,29 @@ struct StoredScreenSaver: Codable, Identifiable, Equatable {
     var createdAt = Date()
     var modifiedAt = Date()
     var scene: ScreenSaverScene
+    /// User opt-in: also appear as its own tile in System Settings (a
+    /// generated scene bundle — see `SceneBundleSpec`).
+    var listedInSystemSettings: Bool = false
 
     /// Read-only, admin-provisioned entry.
     var isManaged: Bool { id == ScreenSaverSceneStore.managedSceneID }
+
+    /// The managed scene is always listed; user scenes opt in.
+    var isListedInSystemSettings: Bool { isManaged || listedInSystemSettings }
+}
+
+extension StoredScreenSaver {
+    // Fields added after 1.0 decode leniently so older files still load.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        modifiedAt = try container.decode(Date.self, forKey: .modifiedAt)
+        scene = try container.decode(ScreenSaverScene.self, forKey: .scene)
+        listedInSystemSettings = container.sceneValue(.listedInSystemSettings, default: false)
+    }
 }
 
 /// Per-user screen saver library (spec §10):
