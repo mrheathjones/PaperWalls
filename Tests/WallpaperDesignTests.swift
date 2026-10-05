@@ -127,6 +127,18 @@ final class WallpaperRenderSizeTests: XCTestCase {
 
 // MARK: - Image background source
 
+final class SceneScaleModeTests: XCTestCase {
+    func testFitBlurRoundTripsAndUnknownModesFallBackToFill() throws {
+        var treatment = SceneBackgroundTreatment()
+        treatment.scaleMode = .fitBlur
+        let data = try JSONEncoder().encode(treatment)
+        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("\"fitBlur\""))
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: data).scaleMode, .fitBlur)
+        let future = Data(#"{"scaleMode": "hologram"}"#.utf8)
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: future).scaleMode, .fill)
+    }
+}
+
 final class ImageBackgroundSourceTests: XCTestCase {
     func testImageBackgroundRoundTrips() throws {
         var scene = ScreenSaverScene()

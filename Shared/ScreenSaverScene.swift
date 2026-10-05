@@ -122,6 +122,10 @@ extension SceneBackgroundSource: Codable {
 enum SceneScaleMode: String, Codable, CaseIterable, Identifiable {
     case fill
     case fit
+    /// The whole image, with a blurred, enlarged copy of itself filling
+    /// the rest of the canvas — no crop, no bars (for generated images,
+    /// which are rarely the display's shape).
+    case fitBlur
     case stretch
     case center
 
@@ -131,6 +135,7 @@ enum SceneScaleMode: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .fill: return "Fill"
         case .fit: return "Fit"
+        case .fitBlur: return "Fit + Blur"
         case .stretch: return "Stretch"
         case .center: return "Center"
         }

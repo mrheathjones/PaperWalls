@@ -58,8 +58,11 @@ your Personal library, where you can set it like any other. Your design
 stays under **Your Designs** in Studio for later edits.
 
 **Generated backgrounds.** If AI generation is turned on in **Settings ›
-AI Generation**, choosing **An Image** as the background also offers a
-description field and a Generate button for each option that's enabled:
+AI Generation**, an **AI Prompt** section appears under Background, whatever
+the background currently is. Describe the image, then press the Generate
+button for one of the options that's enabled; the result replaces the
+background and is shown whole, with a blurred copy filling the rest of the
+screen (the **Fit + Blur** treatment, which you can change):
 
 - **Apple On-Device** opens Image Playground; everything runs on your Mac.
 - **Local Model** asks an image server you run yourself (Draw Things,

@@ -576,6 +576,22 @@ struct SceneBackgroundControls: View {
                     }
             }
 
+            if prefs.aiPolicy.offersGeneration {
+                ComposerSection(title: "AI Prompt") {
+                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it.")
+                        .font(Theme.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                    SettingsDivider()
+                    AIBackgroundGenerator(policy: prefs.aiPolicy) { assetName in
+                        background.source = .image(assetName: assetName)
+                        background.treatment.scaleMode = .fitBlur
+                    }
+                }
+            }
+
             if usesImage {
                 ComposerSection(title: "Treatment") {
                     ComposerRow(title: "Fit") {
@@ -656,12 +672,6 @@ struct SceneBackgroundControls: View {
                         .truncationMode(.middle)
                         .frame(maxWidth: 180)
                     Button("Choose Image…", action: chooseImage)
-                }
-            }
-            if prefs.aiPolicy.offersGeneration {
-                SettingsDivider()
-                AIBackgroundGenerator(policy: prefs.aiPolicy) { assetName in
-                    background.source = .image(assetName: assetName)
                 }
             }
         case .solid(let colorHex):

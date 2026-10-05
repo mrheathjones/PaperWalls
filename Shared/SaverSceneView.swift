@@ -210,6 +210,23 @@ struct SceneFrameView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: size.width, height: size.height)
+        case .fitBlur:
+            ZStack {
+                // Enlarged so the blur's soft edges fall outside the canvas.
+                Image(decorative: image, scale: 1)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size.width, height: size.height)
+                    .scaleEffect(1.2)
+                    .blur(radius: size.height * 0.05, opaque: true)
+                    .overlay(Color.black.opacity(0.2))
+                Image(decorative: image, scale: 1)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: size.width, height: size.height)
+            }
+            .frame(width: size.width, height: size.height)
+            .clipped()
         case .stretch:
             Image(decorative: image, scale: 1)
                 .resizable()
