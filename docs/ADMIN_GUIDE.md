@@ -710,8 +710,10 @@ with its stored secret — at a server the admin didn't type.
 
 | Upload | API | Privileges the API Role needs |
 |---|---|---|
-| Installer package | `POST /api/v1/packages` (record), `POST /api/v1/packages/{id}/upload` (file) | Read Packages, Create Packages, Update Packages |
+| Installer package | `POST /api/v1/packages` (record), `POST /api/v1/packages/{id}/upload` (file); `GET`/`PUT /api/v1/packages/{id}` when changing an existing record's category | Read Packages, Create Packages, Update Packages |
 | Configuration profile | `GET/POST/PUT /JSSResource/osxconfigurationprofiles` | Read, Create, Update macOS Configuration Profiles |
+| Category picker | `GET /api/v1/categories` | Read Categories (optional; without it the picker offers only "None") |
+| Scope picker | `GET /api/v1/computer-groups` | Read Smart Computer Groups, Read Static Computer Groups (optional; without them the picker offers "Leave as is" and "All computers") |
 | Test Connection | `GET /api/v1/jamf-pro-version` | none beyond a valid client |
 
 Package uploads need Jamf Pro 11.5 or later and a cloud distribution point
@@ -721,6 +723,19 @@ after the upload.
 **Publishing.** After **Build Package…** finishes, a **Publish to Jamf Pro**
 card lists what the build left on disk: the pkg, and each `.mobileconfig` in
 `Enforce/` (screen savers: select + lock) or `Configure/` (wallpapers).
+The card also reads your categories and computer groups (one token, released
+right after) and offers:
+
+- **Category** — applied to the package record and every published profile.
+  "None / leave as is" gives new objects no category and leaves existing
+  ones alone.
+- **Profile scope** (shown when a profile is ticked) — **Leave as is** (new
+  profiles unscoped, updated profiles keep their scope), **All computers**,
+  or **Computer groups** with a searchable checklist of smart and static
+  groups. A chosen scope replaces an updated profile's *targets*; its
+  exclusions and limitations are untouched. Packages have no scope in Jamf
+  Pro — a policy carries it — so the picker never affects the pkg.
+
 Untick what you don't want, press **Publish**, and the app:
 
 - signs in with the client credentials (one token per publish, invalidated
@@ -731,8 +746,9 @@ Untick what you don't want, press **Publish**, and the app:
   publishing the same version again replaces its file;
 - for each profile, looks it up by its display name and creates it, or
   updates it if it exists. New profiles are **computer level, install
-  automatically, not user-removable, and unscoped** — scope them in Jamf
-  Pro. Updating keeps the existing scope;
+  automatically, and not user-removable**, with the category and scope you
+  chose (unscoped by default — scope them in Jamf Pro). Updating with
+  "Leave as is" keeps the existing category and scope;
 - shows each object's Jamf Pro ID with an **Open in Jamf Pro** button.
 
 Nothing else changes in Jamf Pro: no policy is created or scoped. Errors

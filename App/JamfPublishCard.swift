@@ -20,8 +20,29 @@ struct JamfPublishCard: View {
 
     let item: JamfPublishable
 
+    /// Scope choices for the profiles.
+    private enum ScopeChoice: String, CaseIterable, Identifiable {
+        case leave, allComputers, groups
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .leave: return "Leave as is"
+            case .allComputers: return "All computers"
+            case .groups: return "Computer groups"
+            }
+        }
+    }
+
     @State private var includePackage = true
     @State private var excludedProfiles: Set<URL> = []
+    @State private var options = JamfPickerOptions()
+    @State private var optionsState: OptionsState = .idle
+    @State private var categoryID: Int = 0          // 0 = none / leave as is
+    @State private var scopeChoice: ScopeChoice = .leave
+    @State private var scopedGroupIDs: Set<Int> = []
+    @State private var groupSearch = ""
     @State private var isPublishing = false
     @State private var progressMessage = ""
     @State private var result: JamfPublishResult?
@@ -38,6 +59,23 @@ struct JamfPublishCard: View {
 
     private var canPublish: Bool {
         !isPublishing && server.isConfigured && (publishesPackage || !selectedProfiles.isEmpty)
+            && !(scopeApplies && scopeChoice == .groups && scopedGroupIDs.isEmpty)
+    }
+
+    /// The scope picker matters only when a profile is going out.
+    private var scopeApplies: Bool { !selectedProfiles.isEmpty }
+
+    private var chosenScope: JamfScope? {
+        guard scopeApplies else { return nil }
+        switch scopeChoice {
+        case .leave: return nil
+        case .allComputers: return .allComputers
+        case .groups: return .computerGroups(options.computerGroups.map(\.id).filter(scopedGroupIDs.contains))
+        }
+    }
+
+    private enum OptionsState: Equatable {
+        case idle, loading, loaded, failed(String)
     }
 
     var body: some View {
@@ -71,15 +109,161 @@ struct JamfPublishCard: View {
                         }
                     }
                     SettingsDivider()
+                    categoryRow
+                    if scopeApplies {
+                        SettingsDivider()
+                        scopeRow
+                        if scopeChoice == .groups {
+                            SettingsDivider()
+                            groupList
+                        }
+                    }
+                    SettingsDivider()
                     publishRow
                 }
             }
+        }
+        .task(id: server) {
+            await loadOptions()
         }
         .onChange(of: item) { _, _ in
             result = nil
             errorMessage = nil
             excludedProfiles = []
             includePackage = true
+        }
+    }
+
+    // MARK: Category and scope
+
+    private var categoryRow: some View {
+        SettingsRow(title: "Category", subtitle: categorySubtitle) {
+            HStack(spacing: 8) {
+                if optionsState == .loading {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Picker("", selection: $categoryID) {
+                    Text(options.categories.isEmpty ? "None" : "None / leave as is").tag(0)
+                    ForEach(options.categories) { category in
+                        Text(category.name).tag(category.id)
+                    }
+                }
+                .labelsHidden()
+                .frame(maxWidth: 240)
+                .disabled(isPublishing || options.categories.isEmpty)
+            }
+        }
+    }
+
+    private var categorySubtitle: String {
+        switch optionsState {
+        case .idle, .loading:
+            return "Reading categories and computer groups from \(server.host)…"
+        case .failed(let message):
+            return "Couldn't read the pickers' options: \(message)"
+        case .loaded:
+            if options.unavailable.contains(where: { $0.hasPrefix("categories") }) {
+                return "The API role can't read categories (needs Read Categories). New objects get no category; existing ones keep theirs"
+            }
+            return categoryID == 0
+                ? "Applied to the package record and the profiles. None: new objects get no category, existing ones keep theirs"
+                : "Set on the package record and every published profile"
+        }
+    }
+
+    private var scopeRow: some View {
+        SettingsRow(title: "Profile scope", subtitle: scopeSubtitle) {
+            Picker("", selection: $scopeChoice) {
+                ForEach(ScopeChoice.allCases) { choice in
+                    if choice != .groups || !options.computerGroups.isEmpty {
+                        Text(choice.label).tag(choice)
+                    }
+                }
+            }
+            .labelsHidden()
+            .frame(maxWidth: 200)
+            .disabled(isPublishing)
+        }
+    }
+
+    private var scopeSubtitle: String {
+        switch scopeChoice {
+        case .leave:
+            var text = "New profiles stay unscoped; updated profiles keep their scope"
+            if options.unavailable.contains(where: { $0.hasPrefix("computer groups") }) {
+                text += ". The API role can't list computer groups (needs Read Smart and Static Computer Groups)"
+            }
+            return text
+        case .allComputers:
+            return "Targets every computer. Replaces an updated profile's targets; exclusions are kept"
+        case .groups:
+            let count = scopedGroupIDs.count
+            return count == 0
+                ? "Tick at least one group below. Replaces an updated profile's targets; exclusions are kept"
+                : "Targets \(count == 1 ? "1 group" : "\(count) groups"). Replaces an updated profile's targets; exclusions are kept"
+        }
+    }
+
+    private var filteredGroups: [JamfComputerGroup] {
+        let query = groupSearch.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return options.computerGroups }
+        return options.computerGroups.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
+
+    private var groupList: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Search groups", text: $groupSearch)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 260)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(filteredGroups) { group in
+                        Toggle(isOn: groupBinding(group.id)) {
+                            HStack(spacing: 6) {
+                                Text(group.name)
+                                    .font(Theme.body)
+                                Text(group.isSmart ? "Smart" : "Static")
+                                    .font(Theme.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .toggleStyle(.checkbox)
+                        .disabled(isPublishing)
+                    }
+                    if filteredGroups.isEmpty {
+                        Text("No groups match “\(groupSearch)”")
+                            .font(Theme.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: 220)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+    }
+
+    private func groupBinding(_ id: Int) -> Binding<Bool> {
+        Binding(get: { scopedGroupIDs.contains(id) },
+                set: { isOn in if isOn { scopedGroupIDs.insert(id) } else { scopedGroupIDs.remove(id) } })
+    }
+
+    @MainActor
+    private func loadOptions() async {
+        guard server.isConfigured else { return }
+        optionsState = .loading
+        do {
+            let loaded = try await JamfClient(server: server).fetchPickerOptions()
+            options = loaded
+            if !loaded.categories.contains(where: { $0.id == categoryID }) { categoryID = 0 }
+            scopedGroupIDs = scopedGroupIDs.filter { id in loaded.computerGroups.contains { $0.id == id } }
+            if scopeChoice == .groups, loaded.computerGroups.isEmpty { scopeChoice = .leave }
+            optionsState = .loaded
+        } catch {
+            options = JamfPickerOptions()
+            optionsState = .failed(error.localizedDescription)
         }
     }
 
@@ -99,6 +283,10 @@ struct JamfPublishCard: View {
                     ProgressView()
                         .controlSize(.small)
                     Text(progressMessage)
+                        .font(Theme.caption)
+                        .foregroundStyle(.secondary)
+                } else if scopeApplies, scopeChoice == .groups, scopedGroupIDs.isEmpty {
+                    Text("Tick at least one computer group")
                         .font(Theme.caption)
                         .foregroundStyle(.secondary)
                 } else if !publishesPackage && selectedProfiles.isEmpty {
@@ -151,7 +339,9 @@ struct JamfPublishCard: View {
             packageName: item.packageName,
             packageInfo: item.info,
             packageNotes: "Built by PaperWalls on \(Date().formatted(date: .abbreviated, time: .shortened)).",
-            profiles: selectedProfiles)
+            profiles: selectedProfiles,
+            categoryID: categoryID == 0 ? nil : categoryID,
+            scope: chosenScope)
         let client = JamfClient(server: server)
         isPublishing = true
         errorMessage = nil

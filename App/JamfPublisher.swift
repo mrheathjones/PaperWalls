@@ -49,6 +49,20 @@ struct JamfPublishRequest {
     var packageInfo: String
     var packageNotes: String
     var profiles: [URL]
+    /// Applied to the package record and every profile; nil = no category
+    /// for new objects, unchanged for existing ones.
+    var categoryID: Int? = nil
+    /// Profile targets; nil = new profiles unscoped, existing ones unchanged.
+    var scope: JamfScope? = nil
+}
+
+/// What the Publish card's pickers offer, read from Jamf Pro in one token.
+struct JamfPickerOptions {
+    var categories: [JamfCategory] = []
+    var computerGroups: [JamfComputerGroup] = []
+    /// Lists the API couldn't read (a missing Read privilege); the pickers
+    /// then offer only "leave as is".
+    var unavailable: [String] = []
 }
 
 struct JamfPublishResult {
@@ -60,12 +74,21 @@ struct JamfPublishResult {
         let name: String
         /// False when an existing object with the same name was updated.
         let created: Bool
+        /// Profiles only: a scope was sent with this publish.
+        let scoped: Bool
         let webURL: URL
 
         var summary: String {
             switch kind {
-            case .package: return created ? "Uploaded as package \(id)" : "Replaced the file of package \(id)"
-            case .profile: return created ? "Created as profile \(id), unscoped" : "Updated profile \(id); its scope is unchanged"
+            case .package:
+                return created ? "Uploaded as package \(id)" : "Replaced the file of package \(id)"
+            case .profile:
+                switch (created, scoped) {
+                case (true, true): return "Created as profile \(id), scoped as chosen"
+                case (true, false): return "Created as profile \(id), unscoped"
+                case (false, true): return "Updated profile \(id) and its scope"
+                case (false, false): return "Updated profile \(id); its scope is unchanged"
+                }
             }
         }
     }
@@ -104,6 +127,32 @@ struct JamfClient {
         }
     }
 
+    // MARK: Picker options
+
+    /// Categories and computer groups. A 403 on either list is reported in
+    /// `unavailable` rather than thrown, so publishing still works without
+    /// the read privileges.
+    func fetchPickerOptions() async throws -> JamfPickerOptions {
+        try await withToken { base, token in
+            var options = JamfPickerOptions()
+            let (categoryData, categoryResponse) = try await session.data(for: JamfAPI.categoriesRequest(base: base, token: token))
+            if (categoryResponse as? HTTPURLResponse)?.statusCode == 403 {
+                options.unavailable.append("categories (Read Categories)")
+            } else {
+                try Self.check(categoryResponse, data: categoryData)
+                options.categories = JamfAPI.categories(from: categoryData)
+            }
+            let (groupData, groupResponse) = try await session.data(for: JamfAPI.computerGroupsRequest(base: base, token: token))
+            if (groupResponse as? HTTPURLResponse)?.statusCode == 403 {
+                options.unavailable.append("computer groups (Read Smart and Static Computer Groups)")
+            } else {
+                try Self.check(groupResponse, data: groupData)
+                options.computerGroups = JamfAPI.computerGroups(from: groupData)
+            }
+            return options
+        }
+    }
+
     // MARK: Publish
 
     func publish(_ request: JamfPublishRequest, progress: @escaping @Sendable (String) -> Void) async throws -> JamfPublishResult {
@@ -114,7 +163,7 @@ struct JamfClient {
                 items.append(try await publishPackage(package, request: request, base: base, token: token, progress: progress))
             }
             for profile in request.profiles {
-                items.append(try await publishProfile(profile, base: base, token: token, progress: progress))
+                items.append(try await publishProfile(profile, request: request, base: base, token: token, progress: progress))
             }
             return JamfPublishResult(items: items)
         }
@@ -134,11 +183,24 @@ struct JamfClient {
         let packageID: Int
         if let existing = JamfAPI.packageID(fromLookup: lookupData) {
             packageID = existing
+            if let categoryID = request.categoryID {
+                progress("Setting the package's category…")
+                let (record, recordResponse) = try await session.data(
+                    for: JamfAPI.packageRecordRequest(base: base, token: token, packageID: existing))
+                try Self.check(recordResponse, data: record)
+                guard let update = JamfAPI.updatePackageCategoryRequest(base: base, token: token, packageID: existing,
+                                                                        record: record, categoryID: categoryID) else {
+                    throw JamfError.badResponse("package record")
+                }
+                let (data, response) = try await session.data(for: update)
+                try Self.check(response, data: data)
+            }
         } else {
             progress("Creating the package record…")
             let (data, response) = try await session.data(
                 for: JamfAPI.createPackageRequest(base: base, token: token, packageName: request.packageName,
-                                                  fileName: fileName, notes: request.packageNotes, info: request.packageInfo))
+                                                  fileName: fileName, notes: request.packageNotes, info: request.packageInfo,
+                                                  categoryID: request.categoryID))
             try Self.check(response, data: data)
             packageID = try JamfAPI.objectID(fromHrefResponse: data)
             created = true
@@ -161,10 +223,11 @@ struct JamfClient {
         try Self.check(uploadResponse, data: uploadData)
         Self.log.info("Uploaded \(fileName, privacy: .public) to Jamf Pro package \(packageID)")
         return JamfPublishResult.Item(kind: .package, id: packageID, name: request.packageName, created: created,
+                                      scoped: false,
                                       webURL: JamfAPI.packageWebURL(base: base, packageID: packageID))
     }
 
-    private func publishProfile(_ file: URL, base: URL, token: String,
+    private func publishProfile(_ file: URL, request: JamfPublishRequest, base: URL, token: String,
                                 progress: @escaping @Sendable (String) -> Void) async throws -> JamfPublishResult.Item {
         guard let mobileconfig = FileManager.default.contents(atPath: file.path) else {
             throw JamfError.unreadableFile(file.path)
@@ -172,7 +235,8 @@ struct JamfClient {
         let name = ConfigurationProfileFile.displayName(in: mobileconfig)
             ?? (file.deletingPathExtension().lastPathComponent)
         let description = ConfigurationProfileFile.payloadDescription(in: mobileconfig) ?? "Built by PaperWalls."
-        let xml = JamfAPI.profileXML(name: name, description: description, mobileconfig: mobileconfig)
+        let xml = JamfAPI.profileXML(name: name, description: description, mobileconfig: mobileconfig,
+                                     categoryID: request.categoryID, scope: request.scope)
 
         progress("Looking up “\(name)” in Jamf Pro…")
         let (lookupData, lookupResponse) = try await session.data(
@@ -201,6 +265,7 @@ struct JamfClient {
         }
         Self.log.info("Published profile \(name, privacy: .public) as Jamf Pro profile \(profileID)")
         return JamfPublishResult.Item(kind: .profile, id: profileID, name: name, created: existingID == nil,
+                                      scoped: request.scope != nil,
                                       webURL: JamfAPI.profileWebURL(base: base, profileID: profileID))
     }
 

@@ -138,14 +138,14 @@ final class JamfPublishTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
     }
 
-    func testProfileXMLEscapesThePayloadAndLeavesItUnscoped() throws {
+    func testProfileXMLEscapesThePayloadAndSendsNoScopeByDefault() throws {
         let mobileconfig = Data("<?xml version=\"1.0\"?><plist><dict><key>PayloadDisplayName</key><string>Acme &amp; Co</string></dict></plist>".utf8)
         let xml = String(decoding: JamfAPI.profileXML(name: "Acme <Lobby> & Co", description: "d", mobileconfig: mobileconfig), as: UTF8.self)
         XCTAssertTrue(xml.contains("<name>Acme &lt;Lobby&gt; &amp; Co</name>"))
         XCTAssertTrue(xml.contains("<level>computer</level>"))
         XCTAssertTrue(xml.contains("<user_removable>false</user_removable>"))
         XCTAssertTrue(xml.contains("<distribution_method>Install Automatically</distribution_method>"))
-        XCTAssertTrue(xml.contains("<all_computers>false</all_computers>"))
+        XCTAssertFalse(xml.contains("<scope>"), "no scope element unless one is chosen")
         XCTAssertTrue(xml.contains("<payloads>&lt;?xml version=&quot;1.0&quot;?&gt;&lt;plist&gt;"))
         XCTAssertTrue(xml.contains("Acme &amp;amp; Co"))
         XCTAssertFalse(xml.contains("<plist>"))
@@ -177,6 +177,73 @@ final class JamfPublishTests: XCTestCase {
         XCTAssertEqual(ConfigurationProfileFile.displayName(in: data), "Acme Lobby Screen Saver")
         XCTAssertEqual(ConfigurationProfileFile.payloadDescription(in: data), "Selects it")
         XCTAssertNil(ConfigurationProfileFile.displayName(in: Data("garbage".utf8)))
+    }
+
+    // MARK: Categories, groups, scope
+
+    func testCategoryAndGroupRequestsAndParsing() throws {
+        let categories = JamfAPI.categoriesRequest(base: base, token: "tok")
+        let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(categories.url), resolvingAgainstBaseURL: false))
+        XCTAssertEqual(components.path, "/api/v1/categories")
+        XCTAssertEqual(components.queryItems?.first { $0.name == "sort" }?.value, "name:asc")
+        XCTAssertEqual(JamfAPI.computerGroupsRequest(base: base, token: "tok").url?.absoluteString,
+                       "https://acme.jamfcloud.com/api/v1/computer-groups")
+
+        let parsed = JamfAPI.categories(from: Data(#"{"totalCount":2,"results":[{"id":"3","name":"Branding","priority":9},{"id":"x","name":"bad"}]}"#.utf8))
+        XCTAssertEqual(parsed, [JamfCategory(id: 3, name: "Branding")])
+        let groups = JamfAPI.computerGroups(from: Data(#"[{"id":"2","name":"Zulu","smartGroup":false},{"id":"1","name":"alpha","smartGroup":true}]"#.utf8))
+        XCTAssertEqual(groups, [JamfComputerGroup(id: 1, name: "alpha", isSmart: true),
+                                JamfComputerGroup(id: 2, name: "Zulu", isSmart: false)])
+        XCTAssertEqual(JamfAPI.computerGroups(from: Data("{}".utf8)), [])
+    }
+
+    func testCreatePackageCarriesTheChosenCategory() throws {
+        let request = JamfAPI.createPackageRequest(base: base, token: "tok", packageName: "p", fileName: "p.pkg",
+                                                   notes: "", info: "", categoryID: 7)
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+        XCTAssertEqual(body["categoryId"] as? String, "7")
+    }
+
+    func testPackageCategoryUpdateReplaysTheRecordWithoutReadOnlyFields() throws {
+        let record = Data(#"{"id":"12","packageName":"p","fileName":"p.pkg","categoryId":"-1","priority":10,"size":123,"indexed":false,"cloudTransferStatus":"READY","fillUserTemplate":false}"#.utf8)
+        let request = try XCTUnwrap(JamfAPI.updatePackageCategoryRequest(base: base, token: "tok", packageID: 12,
+                                                                         record: record, categoryID: 4))
+        XCTAssertEqual(request.url?.absoluteString, "https://acme.jamfcloud.com/api/v1/packages/12")
+        XCTAssertEqual(request.httpMethod, "PUT")
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+        XCTAssertEqual(body["categoryId"] as? String, "4")
+        XCTAssertEqual(body["packageName"] as? String, "p")
+        XCTAssertEqual(body["priority"] as? Int, 10)
+        for key in ["id", "size", "indexed", "cloudTransferStatus"] {
+            XCTAssertNil(body[key], key)
+        }
+        XCTAssertNil(JamfAPI.updatePackageCategoryRequest(base: base, token: "tok", packageID: 1, record: Data("[]".utf8), categoryID: 1))
+    }
+
+    func testProfileXMLOmitsCategoryAndScopeUnlessChosen() throws {
+        let mobileconfig = Data("<plist/>".utf8)
+        let plain = String(decoding: JamfAPI.profileXML(name: "n", description: "d", mobileconfig: mobileconfig), as: UTF8.self)
+        XCTAssertFalse(plain.contains("<scope>"))
+        XCTAssertFalse(plain.contains("<category>"))
+        XCTAssertTrue(plain.contains("<payloads>&lt;plist/&gt;</payloads>"))
+        XCTAssertTrue(plain.hasSuffix("</os_x_configuration_profile>\n"))
+
+        let all = String(decoding: JamfAPI.profileXML(name: "n", description: "d", mobileconfig: mobileconfig,
+                                                      categoryID: 5, scope: .allComputers), as: UTF8.self)
+        XCTAssertTrue(all.contains("<category><id>5</id></category>"))
+        XCTAssertTrue(all.contains("<all_computers>true</all_computers>"))
+        XCTAssertTrue(all.contains("<computer_groups/>"))
+
+        let groups = String(decoding: JamfAPI.profileXML(name: "n", description: "d", mobileconfig: mobileconfig,
+                                                         scope: .computerGroups([3, 9])), as: UTF8.self)
+        XCTAssertTrue(groups.contains("<all_computers>false</all_computers>"))
+        XCTAssertTrue(groups.contains("<computer_group><id>3</id></computer_group>"))
+        XCTAssertTrue(groups.contains("<computer_group><id>9</id></computer_group>"))
+        XCTAssertFalse(groups.contains("<category>"))
+        // Well-formed: the category sits inside <general>, the scope outside it.
+        let generalEnd = try XCTUnwrap(all.range(of: "</general>"))
+        XCTAssertTrue(try XCTUnwrap(all.range(of: "<category>")).lowerBound < generalEnd.lowerBound)
+        XCTAssertTrue(try XCTUnwrap(all.range(of: "<scope>")).lowerBound > generalEnd.lowerBound)
     }
 
     func testWebLinks() {

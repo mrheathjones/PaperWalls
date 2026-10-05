@@ -100,6 +100,26 @@ enum JamfError: LocalizedError, Equatable {
     }
 }
 
+/// A Jamf Pro category, offered for the package record and the profiles.
+struct JamfCategory: Identifiable, Equatable, Hashable {
+    let id: Int
+    let name: String
+}
+
+/// A smart or static computer group, offered as a profile scope target.
+struct JamfComputerGroup: Identifiable, Equatable, Hashable {
+    let id: Int
+    let name: String
+    let isSmart: Bool
+}
+
+/// Who a published profile targets. nil in a request means "leave as is":
+/// a new profile stays unscoped and an updated one keeps its scope.
+enum JamfScope: Equatable {
+    case allComputers
+    case computerGroups([Int])
+}
+
 /// Request builders and response parsers for the slice of the Jamf Pro API
 /// the app uses. Pure functions over `URLRequest` and `Data`, so they are
 /// unit-tested without a server. Networking lives in `JamfClient` (App).
@@ -107,6 +127,9 @@ enum JamfError: LocalizedError, Equatable {
 ///   POST /api/oauth/token                               client credentials → access token
 ///   POST /api/v1/auth/invalidate-token                  always, when done
 ///   GET  /api/v1/jamf-pro-version                       Test Connection
+///   GET  /api/v1/categories                             category picker (Read Categories)
+///   GET  /api/v1/computer-groups                        scope picker (Read Smart + Static Computer Groups)
+///   GET  /api/v1/packages/{id}, PUT …/{id}              change an existing record's category
 ///   GET  /api/v1/packages?filter=packageName=="…"       find an existing package record
 ///   POST /api/v1/packages                               create the record (Create Packages)
 ///   POST /api/v1/packages/{id}/upload                   multipart "file" (Update + Read Packages)
@@ -157,6 +180,42 @@ enum JamfAPI {
         return version.split(separator: "-").first.map(String.init) ?? version
     }
 
+    // MARK: Categories and computer groups (pickers)
+
+    static func categoriesRequest(base: URL, token: String) -> URLRequest {
+        var components = URLComponents(url: base.appendingPathComponent("api/v1/categories"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "page", value: "0"),
+            URLQueryItem(name: "page-size", value: "2000"),
+            URLQueryItem(name: "sort", value: "name:asc"),
+        ]
+        return authorized(components.url!, token: token)
+    }
+
+    /// `{"totalCount": 2, "results": [{"id": "3", "name": "Branding", "priority": 9}]}`
+    static func categories(from data: Data) -> [JamfCategory] {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let results = object["results"] as? [[String: Any]] else { return [] }
+        return results.compactMap { entry in
+            guard let id = intID(entry["id"]), let name = entry["name"] as? String else { return nil }
+            return JamfCategory(id: id, name: name)
+        }
+    }
+
+    static func computerGroupsRequest(base: URL, token: String) -> URLRequest {
+        authorized(base.appendingPathComponent("api/v1/computer-groups"), token: token)
+    }
+
+    /// `[{"id": "1", "name": "All Managed Clients", "smartGroup": true}, …]`, sorted by name.
+    static func computerGroups(from data: Data) -> [JamfComputerGroup] {
+        guard let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return [] }
+        return list.compactMap { entry in
+            guard let id = intID(entry["id"]), let name = entry["name"] as? String else { return nil }
+            let smart = (entry["smartGroup"] as? Bool) ?? ((entry["smartGroup"] as? NSNumber)?.boolValue ?? false)
+            return JamfComputerGroup(id: id, name: name, isSmart: smart)
+        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
     // MARK: Packages (Jamf Pro API v1)
 
     static func packageLookupRequest(base: URL, token: String, packageName: String) -> URLRequest {
@@ -170,14 +229,14 @@ enum JamfAPI {
     }
 
     static func createPackageRequest(base: URL, token: String, packageName: String, fileName: String,
-                                     notes: String, info: String) -> URLRequest {
+                                     notes: String, info: String, categoryID: Int? = nil) -> URLRequest {
         var request = authorized(base.appendingPathComponent("api/v1/packages"), token: token)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let body: [String: Any] = [
             "packageName": packageName,
             "fileName": fileName,
-            "categoryId": noCategoryID,
+            "categoryId": categoryID.map(String.init) ?? noCategoryID,
             "info": info,
             "notes": notes,
             "priority": 10,
@@ -190,6 +249,26 @@ enum JamfAPI {
             "suppressUpdates": false,
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
+        return request
+    }
+
+    static func packageRecordRequest(base: URL, token: String, packageID: Int) -> URLRequest {
+        authorized(base.appendingPathComponent("api/v1/packages/\(packageID)"), token: token)
+    }
+
+    /// PUT replaces the whole record, so the body is the GET'd record with
+    /// its category swapped. Returns nil when `record` isn't a JSON object.
+    static func updatePackageCategoryRequest(base: URL, token: String, packageID: Int,
+                                             record: Data, categoryID: Int) -> URLRequest? {
+        guard var object = try? JSONSerialization.jsonObject(with: record) as? [String: Any] else { return nil }
+        object["categoryId"] = String(categoryID)
+        for readOnly in ["id", "size", "indexed", "cloudTransferStatus", "manifestFileName"] {
+            object.removeValue(forKey: readOnly)
+        }
+        var request = authorized(base.appendingPathComponent("api/v1/packages/\(packageID)"), token: token)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
         return request
     }
 
@@ -260,12 +339,16 @@ enum JamfAPI {
         return request
     }
 
-    /// The Classic body: an unscoped, computer-level, non-removable profile
-    /// that installs automatically, carrying the mobileconfig as its payload.
-    /// Scoping is left to the admin in Jamf Pro.
-    static func profileXML(name: String, description: String, mobileconfig: Data) -> Data {
+    /// The Classic body: a computer-level, non-removable profile that
+    /// installs automatically, carrying the mobileconfig as its payload.
+    /// Classic PUTs change only the elements sent, so `category` and
+    /// `scope` are left out when nil: a new profile then has no category
+    /// and no scope, and an updated one keeps what it had. A scope that is
+    /// sent replaces the profile's targets (exclusions are untouched).
+    static func profileXML(name: String, description: String, mobileconfig: Data,
+                           categoryID: Int? = nil, scope: JamfScope? = nil) -> Data {
         let payloads = String(decoding: mobileconfig, as: UTF8.self)
-        let xml = """
+        var xml = """
             <?xml version="1.0" encoding="UTF-8"?>
             <os_x_configuration_profile>
               <general>
@@ -275,16 +358,44 @@ enum JamfAPI {
                 <user_removable>false</user_removable>
                 <level>computer</level>
                 <redeploy_on_update>Newly Assigned</redeploy_on_update>
-                <payloads>\(xmlEscaped(payloads))</payloads>
-              </general>
-              <scope>
-                <all_computers>false</all_computers>
-                <all_jss_users>false</all_jss_users>
-              </scope>
-            </os_x_configuration_profile>
 
             """
+        if let categoryID {
+            xml += "    <category><id>\(categoryID)</id></category>\n"
+        }
+        xml += """
+                <payloads>\(xmlEscaped(payloads))</payloads>
+              </general>
+
+            """
+        if let scope {
+            xml += scopeXML(scope)
+        }
+        xml += "</os_x_configuration_profile>\n"
         return Data(xml.utf8)
+    }
+
+    static func scopeXML(_ scope: JamfScope) -> String {
+        switch scope {
+        case .allComputers:
+            return """
+                  <scope>
+                    <all_computers>true</all_computers>
+                    <computer_groups/>
+                  </scope>
+
+                """
+        case .computerGroups(let ids):
+            let groups = ids.map { "      <computer_group><id>\($0)</id></computer_group>\n" }.joined()
+            return """
+                  <scope>
+                    <all_computers>false</all_computers>
+                    <computer_groups>
+                \(groups)    </computer_groups>
+                  </scope>
+
+                """
+        }
     }
 
     /// Classic lookups answer JSON when asked:
