@@ -43,7 +43,7 @@ struct SettingsContent: View {
         VStack(alignment: .leading, spacing: 24) {
             PageHeader(title: "Settings", subtitle: "Personalize how PaperWalls looks and behaves")
 
-            SettingsSection(label: "Appearance") {
+            SettingsSection(label: "Appearance", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Theme",
                                 subtitle: "Light, dark, or follow the system setting",
@@ -62,7 +62,7 @@ struct SettingsContent: View {
                 }
             }
 
-            SettingsSection(label: "Auto-Rotate") {
+            SettingsSection(label: "Auto-Rotate", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Rotate wallpaper",
                                 subtitle: "Automatically cycle through a source",
@@ -99,7 +99,7 @@ struct SettingsContent: View {
             }
 
             if prefs.autoRotateEnabled && !model.upNext.isEmpty {
-                SettingsSection(label: "Up Next") {
+                SettingsSection(label: "Up Next", collapsible: true) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(model.upNext) { wallpaper in
@@ -114,7 +114,7 @@ struct SettingsContent: View {
                 }
             }
 
-            SettingsSection(label: "Wallpaper") {
+            SettingsSection(label: "Wallpaper", collapsible: true) {
                 SettingsCard {
                     SettingsChipsRow(title: "Display",
                                      managedKey: .scale,
@@ -151,7 +151,7 @@ struct SettingsContent: View {
                 }
             }
 
-            SettingsSection(label: "Sources") {
+            SettingsSection(label: "Sources", collapsible: true) {
                 SettingsCard {
                     if prefs.personalFolderSource == .appManaged {
                         // Spec §5: the app owns the personal library folder;
@@ -228,7 +228,7 @@ struct SettingsContent: View {
                 }
             }
 
-            SettingsSection(label: "Screen Savers & Studio") {
+            SettingsSection(label: "Screen Savers & Studio", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Screen savers",
                                 subtitle: "Turn off to have the PaperWalls screen saver show a plain color",
@@ -319,7 +319,7 @@ struct SettingsContent: View {
                 }
             }
 
-            SettingsSection(label: "Restrictions") {
+            SettingsSection(label: "Restrictions", collapsible: true) {
                 SettingsCard {
                     SettingsChipsRow(title: "Lock mode",
                                      managedKey: .lockMode,
@@ -338,7 +338,7 @@ struct SettingsContent: View {
                                      text: allowedIDsBinding,
                                      managedKey: .allowedWallpaperIDs)
                 }
-            SettingsSection(label: "AI Generation") {
+            SettingsSection(label: "AI Generation", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Enable AI Generation",
                                 subtitle: "Master switch for generated wallpaper backgrounds in Studio. Off hides every AI control, whatever the options below say",
@@ -452,7 +452,7 @@ struct SettingsContent: View {
                 }
             }
 
-                SettingsSection(label: "Admin") {
+                SettingsSection(label: "Admin", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Admin mode",
                                 subtitle: "Adds Studio › Package for building deployable screen saver and wallpaper packages, “Package for Deployment…” on cards, and “Copy Scene for MDM” on screen saver cards",
@@ -462,7 +462,7 @@ struct SettingsContent: View {
                     }
                 }
             }
-                SettingsSection(label: "Support") {
+                SettingsSection(label: "Support", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Collect logs",
                                 subtitle: "Bundle the app's logs, settings, and status into a zip for troubleshooting — nothing is sent anywhere") {
@@ -583,15 +583,81 @@ struct SettingsContent: View {
 
 struct SettingsSection<Content: View>: View {
     let label: String
+    /// Collapsible sections remember their state across launches (by
+    /// label); Studio's sections stay plain.
+    var collapsible: Bool = false
     @ViewBuilder var content: Content
+
+    @State private var isExpanded = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(label.uppercased())
-                .font(Theme.sectionLabel)
-                .tracking(1.5)
-                .foregroundStyle(.secondary)
-            content
+            if collapsible {
+                Button(action: toggle) {
+                    HStack(spacing: 6) {
+                        header
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(label) section")
+                .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+                .accessibilityAddTraits(.isHeader)
+                if isExpanded {
+                    content
+                }
+            } else {
+                header
+                content
+            }
+        }
+        .onAppear {
+            if collapsible {
+                isExpanded = !CollapsedSettingsSections.contains(label)
+            }
+        }
+    }
+
+    private var header: some View {
+        Text(label.uppercased())
+            .font(Theme.sectionLabel)
+            .tracking(1.5)
+            .foregroundStyle(.secondary)
+    }
+
+    private func toggle() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            isExpanded.toggle()
+        }
+        CollapsedSettingsSections.set(label, collapsed: !isExpanded)
+    }
+}
+
+/// Which Settings sections the user folded, stored as a raw same-domain
+/// key (UI state, like `nextRotationDate`; not a managed preference).
+enum CollapsedSettingsSections {
+    static let key = "settingsCollapsedSections"
+
+    static func contains(_ label: String) -> Bool {
+        (UserDefaults.standard.stringArray(forKey: key) ?? []).contains(label)
+    }
+
+    static func set(_ label: String, collapsed: Bool) {
+        var labels = UserDefaults.standard.stringArray(forKey: key) ?? []
+        if collapsed {
+            if !labels.contains(label) { labels.append(label) }
+        } else {
+            labels.removeAll { $0 == label }
+        }
+        if labels.isEmpty {
+            UserDefaults.standard.removeObject(forKey: key)
+        } else {
+            UserDefaults.standard.set(labels, forKey: key)
         }
     }
 }
