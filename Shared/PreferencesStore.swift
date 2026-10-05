@@ -107,6 +107,17 @@ final class PreferencesStore: ObservableObject {
     /// Unlocks the admin tools (Studio › Package, "Copy Scene for MDM").
     @Published var adminModeEnabled: Bool = false
     @Published var brandAssetsFolderPath: String = ""
+    /// Publish to Jamf Pro (admin mode): master switch + what may be uploaded.
+    @Published var jamfPublishEnabled: Bool = false
+    @Published var jamfPublishPackages: Bool = true
+    @Published var jamfPublishProfiles: Bool = true
+
+    /// The resolved Jamf publishing permissions; off entirely without admin mode.
+    var jamfPolicy: JamfPublishPolicy {
+        JamfPublishPolicy(enabled: adminModeEnabled && jamfPublishEnabled,
+                          packages: jamfPublishPackages,
+                          profiles: jamfPublishProfiles)
+    }
 
     // AI generation (Studio › Wallpapers): master switch + one toggle per
     // provider. `aiPolicy` is the resolved view the composer reads.
@@ -217,6 +228,9 @@ final class PreferencesStore: ObservableObject {
         enforcedScreenSaverPath = ManagedPreferences.string(.enforcedScreenSaverPath) ?? ""
         adminModeEnabled = ManagedPreferences.bool(.adminModeEnabled) ?? false
         brandAssetsFolderPath = ManagedPreferences.string(.brandAssetsFolderPath) ?? ""
+        jamfPublishEnabled = ManagedPreferences.bool(.jamfPublishEnabled) ?? false
+        jamfPublishPackages = ManagedPreferences.bool(.jamfPublishPackages) ?? true
+        jamfPublishProfiles = ManagedPreferences.bool(.jamfPublishProfiles) ?? true
         aiGenerationEnabled = ManagedPreferences.bool(.aiGenerationEnabled) ?? false
         aiAppleOnDeviceEnabled = ManagedPreferences.bool(.aiAppleOnDeviceEnabled) ?? false
         aiLocalModelEnabled = ManagedPreferences.bool(.aiLocalModelEnabled) ?? false
@@ -278,6 +292,9 @@ final class PreferencesStore: ObservableObject {
         persist($enforcedScreenSaverPath, .enforcedScreenSaverPath) { $0.isEmpty ? nil : $0 }
         persist($adminModeEnabled, .adminModeEnabled) { $0 }
         persist($brandAssetsFolderPath, .brandAssetsFolderPath) { $0.isEmpty ? nil : $0 }
+        persist($jamfPublishEnabled, .jamfPublishEnabled) { $0 }
+        persist($jamfPublishPackages, .jamfPublishPackages) { $0 }
+        persist($jamfPublishProfiles, .jamfPublishProfiles) { $0 }
         persist($aiGenerationEnabled, .aiGenerationEnabled) { $0 }
         persist($aiAppleOnDeviceEnabled, .aiAppleOnDeviceEnabled) { $0 }
         persist($aiLocalModelEnabled, .aiLocalModelEnabled) { $0 }

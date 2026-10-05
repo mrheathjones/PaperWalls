@@ -406,6 +406,30 @@
         "infoText": "Key: brandAssetsFolderPath"
       }
     },
+    "jamfPublishEnabled": {
+      "type": "boolean",
+      "title": "Publish to Jamf Pro",
+      "description": "Admin mode only. Adds a Publish to Jamf Pro step after a Studio › Package build that uploads the result through the Jamf Pro API; nothing is sent until the admin presses Publish. The server URL and API client are entered in Settings › Admin on the admin's Mac and are deliberately not managed keys. Force false on end-user Macs.",
+      "options": {
+        "infoText": "Key: jamfPublishEnabled (default: false)"
+      }
+    },
+    "jamfPublishPackages": {
+      "type": "boolean",
+      "title": "Jamf: Allow Package Uploads",
+      "description": "With publishing on, allows uploading the built installer package (Jamf Pro API /api/v1/packages; the API role needs Create, Read, and Update Packages; Jamf Pro 11.5+ with a cloud distribution point).",
+      "options": {
+        "infoText": "Key: jamfPublishPackages (default: true)"
+      }
+    },
+    "jamfPublishProfiles": {
+      "type": "boolean",
+      "title": "Jamf: Allow Configuration Profile Uploads",
+      "description": "With publishing on, allows creating the package's Enforce/ and Configure/ .mobileconfig files as unscoped, computer-level macOS configuration profiles (Classic API; the API role needs Create, Read, and Update macOS Configuration Profiles).",
+      "options": {
+        "infoText": "Key: jamfPublishProfiles (default: true)"
+      }
+    },
     "aiGenerationEnabled": {
       "type": "boolean",
       "title": "Enable AI Generation",

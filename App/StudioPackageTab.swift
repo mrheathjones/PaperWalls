@@ -234,6 +234,13 @@ struct StudioPackageTab: View {
                         }
                     }
                 }
+                if prefs.jamfPolicy.anyAllowed {
+                    JamfPublishCard(item: JamfPublishable(
+                        packageName: result.pkg.deletingPathExtension().lastPathComponent,
+                        pkg: result.pkg,
+                        profiles: result.profiles,
+                        info: "PaperWalls screen savers: \(selected.map(deployedName).joined(separator: ", ")). Installs to \(SceneDeployment.installDirectory)."))
+                }
             }
         }
     }

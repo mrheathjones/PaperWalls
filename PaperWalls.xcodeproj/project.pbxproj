@@ -139,6 +139,12 @@
 		FF00000000000000000000D7 /* AppModel+BrandAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CC /* AppModel+BrandAssets.swift */; };
 		FF00000000000000000000D8 /* StudioAssetsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CD /* StudioAssetsTab.swift */; };
 		FF00000000000000000000D9 /* BrandAssetStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CE /* BrandAssetStoreTests.swift */; };
+		FF00000000000000000000DA /* JamfPublishPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CF /* JamfPublishPolicy.swift */; };
+		FF00000000000000000000DB /* JamfPublishPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CF /* JamfPublishPolicy.swift */; };
+		FF00000000000000000000DC /* JamfPublishPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CF /* JamfPublishPolicy.swift */; };
+		FF00000000000000000000DD /* JamfPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D0 /* JamfPublisher.swift */; };
+		FF00000000000000000000DE /* JamfPublishCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D1 /* JamfPublishCard.swift */; };
+		FF00000000000000000000DF /* JamfPublishTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D2 /* JamfPublishTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -250,6 +256,10 @@
 		DD00000000000000000000CC /* AppModel+BrandAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+BrandAssets.swift"; sourceTree = "<group>"; };
 		DD00000000000000000000CD /* StudioAssetsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioAssetsTab.swift; sourceTree = "<group>"; };
 		DD00000000000000000000CE /* BrandAssetStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandAssetStoreTests.swift; sourceTree = "<group>"; };
+		DD00000000000000000000CF /* JamfPublishPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamfPublishPolicy.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D0 /* JamfPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamfPublisher.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D1 /* JamfPublishCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamfPublishCard.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D2 /* JamfPublishTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JamfPublishTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -337,6 +347,7 @@
 				DD00000000000000000000C3 /* LocalImageEndpoint.swift */,
 				DD00000000000000000000C6 /* ExternalImageEndpoint.swift */,
 				DD00000000000000000000C7 /* PromptImprover.swift */,
+				DD00000000000000000000CF /* JamfPublishPolicy.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -356,6 +367,7 @@
 				DD00000000000000000000C5 /* LocalImageEndpointTests.swift */,
 				DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */,
 				DD00000000000000000000CE /* BrandAssetStoreTests.swift */,
+				DD00000000000000000000D2 /* JamfPublishTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -392,6 +404,8 @@
 				DD00000000000000000000A3 /* SceneBundles.swift */,
 				DD00000000000000000000A6 /* ScenePackager.swift */,
 				DD00000000000000000000AA /* WallpaperPackager.swift */,
+				DD00000000000000000000D0 /* JamfPublisher.swift */,
+				DD00000000000000000000D1 /* JamfPublishCard.swift */,
 				DD0000000000000000000014 /* SettingsView.swift */,
 				DD0000000000000000000018 /* Components.swift */,
 				DD0000000000000000000017 /* Theme.swift */,
@@ -619,6 +633,9 @@
 				FF00000000000000000000CC /* ExternalImageEndpoint.swift in Sources */,
 				FF00000000000000000000CF /* PromptImprover.swift in Sources */,
 				FF00000000000000000000D2 /* ExternalImageProvider.swift in Sources */,
+				FF00000000000000000000DA /* JamfPublishPolicy.swift in Sources */,
+				FF00000000000000000000DD /* JamfPublisher.swift in Sources */,
+				FF00000000000000000000DE /* JamfPublishCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -633,6 +650,7 @@
 				FF00000000000000000000C8 /* LocalImageEndpoint.swift in Sources */,
 				FF00000000000000000000CD /* ExternalImageEndpoint.swift in Sources */,
 				FF00000000000000000000D0 /* PromptImprover.swift in Sources */,
+				FF00000000000000000000DB /* JamfPublishPolicy.swift in Sources */,
 				FF0000000000000000000014 /* ManagedPreferences.swift in Sources */,
 				FF0000000000000000000015 /* WallpaperCatalog.swift in Sources */,
 				FF0000000000000000000021 /* WallpaperContentID.swift in Sources */,
@@ -688,6 +706,8 @@
 				FF00000000000000000000CE /* ExternalImageEndpoint.swift in Sources */,
 				FF00000000000000000000D1 /* PromptImprover.swift in Sources */,
 				FF00000000000000000000D3 /* ExternalImageEndpointTests.swift in Sources */,
+				FF00000000000000000000DC /* JamfPublishPolicy.swift in Sources */,
+				FF00000000000000000000DF /* JamfPublishTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

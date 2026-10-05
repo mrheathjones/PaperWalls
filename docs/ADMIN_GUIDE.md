@@ -156,6 +156,9 @@ is also in `Deployment/`.
 | `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
 | `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers or wallpapers), **Package for Deployment…** on cards, and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
 | `brandAssetsFolderPath` | string | — | Folder of the organization's logos and icons (e.g. `/Library/CompanyBrand`), scanned non-recursively for `.png .jpg .jpeg .heic .tiff .gif`. Offered as read-only **Brand Assets** in Studio's composer on every Mac. Deploy the images separately — see §12 |
+| `jamfPublishEnabled` | bool | `false` | Admin mode only: adds a **Publish to Jamf Pro** step after a Studio › Package build that uploads the result through the Jamf Pro API. Nothing is sent until the admin presses Publish. The server URL and API client live on the admin's Mac (Settings › Admin; user layer + Keychain), never in this domain — see §12 |
+| `jamfPublishPackages` | bool | `true` | With publishing on: allow uploading the built installer package (API role: Create, Read, Update Packages; Jamf Pro 11.5+ with a cloud distribution point) |
+| `jamfPublishProfiles` | bool | `true` | With publishing on: allow creating the `Enforce/` and `Configure/` profiles as unscoped macOS configuration profiles (API role: Create, Read, Update macOS Configuration Profiles) |
 | `aiGenerationEnabled` | bool | `false` | Master switch for AI-generated wallpaper backgrounds in Studio › Wallpapers. `false` hides every AI control regardless of the provider toggles |
 | `aiAppleOnDeviceEnabled` | bool | `false` | Offers **Apple On-Device** generation (Image Playground via Apple Intelligence; runs entirely on the Mac). Needs Apple silicon with Apple Intelligence on |
 | `aiLocalModelEnabled` | bool | `false` | Offers **Local Model** generation: an image server on the Mac or the network (Draw Things, Automatic1111, Forge, SD.Next, or any OpenAI-compatible endpoint). Prompts go only to `aiLocalModelEndpoint`, and only when the user presses Generate |
@@ -281,6 +284,7 @@ failed · `5` ran as root (refused — the desktop is a per-user setting) ·
 | `~/Library/Screen Savers/PaperWalls – <Scene>.saver` | Generated per-scene copies of the saver for scenes shown as their own tile (derived; the app regenerates them) |
 | `~/Library/Screen Savers/PaperWalls.saver` | Only when installed from the app's Settings ("Install for Me") on a Mac without the pkg |
 | `/Library/Application Support/PaperWalls/managed.json` | Optional local admin config (admin-writable) |
+| `~/Library/Preferences/com.herojoneslabs.paperwalls.plist` → `jamfServerURL`, `jamfClientID` | Admin's own Jamf Pro connection (Settings › Admin). Raw user-layer keys, not managed preferences; the client secret is a Keychain item (service `com.herojoneslabs.paperwalls.jamf`) |
 
 Deleting any per-user cache is safe — the app rebuilds it. `Personal/`,
 `Studio/ScreenSavers/*.json` (+ `Assets/`), `Studio/Wallpapers/`, and
@@ -677,6 +681,65 @@ byte, so the IDs listed in `DEPLOY.txt` are the IDs every target Mac resolves �
 use them in your own profiles too. Installing a newer version doesn't remove
 wallpapers you dropped from the package; remove the folder with the commands
 in `DEPLOY.txt`.
+
+### Publishing to Jamf Pro (Admin mode)
+
+Both Package flavors can hand their output straight to Jamf Pro instead of
+(or as well as) leaving it in a folder. It is off by default and gated three
+ways: Admin mode, the `jamfPublishEnabled` switch, and one toggle per kind of
+upload — all of them managed keys, so a fleet profile can force the feature
+off (or allow packages but not profiles) on every Mac.
+
+**Set it up once, on the admin's Mac.** In Jamf Pro create an API Role with
+the privileges below and an API Client that uses it; copy the client ID and
+generate the client secret. Then in PaperWalls, **Settings › Admin**:
+
+1. Turn on **Admin mode** and **Publish to Jamf Pro**.
+2. Leave **Packages** and **Configuration profiles** on, or turn off the kind
+   you don't want this Mac to upload.
+3. Enter the **Jamf Pro server** (`https://yourorg.jamfcloud.com`; the field
+   suggests this Mac's own enrollment URL) and the **API client ID**, paste
+   the **client secret**, and press **Test Connection**. The test obtains a
+   token, reads the Jamf Pro version, and invalidates the token.
+
+The server and client ID are stored in the user layer of the preference
+domain (`jamfServerURL`, `jamfClientID`), the secret in the login Keychain.
+None of the three is a `ManagedPreferenceKey`: they can't be set by a
+profile or `managed.json`, so a managed Mac can never be pointed — together
+with its stored secret — at a server the admin didn't type.
+
+| Upload | API | Privileges the API Role needs |
+|---|---|---|
+| Installer package | `POST /api/v1/packages` (record), `POST /api/v1/packages/{id}/upload` (file) | Read Packages, Create Packages, Update Packages |
+| Configuration profile | `GET/POST/PUT /JSSResource/osxconfigurationprofiles` | Read, Create, Update macOS Configuration Profiles |
+| Test Connection | `GET /api/v1/jamf-pro-version` | none beyond a valid client |
+
+Package uploads need Jamf Pro 11.5 or later and a cloud distribution point
+(Jamf Cloud, or a cloud DP as the primary); Jamf Pro copies the file there
+after the upload.
+
+**Publishing.** After **Build Package…** finishes, a **Publish to Jamf Pro**
+card lists what the build left on disk: the pkg, and each `.mobileconfig` in
+`Enforce/` (screen savers: select + lock) or `Configure/` (wallpapers).
+Untick what you don't want, press **Publish**, and the app:
+
+- signs in with the client credentials (one token per publish, invalidated
+  when done, success or failure);
+- for the package, looks up a record with the pkg's name
+  (`<Name>-<version>`), creates one if there isn't (no category, priority
+  10, build notes), and uploads the file. Each version is its own record;
+  publishing the same version again replaces its file;
+- for each profile, looks it up by its display name and creates it, or
+  updates it if it exists. New profiles are **computer level, install
+  automatically, not user-removable, and unscoped** — scope them in Jamf
+  Pro. Updating keeps the existing scope;
+- shows each object's Jamf Pro ID with an **Open in Jamf Pro** button.
+
+Nothing else changes in Jamf Pro: no policy is created or scoped. Errors
+name the step and the HTTP status (401 bad credentials, 403 a missing
+privilege, 404 an endpoint this Jamf Pro version lacks). Keep
+`jamfPublishEnabled` forced `false` on end-user Macs along with
+`adminModeEnabled`.
 
 ### Verifying a new macOS version
 

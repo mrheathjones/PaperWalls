@@ -116,12 +116,13 @@ struct LocalImageProvider: WallpaperImageProvider {
 
 // MARK: - Keychain
 
-/// Generic-password items for API keys. Keys never go into the
-/// preference domain, which is deployed as managed plists.
+/// Generic-password items for API keys and client secrets. They never go
+/// into the preference domain, which is deployed as managed plists. The
+/// default service is the AI providers'; Jamf uses its own.
 enum KeychainStore {
     static let service = "\(ManagedPreferences.domain).ai"
 
-    static func read(account: String) -> String? {
+    static func read(account: String, service: String = KeychainStore.service) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -137,8 +138,8 @@ enum KeychainStore {
 
     /// Stores `value`; an empty value removes the item.
     @discardableResult
-    static func write(account: String, value: String) -> Bool {
-        guard !value.isEmpty else { return delete(account: account) }
+    static func write(account: String, value: String, service: String = KeychainStore.service) -> Bool {
+        guard !value.isEmpty else { return delete(account: account, service: service) }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -156,7 +157,7 @@ enum KeychainStore {
     }
 
     @discardableResult
-    static func delete(account: String) -> Bool {
+    static func delete(account: String, service: String = KeychainStore.service) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

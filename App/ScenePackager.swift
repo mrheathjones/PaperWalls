@@ -41,6 +41,8 @@ enum ScenePackager {
     struct Result {
         let folder: URL
         let pkg: URL
+        /// The Enforce/ profiles (select + lock), when a saver is enforced.
+        let profiles: [URL]
     }
 
     enum PackagingError: LocalizedError {
@@ -151,19 +153,23 @@ enum ScenePackager {
                 try Data(json.utf8).write(to: mdm.appendingPathComponent("\(spec.title).json"))
             }
         }
+        var profilePaths: [String] = []   // relative to the output folder
         if let saver = request.enforcedSaver {
             let enforce = staging.appendingPathComponent("Enforce", isDirectory: true)
             try fileManager.createDirectory(at: enforce, withIntermediateDirectories: true)
             let profile = DeploymentEnforcement.profile(bundle: saver, packageIdentifier: request.package.identifier,
                                                         organization: request.organization)
+            let selectName = "\(saver.title) – Enforce Screen Saver.mobileconfig"
             try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0)
-                .write(to: enforce.appendingPathComponent("\(saver.title) – Enforce Screen Saver.mobileconfig"))
+                .write(to: enforce.appendingPathComponent(selectName))
             try Data(DeploymentEnforcement.managedJSON(bundle: saver).utf8)
                 .write(to: enforce.appendingPathComponent("managed.json"))
             let lock = DeploymentEnforcement.lockProfile(bundle: saver, packageIdentifier: request.package.identifier,
                                                          organization: request.organization)
+            let lockName = "\(saver.title) – Lock Screen Saver.mobileconfig"
             try PropertyListSerialization.data(fromPropertyList: lock, format: .xml, options: 0)
-                .write(to: enforce.appendingPathComponent("\(saver.title) – Lock Screen Saver.mobileconfig"))
+                .write(to: enforce.appendingPathComponent(lockName))
+            profilePaths = ["Enforce/\(selectName)", "Enforce/\(lockName)"]
         }
         try Data(deployNotes(request, includesMDM: !mdmItems.isEmpty).utf8)
             .write(to: staging.appendingPathComponent("DEPLOY.txt"))
@@ -176,7 +182,8 @@ enum ScenePackager {
         try fileManager.createDirectory(at: request.outputDirectory, withIntermediateDirectories: true)
         try fileManager.moveItem(at: staging, to: folder)
         log.info("Packaged \(prepared.count) screen saver(s) as \(request.package.identifier, privacy: .public) \(request.package.version, privacy: .public)")
-        return Result(folder: folder, pkg: folder.appendingPathComponent(builtPkg.lastPathComponent))
+        return Result(folder: folder, pkg: folder.appendingPathComponent(builtPkg.lastPathComponent),
+                      profiles: profilePaths.map { folder.appendingPathComponent($0) })
     }
 
     // MARK: - DEPLOY.txt

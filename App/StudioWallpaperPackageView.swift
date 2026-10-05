@@ -434,6 +434,14 @@ struct StudioWallpaperPackageView: View {
                         }
                     }
                 }
+                if prefs.jamfPolicy.anyAllowed {
+                    let count = selected.count == 1 ? "1 wallpaper" : "\(selected.count) wallpapers"
+                    JamfPublishCard(item: JamfPublishable(
+                        packageName: result.pkg.deletingPathExtension().lastPathComponent,
+                        pkg: result.pkg,
+                        profiles: result.profiles,
+                        info: "PaperWalls wallpapers (\(count)). Installs to \(WallpaperDeployment.normalizedInstallDirectory(installDirectory))."))
+                }
             }
         }
     }

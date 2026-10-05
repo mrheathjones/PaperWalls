@@ -18,6 +18,7 @@
     "autoRotateIntervalMinutes": 30,
     "showFeaturedWallpaper": true,
     "showStudio": true,
-    "adminModeEnabled": false
+    "adminModeEnabled": false,
+    "jamfPublishEnabled": false
   }
 }

@@ -53,6 +53,8 @@ enum WallpaperPackager {
     struct Result {
         let folder: URL
         let pkg: URL
+        /// The Configure/ profile, when one was requested.
+        let profiles: [URL]
     }
 
     enum PackagingError: LocalizedError {
@@ -174,7 +176,10 @@ enum WallpaperPackager {
         try fileManager.createDirectory(at: request.outputDirectory, withIntermediateDirectories: true)
         try fileManager.moveItem(at: staging, to: folder)
         log.info("Packaged \(request.items.count) wallpaper(s) as \(request.package.identifier, privacy: .public) \(request.package.version, privacy: .public)")
-        return Result(folder: folder, pkg: folder.appendingPathComponent(builtPkg.lastPathComponent))
+        let profiles = settings == nil
+            ? []
+            : [folder.appendingPathComponent("Configure", isDirectory: true).appendingPathComponent(profileFilename(for: request.package))]
+        return Result(folder: folder, pkg: folder.appendingPathComponent(builtPkg.lastPathComponent), profiles: profiles)
     }
 
     /// "Acme Wallpapers – Configure PaperWalls.mobileconfig"

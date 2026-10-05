@@ -480,6 +480,36 @@ struct SettingsContent: View {
                         SettingsToggle(isOn: $prefs.adminModeEnabled,
                                        disabled: prefs.isForced(.adminModeEnabled))
                     }
+                    if prefs.adminModeEnabled {
+                        SettingsDivider()
+                        SettingsRow(title: "Publish to Jamf Pro",
+                                    subtitle: "Adds a Publish step to Studio › Package that sends what you build to your Jamf Pro server through its API. Nothing is sent until you press Publish",
+                                    managedKey: .jamfPublishEnabled) {
+                            SettingsToggle(isOn: $prefs.jamfPublishEnabled,
+                                           disabled: prefs.isForced(.jamfPublishEnabled))
+                        }
+                        if prefs.jamfPublishEnabled {
+                            SettingsDivider()
+                            SettingsRow(title: "Packages",
+                                        subtitle: "Allow uploading installer packages. The API role needs Create, Read, and Update Packages; the file lands on the cloud distribution point",
+                                        managedKey: .jamfPublishPackages) {
+                                SettingsToggle(isOn: $prefs.jamfPublishPackages,
+                                               disabled: prefs.isForced(.jamfPublishPackages))
+                            }
+                            SettingsDivider()
+                            SettingsRow(title: "Configuration profiles",
+                                        subtitle: "Allow creating macOS configuration profiles from the Enforce/ and Configure/ files, unscoped. The API role needs Create, Read, and Update macOS Configuration Profiles",
+                                        managedKey: .jamfPublishProfiles) {
+                                SettingsToggle(isOn: $prefs.jamfPublishProfiles,
+                                               disabled: prefs.isForced(.jamfPublishProfiles))
+                            }
+                            SettingsDivider()
+                            // The server and API client are this Mac's own
+                            // settings (never a managed key) — see
+                            // JamfConnectionStore.
+                            JamfConnectionRows()
+                        }
+                    }
                 }
             }
 
@@ -934,6 +964,7 @@ struct SegmentedPills<Value: Hashable>: View {
 /// preference domain, which ships in profiles).
 struct KeychainKeyRow: View {
     let account: String
+    var service = KeychainStore.service
     var title = "API key"
     /// Shown when no key is stored.
     let hint: String
@@ -960,7 +991,7 @@ struct KeychainKeyRow: View {
                     .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 8))
                     .accessibilityLabel("\(title) for \(account)")
                 Button("Save") {
-                    let saved = KeychainStore.write(account: account, value: key)
+                    let saved = KeychainStore.write(account: account, value: key, service: service)
                     status = saved ? "Saved" : "Couldn’t write to the Keychain"
                     hasStoredKey = saved && !key.isEmpty
                     key = ""
@@ -968,7 +999,7 @@ struct KeychainKeyRow: View {
                 .disabled(key.isEmpty)
                 if hasStoredKey {
                     Button("Remove") {
-                        KeychainStore.delete(account: account)
+                        KeychainStore.delete(account: account, service: service)
                         hasStoredKey = false
                         status = "Removed"
                     }
@@ -990,7 +1021,7 @@ struct KeychainKeyRow: View {
     }
 
     private func reload() {
-        hasStoredKey = KeychainStore.read(account: account) != nil
+        hasStoredKey = KeychainStore.read(account: account, service: service) != nil
         key = ""
         status = nil
     }

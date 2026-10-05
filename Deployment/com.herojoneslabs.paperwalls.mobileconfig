@@ -97,6 +97,13 @@
 								<!-- folder of the organization's logos/icons, offered as Brand Assets in Studio's composer (deploy the images separately) -->
 								<key>brandAssetsFolderPath</key>
 								<string>/Library/CompanyBrand</string>
+								<!-- Publish to Jamf Pro from Studio › Package (admin mode); the server URL and API client are set in Settings › Admin, never here -->
+								<key>jamfPublishEnabled</key>
+								<false/>
+								<key>jamfPublishPackages</key>
+								<true/>
+								<key>jamfPublishProfiles</key>
+								<true/>
 								<!-- AI-generated wallpaper backgrounds (Studio › Wallpapers); master switch + one toggle per provider, all off by default -->
 								<key>aiGenerationEnabled</key>
 								<false/>

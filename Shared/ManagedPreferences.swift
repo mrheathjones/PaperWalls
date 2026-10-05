@@ -54,6 +54,13 @@ enum ManagedPreferenceKey: String, CaseIterable {
 
     // Admin tools.
     case adminModeEnabled               // unlocks Studio › Package (deployable savers)
+    // Publish to Jamf Pro (Studio › Package, admin mode). The master switch
+    // defaults OFF like every other network gate; the per-kind toggles say
+    // what may be uploaded. The server URL and API client are NOT here —
+    // they live in the user layer / Keychain (see JamfConnectionStore).
+    case jamfPublishEnabled
+    case jamfPublishPackages            // installer packages → /api/v1/packages
+    case jamfPublishProfiles            // .mobileconfig → macOS configuration profiles
 
     // AI generation (Studio › Wallpapers). All default OFF; the master
     // switch hides every AI control regardless of the sub-toggles.
