@@ -80,6 +80,7 @@ paperwallscli set x.jpg 0 --scale fit --color 1D2E3F
 paperwallscli set x.jpg --all-screens
 paperwallscli manage                 # apply MDM/user preferences
 paperwallscli screensaver            # print what the screen saver will show (read-only)
+paperwallscli screensaver enforce    # select enforcedScreenSaverPath everywhere now (run as the user)
 paperwallscli version
 paperwallscli help
 ```

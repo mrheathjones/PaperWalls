@@ -244,6 +244,7 @@ paperwallscli set <path> [screen-index] [--scale fill|fit|stretch|center] [--col
 paperwallscli manage                    apply the managed/user preferences (LaunchAgent entry point)
 paperwallscli watch [--interval s]      Tier-3 enforcement watcher (min 5s, default 15s)
 paperwallscli screensaver               print what the screen saver will show (read-only)
+paperwallscli screensaver enforce       select enforcedScreenSaverPath for every Space/display now
 paperwallscli version | help
 ```
 
