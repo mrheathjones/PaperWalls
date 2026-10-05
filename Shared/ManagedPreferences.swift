@@ -50,6 +50,9 @@ enum ManagedPreferenceKey: String, CaseIterable {
     case managedScreenSaverScene        // admin-provisioned scene (JSON string or inline object)
     case allowedScreenSaverSceneIDs     // optional allow-list for the active scene
 
+    // Admin tools.
+    case adminModeEnabled               // unlocks Studio › Package (deployable savers)
+
     // Legacy rotation keys — read ONLY by RotationPoolMigration (spec §4).
     case autoRotateSource
     case rotateIncludeBundled

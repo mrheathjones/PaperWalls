@@ -39,7 +39,8 @@ extension AppModel {
         StudioTab.visibleTabs(showStudio: prefs.showStudio,
                               showWallpapersTab: prefs.showStudioWallpapersTab,
                               showScreenSaverTab: prefs.showStudioScreenSaverTab,
-                              canCreate: screenSaverPolicy.canCreate)
+                              canCreate: screenSaverPolicy.canCreate,
+                              adminMode: prefs.adminModeEnabled)
     }
 
     /// True when the Scene Composer can be reached (Studio visible with

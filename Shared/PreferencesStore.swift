@@ -102,6 +102,8 @@ final class PreferencesStore: ObservableObject {
     @Published var allowScreenSaverCreation: Bool = true
     @Published var activeScreenSaverSceneID: String?
     @Published var allowedScreenSaverSceneIDs: [String]?
+    /// Unlocks the admin tools (Studio › Package, "Copy Scene for MDM").
+    @Published var adminModeEnabled: Bool = false
 
     private var isReloading = false
     private var cancellables: Set<AnyCancellable> = []
@@ -164,6 +166,7 @@ final class PreferencesStore: ObservableObject {
         allowScreenSaverCreation = ManagedPreferences.bool(.allowScreenSaverCreation) ?? true
         activeScreenSaverSceneID = ManagedPreferences.string(.activeScreenSaverSceneID)
         allowedScreenSaverSceneIDs = ManagedPreferences.stringArray(.allowedScreenSaverSceneIDs)
+        adminModeEnabled = ManagedPreferences.bool(.adminModeEnabled) ?? false
     }
 
     /// Persists each published property back to CFPreferences when it changes
@@ -208,6 +211,7 @@ final class PreferencesStore: ObservableObject {
         persist($allowScreenSaverCreation, .allowScreenSaverCreation) { $0 }
         persist($activeScreenSaverSceneID, .activeScreenSaverSceneID) { $0 }
         persist($allowedScreenSaverSceneIDs, .allowedScreenSaverSceneIDs) { ($0?.isEmpty ?? true) ? nil : $0 }
+        persist($adminModeEnabled, .adminModeEnabled) { $0 }
     }
 
     private func persist<Value: Equatable>(_ publisher: Published<Value>.Publisher,

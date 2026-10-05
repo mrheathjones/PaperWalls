@@ -328,6 +328,16 @@ struct SettingsContent: View {
                                      text: allowedIDsBinding,
                                      managedKey: .allowedWallpaperIDs)
                 }
+                SettingsSection(label: "Admin") {
+                SettingsCard {
+                    SettingsRow(title: "Admin mode",
+                                subtitle: "Adds Studio › Package for building deployable screen saver packages, and “Copy Scene for MDM” on screen saver cards",
+                                managedKey: .adminModeEnabled) {
+                        SettingsToggle(isOn: $prefs.adminModeEnabled,
+                                       disabled: prefs.isForced(.adminModeEnabled))
+                    }
+                }
+            }
                 SettingsSection(label: "Support") {
                 SettingsCard {
                     SettingsRow(title: "Collect logs",

@@ -271,9 +271,11 @@ final class ScreenSaverPolicyTests: XCTestCase {
 
 final class StudioTabVisibilityTests: XCTestCase {
     private func tabs(studio: Bool = true, wallpapers: Bool = true,
-                      screenSaver: Bool = true, canCreate: Bool = true) -> [StudioTab] {
+                      screenSaver: Bool = true, canCreate: Bool = true,
+                      admin: Bool = false) -> [StudioTab] {
         StudioTab.visibleTabs(showStudio: studio, showWallpapersTab: wallpapers,
-                              showScreenSaverTab: screenSaver, canCreate: canCreate)
+                              showScreenSaverTab: screenSaver, canCreate: canCreate,
+                              adminMode: admin)
     }
 
     func testBothTabsByDefault() {
@@ -296,6 +298,16 @@ final class StudioTabVisibilityTests: XCTestCase {
     func testComposerTabNeedsCreation() {
         XCTAssertEqual(tabs(canCreate: false), [.wallpapers])
         XCTAssertTrue(tabs(wallpapers: false, canCreate: false).isEmpty)
+    }
+
+    func testPackageTabFollowsAdminMode() {
+        XCTAssertEqual(tabs(admin: true), [.wallpapers, .screenSaver, .package])
+        XCTAssertFalse(tabs().contains(.package))
+    }
+
+    func testPackageTabSurvivesHiddenStudio() {
+        XCTAssertEqual(tabs(studio: false, admin: true), [.package])
+        XCTAssertEqual(tabs(canCreate: false, admin: true), [.wallpapers, .package])
     }
 }
 
