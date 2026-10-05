@@ -8,14 +8,12 @@
 	     separately, by activeScreenSaverSceneID / managedScreenSaverScene in
 	     the com.herojoneslabs.paperwalls domain.
 
-	     ⚠️ UNVERIFIED per macOS version. Apple documents moduleName /
-	     modulePath for this payload, but admins report that macOS Sonoma
-	     (14) and later often ignore them for third-party savers, because the
-	     selection moved into the wallpaper system's own store. Test on each
-	     target release before relying on it. If the saver is not selected,
-	     the idle time below still applies and users can pick "PaperWalls"
-	     under System Settings > Screen Saver > Other. See the Administrator
-	     Guide for the alternatives admins use on newer releases.
+	     ⚠️ On macOS 14 and later moduleName / modulePath do NOT select a
+	     third-party saver: the selection lives in each user's wallpaper store,
+	     which these keys don't reach. To select a saver, set PaperWalls'
+	     enforcedScreenSaverPath key instead (see the Administrator Guide); the
+	     manage LaunchAgent keeps it selected. This profile remains useful for
+	     the idle time below.
 
 	     There is deliberately no PaperWalls preference for the idle time:
 	     it is an OS setting, and this payload is the supported way to set it. -->

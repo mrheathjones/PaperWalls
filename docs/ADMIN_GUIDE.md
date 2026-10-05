@@ -148,6 +148,7 @@ is also in `Deployment/`.
 | `activeScreenSaverSceneID` | string | — | The scene the saver runs: a scene's UUID from the user's library, or `managed` for the scene provisioned by `managedScreenSaverScene`. Forcing it disables **Set Active** |
 | `managedScreenSaverScene` | string (JSON) | — | An organization-provided scene, shown as a read-only **Managed** entry (ID `managed`). Build it in Studio and use the card's **Copy Scene for MDM** action (shown in Admin mode). In `managed.json` it may be an inline object instead of a string |
 | `allowedScreenSaverSceneIDs` | array of strings | — | Optional allow-list of scene IDs that may be active; other scenes stay visible but can't be set active |
+| `enforcedScreenSaverPath` | string | — | Full path of a saver to keep selected for every Space and display, e.g. `/Library/Screen Savers/PaperWalls.saver`. Applied by `paperwallscli manage` (login + hourly) or `paperwallscli screensaver enforce`; users' own picks are switched back. Replaces Apple's `moduleName`/`modulePath`, which don't select third-party savers on macOS 14+ |
 | `allowScreenSaverCreation` | bool | `true` | `false` = users can't create, edit, rename, or delete scenes (Studio's ScreenSaver tab is unavailable); they can still browse, preview, and Set Active |
 | `showScreenSaversPage` | bool | `true` | Shows/hides the ScreenSavers page in the sidebar's Library section |
 | `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
@@ -335,7 +336,7 @@ go to its stdout and the unified log.
 | Saver shows a plain color | `paperwallscli screensaver` prints the state: `disabled` (`screenSaverEnabled=false`) or `hardLock` (`lockMode=hard`) — both are by design |
 | Saver shows a Minimal Clock instead of the chosen scene | State is `noneSelected` (nothing active, the active ID doesn't exist on this Mac, or the allow-list excludes it), or nothing has been published yet — open PaperWalls once or run `paperwallscli manage` as the user |
 | Saver shows an old scene | The saver reads the published snapshot when it starts. `paperwallscli screensaver` reports `published: stale` if it's behind; `manage` (hourly agent) or opening the app refreshes it |
-| "PaperWalls" isn't the selected screen saver | Selection is a macOS setting, not a PaperWalls one — see §12 on the selection profile and its limits |
+| The intended saver isn't the selected one | Set `enforcedScreenSaverPath` (§12, Selecting the saver). `paperwallscli screensaver` shows what macOS has selected and whether it matches; `paperwallscli screensaver enforce` applies it now. Errors are logged in the `saverselection` category |
 | Managed scene missing from the ScreenSavers page | `managedScreenSaverScene` isn't valid scene JSON — `scenestore` log says "Ignoring managedScreenSaverScene" |
 | A chosen font doesn't appear in the saver | The font family isn't installed on that Mac; the scene falls back to the system font |
 | Updated saver doesn't take effect | The host process caches the loaded bundle: `killall legacyScreenSaver` (the pkg postinstall does this) |
@@ -469,18 +470,34 @@ allow-list that excludes it). Points to know:
 Installing the pkg puts the saver in `/Library/Screen Savers`; it then appears
 under **System Settings › Screen Saver › Other** as "PaperWalls". On a Mac
 without the pkg, Settings › Screen Savers & Studio offers **Install for Me**,
-which copies the app's embedded saver to `~/Library/Screen Savers`. Which saver
-is selected, and how long before it starts, are macOS settings — there is no
-PaperWalls key for either.
+which copies the app's embedded saver to `~/Library/Screen Savers`.
 
-`Deployment/com.herojoneslabs.paperwalls.screensaver.mobileconfig` is a
-reference `com.apple.screensaver.user` payload that sets `moduleName`,
-`modulePath`, and `idleTime`. **Treat saver selection by profile as
-unverified on macOS 14 and later:** Apple still documents those keys, but
-admins report that newer releases frequently ignore them for third-party
-savers (selection moved into the wallpaper system's own per-user store, and
-some fleets fall back to a scripted approach). Test on every macOS version you
-deploy to. The idle time is unaffected by that caveat.
+**Selecting a saver for users: `enforcedScreenSaverPath`.** Set it to a
+saver's full path, e.g. `/Library/Screen Savers/PaperWalls.saver` or a saver
+built with Studio › Package. The manage LaunchAgent then keeps that saver
+selected for every Space and display, at login and hourly. Users can still
+pick another saver in System Settings; the next run switches it back. To apply
+it at once (for example from a Jamf policy run as the user), run
+`paperwallscli screensaver enforce`. `paperwallscli screensaver` shows what
+macOS has selected and whether it matches.
+
+How it works: since macOS 14 the selection lives in each user's wallpaper
+store, `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`,
+with one entry for the system default and one for each Space, display, and
+Space + display. PaperWalls rewrites every one of those entries to the
+enforced saver, backs up the previous store to
+`~/Library/Application Support/PaperWalls/WallpaperStore-backup.plist`, reads
+the result back to verify it (restoring the backup if that fails), and
+restarts `WallpaperAgent`. The store's format is undocumented: PaperWalls
+leaves the file alone and logs an error (category `saverselection`) if it
+finds a layout it doesn't recognize. Verified on macOS 27.
+
+`Deployment/com.herojoneslabs.paperwalls.screensaver.mobileconfig` is
+Apple's `com.apple.screensaver.user` payload with `moduleName`, `modulePath`,
+and `idleTime`. **Its saver selection has no effect on macOS 14 and later**
+(the keys target a store macOS no longer reads for this); use
+`enforcedScreenSaverPath` instead. The profile is still the supported way to
+set the idle time, which PaperWalls deliberately has no key for.
 
 The saver's tile in System Settings is a fixed image shipped inside the
 bundle (a clock on a coral gradient), not a live view of the active scene.
@@ -512,7 +529,7 @@ a card):
    | `<Name>-<version>.pkg` | Installs every saver to `/Library/Screen Savers` (not relocatable) |
    | `Savers/` | The same bundles, for tools that copy files |
    | `MDM/` | Optional `managedScreenSaverScene` JSON per scene |
-   | `Profiles/` | Optional reference profile selecting one saver (same caveat as the next section) |
+   | `Enforce/` | Optional profile and `managed.json` setting `enforcedScreenSaverPath` to one of the savers, so PaperWalls keeps it selected (needs PaperWalls 0.3.3+ with the manage agent on the Mac) |
    | `DEPLOY.txt` | Contents, signing state, notarization commands, removal steps |
 
 Each saver carries its own copy of the images its scene uses (a chosen
