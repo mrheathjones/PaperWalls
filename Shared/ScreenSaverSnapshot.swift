@@ -106,6 +106,23 @@ struct ScreenSaverSnapshot: Codable, Equatable {
         return true
     }
 
+    // MARK: - Bundle-relative paths
+
+    /// A deployed bundle (Studio › Package) carries its own images, with
+    /// paths relative to its Resources folder. Makes them absolute; paths
+    /// that already are stay as they are.
+    func resolvingBundlePaths(in resources: URL) -> ScreenSaverSnapshot {
+        func resolve(_ path: String) -> String {
+            guard !path.isEmpty, !path.hasPrefix("/") else { return path }
+            return resources.appendingPathComponent(path).path
+        }
+        var copy = self
+        copy.wallpaperPaths = wallpaperPaths.mapValues(resolve)
+        copy.rotationPaths = rotationPaths.map(resolve)
+        copy.assetsDirectory = resolve(assetsDirectory)
+        return copy
+    }
+
     // MARK: - For the renderer
 
     /// File for an imported icon image, confined to the assets folder.

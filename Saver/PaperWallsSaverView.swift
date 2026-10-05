@@ -111,7 +111,9 @@ final class PaperWallsSaverView: ScreenSaverView {
         if let path = sceneBundlePath {
             // A scene bundle carries its own resolved snapshot.
             let url = URL(fileURLWithPath: path).appendingPathComponent("Contents/Resources/\(ScreenSaverSnapshot.bundledFilename)")
-            snapshot = ScreenSaverSnapshot.read(from: url)
+            // Deployed bundles carry their images with bundle-relative paths.
+            snapshot = ScreenSaverSnapshot.read(from: url)?
+                .resolvingBundlePaths(in: url.deletingLastPathComponent())
             Self.log.info("Scene bundle \(path, privacy: .public) → \(snapshot?.sceneName ?? "no snapshot", privacy: .public)")
         } else {
             snapshot = ScreenSaverSnapshot.read()

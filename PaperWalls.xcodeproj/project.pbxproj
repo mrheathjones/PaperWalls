@@ -96,6 +96,8 @@
 		FF0000000000000000000027 /* SystemWallpapers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000009 /* SystemWallpapers.swift */; };
 		FF000000000000000000003A /* SystemWallpapers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000009 /* SystemWallpapers.swift */; };
 		FF0000000000000000000028 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000000000000000001E /* Diagnostics.swift */; };
+		FF00000000000000000000AE /* SceneDeployment.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* SceneDeployment.swift */; };
+		FF00000000000000000000AF /* SceneDeployment.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* SceneDeployment.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -179,6 +181,7 @@
 		DD000000000000000000001E /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
 		DD0000000000000000000021 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		DD0000000000000000000031 /* Wallpapers */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Wallpapers; sourceTree = "<group>"; };
+		DD00000000000000000000A5 /* SceneDeployment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDeployment.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -256,6 +259,7 @@
 				DD0000000000000000000081 /* ScreenSaverPolicy.swift */,
 				DD00000000000000000000A0 /* ScreenSaverSnapshot.swift */,
 				DD00000000000000000000A2 /* SceneBundleSpec.swift */,
+				DD00000000000000000000A5 /* SceneDeployment.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -497,6 +501,7 @@
 				FF0000000000000000000092 /* ComposerPickers.swift in Sources */,
 				FF00000000000000000000A0 /* ScreenSaverSnapshot.swift in Sources */,
 				FF00000000000000000000A9 /* SceneBundleSpec.swift in Sources */,
+				FF00000000000000000000AE /* SceneDeployment.swift in Sources */,
 				FF00000000000000000000AB /* SceneBundles.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -545,6 +550,7 @@
 				FF0000000000000000000087 /* ScreenSaverStoreTests.swift in Sources */,
 				FF00000000000000000000A1 /* ScreenSaverSnapshot.swift in Sources */,
 				FF00000000000000000000AA /* SceneBundleSpec.swift in Sources */,
+				FF00000000000000000000AF /* SceneDeployment.swift in Sources */,
 				FF00000000000000000000AC /* SceneBundleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

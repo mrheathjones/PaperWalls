@@ -10,16 +10,31 @@ import Foundation
 /// load hook (`SceneBundleIdentity.m`) registers that class and ties it to
 /// the copy's path. Everything here is the pure naming/identity contract
 /// shared by the generator, the saver, and the uninstaller.
+///
+/// A *deployed* bundle (Studio › Package) is the same thing built for
+/// `/Library/Screen Savers` on other Macs. It gets its own identifier and
+/// class prefixes so it can never collide with — or be cleaned up as — a
+/// user's own tile for the same scene.
 struct SceneBundleSpec: Equatable {
+    enum Flavor: Equatable {
+        /// Generated per user in ~/Library/Screen Savers.
+        case userTile
+        /// Built by an admin for deployment.
+        case deployed
+    }
+
     static let namePrefix = "PaperWalls – "
     static let bundleExtension = "saver"
     static let identifierPrefix = "com.herojoneslabs.paperwalls.saver.scene."
     static let principalClassPrefix = "PaperWallsScene_"
+    static let deployedIdentifierPrefix = "com.herojoneslabs.paperwalls.saver.deployed."
+    static let deployedPrincipalClassPrefix = "PaperWallsDeployed_"
     /// Keeps generated filenames sane; Finder's limit is 255 bytes.
     static let maximumTitleLength = 60
 
     let sceneID: String
     let title: String
+    let flavor: Flavor
 
     init(sceneID: String, name: String, isManaged: Bool) {
         self.sceneID = sceneID
@@ -28,27 +43,36 @@ struct SceneBundleSpec: Equatable {
             title += " (Managed)"
         }
         self.title = title
+        self.flavor = .userTile
+    }
+
+    /// A deployable bundle, named exactly as the admin chose (no prefix).
+    init(deployedSceneID sceneID: String, displayName: String) {
+        self.sceneID = sceneID
+        self.title = Self.sanitizedTitle(displayName)
+        self.flavor = .deployed
     }
 
     /// "PaperWalls – Bouncing Clock.saver"
     var bundleName: String {
-        "\(Self.namePrefix)\(title).\(Self.bundleExtension)"
+        "\(displayName).\(Self.bundleExtension)"
     }
 
     /// "PaperWalls – Bouncing Clock" (CFBundleName / CFBundleDisplayName).
     var displayName: String {
-        "\(Self.namePrefix)\(title)"
+        flavor == .deployed ? title : "\(Self.namePrefix)\(title)"
     }
 
     /// Unique per scene; the scene ID is recoverable from it.
     var bundleIdentifier: String {
-        Self.identifierPrefix + sceneID.lowercased()
+        (flavor == .deployed ? Self.deployedIdentifierPrefix : Self.identifierPrefix) + sceneID.lowercased()
     }
 
     /// Unique per scene and a valid Objective-C class name.
     var principalClassName: String {
         let digest = SHA256.hash(data: Data(sceneID.lowercased().utf8))
-        return Self.principalClassPrefix + digest.prefix(4).map { String(format: "%02x", $0) }.joined()
+        let prefix = flavor == .deployed ? Self.deployedPrincipalClassPrefix : Self.principalClassPrefix
+        return prefix + digest.prefix(4).map { String(format: "%02x", $0) }.joined()
     }
 
     /// Filesystem-safe title: no path separators or control characters,

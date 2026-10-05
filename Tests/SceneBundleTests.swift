@@ -112,3 +112,119 @@ final class StoredScreenSaverListingTests: XCTestCase {
         XCTAssertTrue(snapshot.rotationPaths.isEmpty)
     }
 }
+
+// MARK: - Deployment packaging (Studio › Package)
+
+final class SceneDeploymentTests: XCTestCase {
+    private let id = "9BF01BF4-AFC4-4567-AF74-281FB1FABF61"
+
+    func testDeployedBundleNeverCollidesWithAUserTile() {
+        let deployed = SceneBundleSpec(deployedSceneID: id, displayName: "Acme – Lobby")
+        let tile = SceneBundleSpec(sceneID: id, name: "Lobby", isManaged: false)
+        XCTAssertEqual(deployed.bundleName, "Acme – Lobby.saver")
+        XCTAssertEqual(deployed.displayName, "Acme – Lobby")
+        XCTAssertEqual(deployed.bundleIdentifier, "com.herojoneslabs.paperwalls.saver.deployed." + id.lowercased())
+        XCTAssertNotEqual(deployed.bundleIdentifier, tile.bundleIdentifier)
+        XCTAssertNotEqual(deployed.principalClassName, tile.principalClassName)
+        XCTAssertTrue(deployed.principalClassName.hasPrefix("PaperWallsDeployed_"))
+        // The user-tile manager must never adopt (or delete) a deployed bundle.
+        XCTAssertNil(SceneBundleSpec.sceneID(fromBundleIdentifier: deployed.bundleIdentifier))
+    }
+
+    func testDeployedNameIsSanitized() {
+        let spec = SceneBundleSpec(deployedSceneID: id, displayName: " Front / Desk ")
+        XCTAssertEqual(spec.bundleName, "Front Desk.saver")
+    }
+
+    private func snapshot(wallpapers: [String: String] = [:], rotation: [String] = [],
+                          assetNames: [String?] = []) -> ScreenSaverSnapshot {
+        var scene = ScreenSaverScene()
+        scene.layers = assetNames.map { name in
+            var icon = IconLayer()
+            icon.imageAssetName = name
+            return SceneLayer(content: .icon(icon), size: 0.1)
+        }
+        var snapshot = ScreenSaverSnapshot(state: .active, sceneID: id, sceneName: "Lobby", scene: scene)
+        snapshot.wallpaperPaths = wallpapers
+        snapshot.rotationPaths = rotation
+        snapshot.assetsDirectory = "/Users/me/Library/Application Support/PaperWalls/Studio/Assets"
+        return snapshot
+    }
+
+    func testPortableSnapshotCarriesEveryImageWithRelativePaths() {
+        let source = snapshot(wallpapers: ["bundled-prism": "/Apps/Prism.HEIC"],
+                              rotation: ["/a/one.jpg", "/b/two.png"],
+                              assetNames: ["logo.png", nil, "logo.png", "badge.pdf"])
+        let (portable, media) = SceneDeployment.portable(source)
+
+        XCTAssertEqual(portable.wallpaperPaths, ["bundled-prism": "Media/wallpaper-1.heic"])
+        XCTAssertEqual(portable.rotationPaths, ["Media/rotation-1.jpg", "Media/rotation-2.png"])
+        XCTAssertEqual(portable.assetsDirectory, "Media/Assets")
+        XCTAssertEqual(media, [
+            .init(source: "/Apps/Prism.HEIC", destination: "Media/wallpaper-1.heic"),
+            .init(source: "/a/one.jpg", destination: "Media/rotation-1.jpg"),
+            .init(source: "/b/two.png", destination: "Media/rotation-2.png"),
+            .init(source: source.assetsDirectory + "/badge.pdf", destination: "Media/Assets/badge.pdf"),
+            .init(source: source.assetsDirectory + "/logo.png", destination: "Media/Assets/logo.png"),
+        ])
+        XCTAssertEqual(portable.scene, source.scene)
+    }
+
+    func testPortableSnapshotWithoutImagesCarriesNothing() {
+        let (portable, media) = SceneDeployment.portable(snapshot())
+        XCTAssertTrue(media.isEmpty)
+        XCTAssertEqual(portable.assetsDirectory, "")
+    }
+
+    func testUnsafeAssetNamesAreNotCopied() {
+        let (_, media) = SceneDeployment.portable(snapshot(assetNames: ["../../etc/passwd", ".hidden"]))
+        XCTAssertTrue(media.isEmpty)
+    }
+
+    func testBundleRelativePathsResolveAgainstResources() {
+        let (portable, _) = SceneDeployment.portable(
+            snapshot(wallpapers: ["w": "/x/w.jpg"], rotation: ["/x/r.jpg"], assetNames: ["logo.png"]))
+        let resources = URL(fileURLWithPath: "/Library/Screen Savers/Acme.saver/Contents/Resources")
+        let resolved = portable.resolvingBundlePaths(in: resources)
+        XCTAssertEqual(resolved.wallpaperPaths["w"], resources.path + "/Media/wallpaper-1.jpg")
+        XCTAssertEqual(resolved.rotationPaths, [resources.path + "/Media/rotation-1.jpg"])
+        XCTAssertEqual(resolved.assetURL(named: "logo.png")?.path, resources.path + "/Media/Assets/logo.png")
+    }
+
+    func testAbsolutePathsAreLeftAlone() {
+        let source = snapshot(wallpapers: ["w": "/x/w.jpg"])
+        let resolved = source.resolvingBundlePaths(in: URL(fileURLWithPath: "/tmp/R"))
+        XCTAssertEqual(resolved.wallpaperPaths, source.wallpaperPaths)
+        XCTAssertEqual(resolved.assetsDirectory, source.assetsDirectory)
+    }
+
+    func testPackageNaming() {
+        let spec = DeploymentPackageSpec(name: "Acme Lobby Savers!", version: "1.2")
+        XCTAssertEqual(spec.identifier, "com.herojoneslabs.paperwalls.savers.acme-lobby-savers")
+        XCTAssertEqual(spec.pkgFilename, "Acme Lobby Savers!-1.2.pkg")
+        XCTAssertTrue(spec.isValid)
+        XCTAssertEqual(DeploymentPackageSpec.slug("Café — Écrans"), "caf-crans")
+        XCTAssertEqual(DeploymentPackageSpec.slug("!!!"), "package")
+    }
+
+    func testVersionValidation() {
+        for good in ["1", "1.0", "2026.10.4", "1.2.3.4"] {
+            XCTAssertTrue(DeploymentPackageSpec.isValidVersion(good), good)
+        }
+        for bad in ["", "1.", ".1", "1..2", "v1", "1.2.3.4.5", "1.0b"] {
+            XCTAssertFalse(DeploymentPackageSpec.isValidVersion(bad), bad)
+        }
+        XCTAssertFalse(DeploymentPackageSpec(name: " ", version: "1").isValid)
+    }
+
+    func testProfileSelectsTheDeployedBundle() {
+        let bundle = SceneBundleSpec(deployedSceneID: id, displayName: "Acme – Lobby")
+        let profile = DeploymentProfile.make(bundle: bundle, packageIdentifier: "com.example.savers",
+                                             organization: "Acme")
+        let payload = try? XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
+        XCTAssertEqual(payload?["moduleName"] as? String, "Acme – Lobby")
+        XCTAssertEqual(payload?["modulePath"] as? String, "/Library/Screen Savers/Acme – Lobby.saver")
+        XCTAssertEqual(profile["PayloadOrganization"] as? String, "Acme")
+        XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
+    }
+}
