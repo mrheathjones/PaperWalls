@@ -320,9 +320,15 @@ struct ScreenSaverCard: View {
             // For the managed entry this makes a personal, editable copy.
             Button(saver.isManaged ? "Duplicate as My Own" : "Duplicate", action: onDuplicate)
         }
-        if !saver.isManaged && prefs.adminModeEnabled {
-            Button("Copy Scene for MDM") {
-                model.copyManagedSceneJSON(for: saver)
+        if prefs.adminModeEnabled {
+            Divider()
+            Button("Package for Deployment…") {
+                model.openPackaging(selecting: saver.id)
+            }
+            if !saver.isManaged {
+                Button("Copy Scene for MDM") {
+                    model.copyManagedSceneJSON(for: saver)
+                }
             }
         }
         if canModify {

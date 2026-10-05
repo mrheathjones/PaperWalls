@@ -99,6 +99,7 @@
 		FF00000000000000000000AE /* SceneDeployment.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* SceneDeployment.swift */; };
 		FF00000000000000000000AF /* SceneDeployment.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A5 /* SceneDeployment.swift */; };
 		FF00000000000000000000B0 /* ScenePackager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A6 /* ScenePackager.swift */; };
+		FF00000000000000000000B1 /* StudioPackageTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000A7 /* StudioPackageTab.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -184,6 +185,7 @@
 		DD0000000000000000000031 /* Wallpapers */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Wallpapers; sourceTree = "<group>"; };
 		DD00000000000000000000A5 /* SceneDeployment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDeployment.swift; sourceTree = "<group>"; };
 		DD00000000000000000000A6 /* ScenePackager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenePackager.swift; sourceTree = "<group>"; };
+		DD00000000000000000000A7 /* StudioPackageTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioPackageTab.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -295,6 +297,7 @@
 				DD0000000000000000000082 /* AppModel+ScreenSavers.swift */,
 				DD0000000000000000000083 /* ScreenSaversPage.swift */,
 				DD0000000000000000000084 /* StudioPage.swift */,
+				DD00000000000000000000A7 /* StudioPackageTab.swift */,
 				DD0000000000000000000090 /* SceneComposer.swift */,
 				DD0000000000000000000091 /* SceneLayerControls.swift */,
 				DD0000000000000000000092 /* ComposerPickers.swift */,
@@ -499,6 +502,7 @@
 				FF0000000000000000000084 /* AppModel+ScreenSavers.swift in Sources */,
 				FF0000000000000000000085 /* ScreenSaversPage.swift in Sources */,
 				FF0000000000000000000086 /* StudioPage.swift in Sources */,
+				FF00000000000000000000B1 /* StudioPackageTab.swift in Sources */,
 				FF0000000000000000000090 /* SceneComposer.swift in Sources */,
 				FF0000000000000000000091 /* SceneLayerControls.swift in Sources */,
 				FF0000000000000000000092 /* ComposerPickers.swift in Sources */,

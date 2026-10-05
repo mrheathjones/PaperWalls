@@ -52,7 +52,7 @@ struct StudioPage: View {
             case .screenSaver:
                 StudioScreenSaverTab(studio: studio)
             case .package:
-                StudioPackageTab()
+                StudioPackageTab(studio: studio)
             case nil:
                 EmptyView()
             }
@@ -85,15 +85,6 @@ struct StudioWallpapersTab: View {
             RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous)
                 .strokeBorder(Theme.hairline)
         }
-    }
-}
-
-// MARK: - Package tab
-
-/// Admin mode: turns library scenes into deployable packages.
-struct StudioPackageTab: View {
-    var body: some View {
-        EmptyView()
     }
 }
 

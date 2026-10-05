@@ -177,24 +177,52 @@ extension AppModel {
     /// The scenes that should exist as bundles, with their snapshots, handed
     /// to the manager (debounced). Managed is always listed; users opt in.
     func syncSceneBundles() {
-        let library = self.library
-        let company = prefs.companyName.trimmingCharacters(in: .whitespaces)
         let desired = allScreenSavers
             .filter { $0.isListedInSystemSettings && canListInSystemSettings($0.id) }
             .map { stored in
                 SceneBundleManager.Desired(
                     spec: SceneBundleSpec(sceneID: stored.id, name: stored.name, isManaged: stored.isManaged),
-                    snapshot: ScreenSaverSnapshot.forScene(
-                        stored, companyName: company,
-                        assetsDirectory: ScreenSaverSceneStore.assetsDirectory().path,
-                        wallpaperPath: { id in
-                            library.wallpaper(withID: id).flatMap { library.fileURL(for: $0) }?.path
-                        },
-                        rotationPaths: {
-                            self.rotationPool.compactMap { library.fileURL(for: $0)?.path }
-                        }))
+                    snapshot: sceneSnapshot(for: stored))
             }
         sceneBundles.schedule(desired)
+    }
+
+    /// An "active" snapshot for one scene, with this Mac's file paths.
+    func sceneSnapshot(for stored: StoredScreenSaver) -> ScreenSaverSnapshot {
+        let library = self.library
+        return ScreenSaverSnapshot.forScene(
+            stored, companyName: prefs.companyName.trimmingCharacters(in: .whitespaces),
+            assetsDirectory: ScreenSaverSceneStore.assetsDirectory().path,
+            wallpaperPath: { id in
+                library.wallpaper(withID: id).flatMap { library.fileURL(for: $0) }?.path
+            },
+            rotationPaths: {
+                self.rotationPool.compactMap { library.fileURL(for: $0)?.path }
+            })
+    }
+
+    // MARK: - Packaging (admin mode)
+
+    /// "Package for Deployment…" on a card: Studio › Package with the
+    /// scene ticked.
+    func openPackaging(selecting id: String) {
+        guard prefs.adminModeEnabled else { return }
+        if !studio.packageSelection.contains(id) {
+            studio.packageSelection.append(id)
+        }
+        studioTab = .package
+        page = .studio
+    }
+
+    /// The name a deployed saver gets unless the admin edits it.
+    func defaultDeployedName(for stored: StoredScreenSaver) -> String {
+        "\(prefs.companyDisplayName) – \(stored.name)"
+    }
+
+    func deploymentItem(for stored: StoredScreenSaver, displayName: String, includeMDMJSON: Bool) -> ScenePackager.Item {
+        ScenePackager.Item(spec: SceneBundleSpec(deployedSceneID: stored.id, displayName: displayName),
+                           snapshot: sceneSnapshot(for: stored),
+                           managedSceneJSON: includeMDMJSON ? ScreenSaverSceneStore.managedSceneJSON(for: stored) : nil)
     }
 
     /// Opt a user scene in or out of its own tile. Not a scene edit, so the
@@ -315,6 +343,11 @@ final class StudioSession: ObservableObject {
     @Published var draft: SceneDraft?
     /// A request held back because the draft has unsaved changes.
     @Published var pendingRequest: StudioRequest?
+
+    /// Studio › Package: ticked scene IDs (in the order ticked) and any
+    /// edited saver names. Kept for the session, like the draft.
+    @Published var packageSelection: [String] = []
+    @Published var packageDisplayNames: [String: String] = [:]
 }
 
 extension StudioRequest {
