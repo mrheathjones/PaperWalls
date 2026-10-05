@@ -85,14 +85,17 @@ final class PaperWallsSaverView: ScreenSaverView {
         tearDownScene()
     }
 
-    /// System Settings' live preview (macOS 27) puts the view in a window
-    /// but never calls `startAnimation`, so a preview builds its scene when
-    /// it lands in a window and drops it when it leaves.
+    /// Build the scene as soon as we're in a window, not at
+    /// `startAnimation`. System Settings (macOS 27) shows the selected
+    /// saver in a full-size, non-preview view that it draws right away but
+    /// often starts late or never — it stayed black until another tile was
+    /// clicked. Its tile views (`isPreview`) are never started at all. The
+    /// real screen saver is in a window before it starts, so building early
+    /// is harmless there.
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         trace("viewDidMoveToWindow window=\(window.map { String(describing: type(of: $0)) } ?? "nil") "
               + "visible=\(window?.isVisible ?? false) superview=\(superview.map { String(describing: type(of: $0)) } ?? "nil")")
-        guard isPreview else { return }
         if window != nil {
             installScene()
         } else {
