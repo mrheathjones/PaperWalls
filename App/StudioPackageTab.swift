@@ -130,7 +130,7 @@ struct StudioPackageTab: View {
                 }
                 SettingsDivider()
                 SettingsRow(title: "Enforce a saver",
-                            subtitle: "A profile and managed.json that keep one saver selected on every Space and display. Needs PaperWalls 0.3.3+ with its manage agent on the Mac") {
+                            subtitle: "Profiles that select one saver (PaperWalls 0.3.3+ with its manage agent) and lock it so users can't change it") {
                     HStack(spacing: 10) {
                         if includeProfile {
                             Picker("", selection: profileSelection) {

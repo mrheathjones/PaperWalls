@@ -234,6 +234,21 @@ final class SceneDeploymentTests: XCTestCase {
         XCTAssertEqual(parsed.forced["enforcedScreenSaverPath"] as? String, "/Library/Screen Savers/Acme – Lobby.saver")
     }
 
+    func testLockProfileForcesOnlyModuleName() throws {
+        let bundle = SceneBundleSpec(deployedSceneID: id, displayName: "Mountain at Dusk")
+        XCTAssertEqual(DeploymentEnforcement.moduleName(for: bundle), "Mountain at Dusk")
+        let profile = DeploymentEnforcement.lockProfile(bundle: bundle, packageIdentifier: "com.example.savers",
+                                                        organization: "")
+        let payload = try XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
+        XCTAssertEqual(payload["PayloadType"] as? String, "com.apple.screensaver")
+        XCTAssertEqual(payload["moduleName"] as? String, "Mountain at Dusk")
+        XCTAssertNil(payload["modulePath"])
+        XCTAssertNil(payload["idleTime"], "idle time is left to the admin's own profile")
+        XCTAssertEqual(profile["PayloadScope"] as? String, "System")
+        XCTAssertEqual(profile["PayloadOrganization"] as? String, "YourOrg")
+        XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
+    }
+
     func testIdentityListParsing() {
         let output = """
           1) 0123456789ABCDEF0123456789ABCDEF01234567 "Developer ID Application: Example Org (ABCDE12345)"

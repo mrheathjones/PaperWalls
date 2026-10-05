@@ -377,7 +377,7 @@
     "enforcedScreenSaverPath": {
       "type": "string",
       "title": "Enforced Screen Saver",
-      "description": "Full path of a screen saver to keep selected for every Space and display, e.g. /Library/Screen Savers/PaperWalls.saver or a saver built with Studio › Package. The PaperWalls manage agent applies it at login and hourly. Use this instead of Apple's moduleName/modulePath, which don't select third-party savers on macOS 14 and later.",
+      "description": "Full path of a screen saver to keep selected for every Space and display, e.g. /Library/Screen Savers/PaperWalls.saver or a saver built with Studio › Package. The PaperWalls manage agent applies it at login and hourly. On macOS 14 and later Apple's com.apple.screensaver moduleName only locks the choice and doesn't select a third-party saver; deploy both for a selected, locked saver.",
       "options": {
         "infoText": "Key: enforcedScreenSaverPath"
       }

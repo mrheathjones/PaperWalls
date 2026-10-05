@@ -7,7 +7,7 @@ import os
 ///     <Name>-<version>/
 ///       <Name>-<version>.pkg        installs every saver to /Library/Screen Savers
 ///       Savers/<Display Name>.saver the same bundles, for other delivery tools
-///       Enforce/                    optional: keeps one saver selected (profile + managed.json)
+///       Enforce/                    optional: selects (PaperWalls profile / managed.json) and locks (screensaver profile) one saver
 ///       MDM/<scene>.json            managedScreenSaverScene values
 ///       DEPLOY.txt                  what's here and how to ship it
 ///
@@ -179,6 +179,10 @@ enum ScenePackager {
                 .write(to: enforce.appendingPathComponent("\(saver.title) – Enforce Screen Saver.mobileconfig"))
             try Data(DeploymentEnforcement.managedJSON(bundle: saver).utf8)
                 .write(to: enforce.appendingPathComponent("managed.json"))
+            let lock = DeploymentEnforcement.lockProfile(bundle: saver, packageIdentifier: request.package.identifier,
+                                                         organization: request.organization)
+            try PropertyListSerialization.data(fromPropertyList: lock, format: .xml, options: 0)
+                .write(to: enforce.appendingPathComponent("\(saver.title) – Lock Screen Saver.mobileconfig"))
         }
         try Data(deployNotes(request, includesMDM: !mdmItems.isEmpty).utf8)
             .write(to: staging.appendingPathComponent("DEPLOY.txt"))
@@ -265,14 +269,23 @@ enum ScenePackager {
         if let saver = request.enforcedSaver {
             notes += """
             ENFORCE (Enforce/)
-            Keeps \(DeploymentEnforcement.saverPath(for: saver)) selected for every
-            Space and display. Deploy the .mobileconfig through your MDM, or copy managed.json
-            to /Library/Application Support/PaperWalls/ on Macs without MDM. Either sets
-            enforcedScreenSaverPath; the PaperWalls manage LaunchAgent (in the PaperWalls pkg)
-            applies it at login and hourly. To apply it immediately, run this as the user:
-              paperwallscli screensaver enforce
-            Needs PaperWalls 0.3.3 or later on the Mac. Apple's own com.apple.screensaver
-            profile keys don't select third-party savers on macOS 14 and later.
+            Makes \(DeploymentEnforcement.saverPath(for: saver)) the screen saver.
+            Deploy both parts; each does half the job on macOS 14 and later:
+
+              SELECT  "\(saver.title) – Enforce Screen Saver.mobileconfig" (or managed.json in
+                      /Library/Application Support/PaperWalls/ on Macs without MDM) sets
+                      enforcedScreenSaverPath. The PaperWalls manage LaunchAgent (in the
+                      PaperWalls pkg) writes the selection for every Space and display, at
+                      login and hourly. Needs PaperWalls 0.3.3 or later. To apply it at once,
+                      run this as the user:  paperwallscli screensaver enforce
+              LOCK    "\(saver.title) – Lock Screen Saver.mobileconfig" forces
+                      com.apple.screensaver moduleName = "\(DeploymentEnforcement.moduleName(for: saver))", so users
+                      can't pick another saver. On its own it doesn't select the saver; it
+                      only locks one that's already selected.
+
+            With SELECT alone, users can change the saver until the next agent run. Keep
+            idle time and password settings in your existing screen saver profile; if it
+            already sets moduleName, use that instead of the LOCK profile.
 
             """
         }

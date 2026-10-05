@@ -120,12 +120,15 @@ struct DeploymentPackageSpec: Equatable {
     }
 }
 
-/// Making one deployed saver the selected screen saver on target Macs.
+/// Making one deployed saver the screen saver on target Macs. Two parts,
+/// deployed together (verified on macOS 27):
 ///
-/// Apple's `com.apple.screensaver` keys (`moduleName` / `modulePath`) don't
-/// select a third-party saver on macOS 14 and later, so this sets
-/// PaperWalls' own `enforcedScreenSaverPath` instead; the PaperWalls manage
-/// agent then keeps that saver selected (see `ScreenSaverSelection`).
+///   * **Select** — PaperWalls' `enforcedScreenSaverPath`; the manage agent
+///     writes it into the wallpaper store (see `ScreenSaverSelection`).
+///   * **Lock** — a `com.apple.screensaver` profile forcing `moduleName`.
+///     System Settings then can't change the choice, but on macOS 14+ this
+///     key alone doesn't select a third-party saver; it only locks one that
+///     is already selected.
 enum DeploymentEnforcement {
     /// "/Library/Screen Savers/Acme – Lobby.saver"
     static func saverPath(for bundle: SceneBundleSpec) -> String {
@@ -154,6 +157,38 @@ enum DeploymentEnforcement {
             "PayloadDescription": "Keeps “\(bundle.displayName)” selected as the screen saver. Requires PaperWalls with its manage LaunchAgent on the Mac.",
             "PayloadDisplayName": "\(bundle.displayName) Screen Saver",
             "PayloadIdentifier": "\(packageIdentifier).enforce",
+            "PayloadOrganization": organization.isEmpty ? "YourOrg" : organization,
+            "PayloadRemovalDisallowed": false,
+            "PayloadScope": "System",
+            "PayloadType": "Configuration",
+            "PayloadUUID": uuid().uuidString,
+            "PayloadVersion": 1,
+        ]
+    }
+
+    /// "Acme – Lobby": what `moduleName` must hold (the saver's bundle name).
+    static func moduleName(for bundle: SceneBundleSpec) -> String {
+        bundle.displayName
+    }
+
+    /// The lock: a computer-level `com.apple.screensaver` profile forcing
+    /// `moduleName`. Only that key — idle time and password settings are
+    /// left to the admin's own screen saver profile.
+    static func lockProfile(bundle: SceneBundleSpec, packageIdentifier: String, organization: String,
+                            uuid: () -> UUID = UUID.init) -> [String: Any] {
+        let payload: [String: Any] = [
+            "PayloadType": "com.apple.screensaver",
+            "PayloadVersion": 1,
+            "PayloadIdentifier": "\(packageIdentifier).lock.screensaver",
+            "PayloadUUID": uuid().uuidString,
+            "PayloadDisplayName": "Screen Saver Lock",
+            "moduleName": moduleName(for: bundle),
+        ]
+        return [
+            "PayloadContent": [payload],
+            "PayloadDescription": "Locks the screen saver to “\(bundle.displayName)”. Deploy with the PaperWalls enforcement profile, which selects it.",
+            "PayloadDisplayName": "\(bundle.displayName) Screen Saver Lock",
+            "PayloadIdentifier": "\(packageIdentifier).lock",
             "PayloadOrganization": organization.isEmpty ? "YourOrg" : organization,
             "PayloadRemovalDisallowed": false,
             "PayloadScope": "System",
