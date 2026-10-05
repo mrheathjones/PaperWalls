@@ -7,7 +7,7 @@ import os
 ///     <Name>-<version>/
 ///       <Name>-<version>.pkg        installs every saver to /Library/Screen Savers
 ///       Savers/<Display Name>.saver the same bundles, for other delivery tools
-///       Profiles/…mobileconfig      optional: selects one saver (verify per macOS)
+///       Enforce/                    optional: keeps one saver selected (profile + managed.json)
 ///       MDM/<scene>.json            managedScreenSaverScene values
 ///       DEPLOY.txt                  what's here and how to ship it
 ///
@@ -32,8 +32,9 @@ enum ScenePackager {
         var appIdentity: String?
         /// "Developer ID Installer: …"; nil leaves the pkg unsigned.
         var installerIdentity: String?
-        /// The saver a reference profile should select; nil skips it.
-        var profileSaver: SceneBundleSpec?
+        /// The saver to keep selected on target Macs (`enforcedScreenSaverPath`);
+        /// nil skips it.
+        var enforcedSaver: SceneBundleSpec?
         var organization: String
     }
 
@@ -169,13 +170,15 @@ enum ScenePackager {
                 try Data(json.utf8).write(to: mdm.appendingPathComponent("\(spec.title).json"))
             }
         }
-        if let saver = request.profileSaver {
-            let profiles = staging.appendingPathComponent("Profiles", isDirectory: true)
-            try fileManager.createDirectory(at: profiles, withIntermediateDirectories: true)
-            let profile = DeploymentProfile.make(bundle: saver, packageIdentifier: request.package.identifier,
-                                                 organization: request.organization)
+        if let saver = request.enforcedSaver {
+            let enforce = staging.appendingPathComponent("Enforce", isDirectory: true)
+            try fileManager.createDirectory(at: enforce, withIntermediateDirectories: true)
+            let profile = DeploymentEnforcement.profile(bundle: saver, packageIdentifier: request.package.identifier,
+                                                        organization: request.organization)
             try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0)
-                .write(to: profiles.appendingPathComponent("\(saver.title) – Screen Saver.mobileconfig"))
+                .write(to: enforce.appendingPathComponent("\(saver.title) – Enforce Screen Saver.mobileconfig"))
+            try Data(DeploymentEnforcement.managedJSON(bundle: saver).utf8)
+                .write(to: enforce.appendingPathComponent("managed.json"))
         }
         try Data(deployNotes(request, includesMDM: !mdmItems.isEmpty).utf8)
             .write(to: staging.appendingPathComponent("DEPLOY.txt"))
@@ -251,7 +254,7 @@ enum ScenePackager {
         DEPLOYING
         1. Upload the pkg to Jamf Pro (or your MDM) and scope a policy to the target Macs.
         2. Each saver appears under System Settings › Screen Saver. Users can pick one,
-           or an admin can select one with a profile (below).
+           or PaperWalls can keep one selected (ENFORCE, below).
         3. Each saver shows its own scene and carries its own images. The PaperWalls app
            isn't required on the target Mac.
         4. To ship a new version, raise the version number and package again. The pkg
@@ -259,12 +262,17 @@ enum ScenePackager {
            Settings to see it.
 
         """
-        if request.profileSaver != nil {
+        if let saver = request.enforcedSaver {
             notes += """
-            PROFILE (Profiles/)
-            Selects one saver through com.apple.screensaver.user (moduleName / modulePath).
-            Unverified per macOS release: Sonoma (14) and later often ignore these keys for
-            third-party savers. Test on each release before relying on it.
+            ENFORCE (Enforce/)
+            Keeps \(DeploymentEnforcement.saverPath(for: saver)) selected for every
+            Space and display. Deploy the .mobileconfig through your MDM, or copy managed.json
+            to /Library/Application Support/PaperWalls/ on Macs without MDM. Either sets
+            enforcedScreenSaverPath; the PaperWalls manage LaunchAgent (in the PaperWalls pkg)
+            applies it at login and hourly. To apply it immediately, run this as the user:
+              paperwallscli screensaver enforce
+            Needs PaperWalls 0.3.3 or later on the Mac. Apple's own com.apple.screensaver
+            profile keys don't select third-party savers on macOS 14 and later.
 
             """
         }

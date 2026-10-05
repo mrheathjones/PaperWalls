@@ -129,8 +129,8 @@ struct StudioPackageTab: View {
                     SettingsToggle(isOn: $includeMDMJSON)
                 }
                 SettingsDivider()
-                SettingsRow(title: "Selection profile",
-                            subtitle: "A reference .mobileconfig that selects one saver. macOS 14 and later may ignore it; test before relying on it") {
+                SettingsRow(title: "Enforce a saver",
+                            subtitle: "A profile and managed.json that keep one saver selected on every Space and display. Needs PaperWalls 0.3.3+ with its manage agent on the Mac") {
                     HStack(spacing: 10) {
                         if includeProfile {
                             Picker("", selection: profileSelection) {
@@ -279,7 +279,7 @@ struct StudioPackageTab: View {
         let items = selected.map { saver in
             model.deploymentItem(for: saver, displayName: deployedName(saver), includeMDMJSON: includeMDMJSON)
         }
-        let profileSaver = includeProfile
+        let enforcedSaver = includeProfile
             ? items.first { $0.spec.sceneID == profileSelection.wrappedValue }?.spec
             : nil
         let request = ScenePackager.Request(package: packageSpec,
@@ -287,7 +287,7 @@ struct StudioPackageTab: View {
                                             outputDirectory: folder,
                                             appIdentity: appIdentity.isEmpty ? nil : appIdentity,
                                             installerIdentity: installerIdentity.isEmpty ? nil : installerIdentity,
-                                            profileSaver: profileSaver,
+                                            enforcedSaver: enforcedSaver,
                                             organization: prefs.companyName.trimmingCharacters(in: .whitespaces))
         isBuilding = true
         errorMessage = nil

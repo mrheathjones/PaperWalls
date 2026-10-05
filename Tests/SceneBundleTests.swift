@@ -217,15 +217,21 @@ final class SceneDeploymentTests: XCTestCase {
         XCTAssertFalse(DeploymentPackageSpec(name: " ", version: "1").isValid)
     }
 
-    func testProfileSelectsTheDeployedBundle() {
+    func testEnforcementProfileForcesTheDeployedSaver() throws {
         let bundle = SceneBundleSpec(deployedSceneID: id, displayName: "Acme – Lobby")
-        let profile = DeploymentProfile.make(bundle: bundle, packageIdentifier: "com.example.savers",
-                                             organization: "Acme")
-        let payload = try? XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
-        XCTAssertEqual(payload?["moduleName"] as? String, "Acme – Lobby")
-        XCTAssertEqual(payload?["modulePath"] as? String, "/Library/Screen Savers/Acme – Lobby.saver")
+        let profile = DeploymentEnforcement.profile(bundle: bundle, packageIdentifier: "com.example.savers",
+                                                    organization: "Acme")
+        let payload = try XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
+        XCTAssertEqual(payload["PayloadType"] as? String, "com.apple.ManagedClient.preferences")
+        let domain = try XCTUnwrap((payload["PayloadContent"] as? [String: Any])?["com.herojoneslabs.paperwalls"] as? [String: Any])
+        let settings = try XCTUnwrap(((domain["Forced"] as? [[String: Any]])?.first)?["mcx_preference_settings"] as? [String: Any])
+        XCTAssertEqual(settings["enforcedScreenSaverPath"] as? String, "/Library/Screen Savers/Acme – Lobby.saver")
         XCTAssertEqual(profile["PayloadOrganization"] as? String, "Acme")
         XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
+
+        let json = DeploymentEnforcement.managedJSON(bundle: bundle)
+        let parsed = try XCTUnwrap(LocalManagedConfig.parse(data: Data(json.utf8)))
+        XCTAssertEqual(parsed.forced["enforcedScreenSaverPath"] as? String, "/Library/Screen Savers/Acme – Lobby.saver")
     }
 
     func testIdentityListParsing() {

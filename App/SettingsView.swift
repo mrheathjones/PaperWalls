@@ -253,6 +253,14 @@ struct SettingsContent: View {
                             }
                         }
                     }
+                    if !prefs.enforcedScreenSaverPath.isEmpty {
+                        SettingsDivider()
+                        SettingsRow(title: "Enforced screen saver",
+                                    subtitle: "\((prefs.enforcedScreenSaverPath as NSString).lastPathComponent) stays selected for every Space and display",
+                                    managedKey: .enforcedScreenSaverPath) {
+                            EmptyView()
+                        }
+                    }
                     SettingsDivider()
                     SettingsRow(title: "Tiles in System Settings",
                                 subtitle: sceneBundleSubtitle) {

@@ -120,34 +120,53 @@ struct DeploymentPackageSpec: Equatable {
     }
 }
 
-/// Reference configuration profile that selects one deployed saver. Same
-/// payload — and the same per-release caveat — as
-/// Deployment/com.herojoneslabs.paperwalls.screensaver.mobileconfig.
-enum DeploymentProfile {
-    static func make(bundle: SceneBundleSpec, packageIdentifier: String, organization: String,
-                     idleTime: Int = 600, uuid: () -> UUID = UUID.init) -> [String: Any] {
-        let modulePath = "\(SceneDeployment.installDirectory)/\(bundle.bundleName)"
+/// Making one deployed saver the selected screen saver on target Macs.
+///
+/// Apple's `com.apple.screensaver` keys (`moduleName` / `modulePath`) don't
+/// select a third-party saver on macOS 14 and later, so this sets
+/// PaperWalls' own `enforcedScreenSaverPath` instead; the PaperWalls manage
+/// agent then keeps that saver selected (see `ScreenSaverSelection`).
+enum DeploymentEnforcement {
+    /// "/Library/Screen Savers/Acme – Lobby.saver"
+    static func saverPath(for bundle: SceneBundleSpec) -> String {
+        "\(SceneDeployment.installDirectory)/\(bundle.bundleName)"
+    }
+
+    /// A managed-preferences profile forcing `enforcedScreenSaverPath`,
+    /// shaped like Deployment/com.herojoneslabs.paperwalls.mobileconfig.
+    static func profile(bundle: SceneBundleSpec, packageIdentifier: String, organization: String,
+                        uuid: () -> UUID = UUID.init) -> [String: Any] {
+        let settings: [String: Any] = [
+            ManagedPreferenceKey.enforcedScreenSaverPath.rawValue: saverPath(for: bundle),
+        ]
         let payload: [String: Any] = [
-            "PayloadType": "com.apple.screensaver.user",
+            "PayloadType": "com.apple.ManagedClient.preferences",
             "PayloadVersion": 1,
-            "PayloadIdentifier": "\(packageIdentifier).screensaver.user",
+            "PayloadIdentifier": "\(packageIdentifier).enforce.mcx",
             "PayloadUUID": uuid().uuidString,
-            "PayloadDisplayName": "Screen Saver Selection",
-            "idleTime": idleTime,
-            "moduleName": bundle.displayName,
-            "modulePath": modulePath,
+            "PayloadDisplayName": "Enforced Screen Saver",
+            "PayloadContent": [
+                ManagedPreferences.domain: ["Forced": [["mcx_preference_settings": settings]]],
+            ],
         ]
         return [
             "PayloadContent": [payload],
-            "PayloadDescription": "Selects the “\(bundle.displayName)” screen saver. Verify on each macOS release you deploy to.",
+            "PayloadDescription": "Keeps “\(bundle.displayName)” selected as the screen saver. Requires PaperWalls with its manage LaunchAgent on the Mac.",
             "PayloadDisplayName": "\(bundle.displayName) Screen Saver",
-            "PayloadIdentifier": "\(packageIdentifier).screensaver",
+            "PayloadIdentifier": "\(packageIdentifier).enforce",
             "PayloadOrganization": organization.isEmpty ? "YourOrg" : organization,
             "PayloadRemovalDisallowed": false,
-            "PayloadScope": "User",
+            "PayloadScope": "System",
             "PayloadType": "Configuration",
             "PayloadUUID": uuid().uuidString,
             "PayloadVersion": 1,
         ]
+    }
+
+    /// The same setting for /Library/Application Support/PaperWalls/managed.json.
+    static func managedJSON(bundle: SceneBundleSpec) -> String {
+        let object: [String: Any] = ["forced": [ManagedPreferenceKey.enforcedScreenSaverPath.rawValue: saverPath(for: bundle)]]
+        let data = (try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data()
+        return String(decoding: data, as: UTF8.self) + "\n"
     }
 }
