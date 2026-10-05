@@ -122,10 +122,23 @@ enum ScenePackager {
         let componentPlist = scratch.appendingPathComponent("components.plist")
         try ProcessRunner.run("/usr/bin/pkgbuild", ["--analyze", "--root", root.path, componentPlist.path])
         try pinComponents(at: componentPlist)
+        // The saver host keeps loaded code for its whole life, so an update
+        // only takes effect once it restarts (the system relaunches it).
+        let scripts = scratch.appendingPathComponent("scripts", isDirectory: true)
+        try fileManager.createDirectory(at: scripts, withIntermediateDirectories: true)
+        let postinstall = scripts.appendingPathComponent("postinstall")
+        try Data("""
+            #!/bin/bash
+            /usr/bin/killall legacyScreenSaver legacyScreenSaver-x86_64 2>/dev/null
+            exit 0
+
+            """.utf8).write(to: postinstall)
+        try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: postinstall.path)
         let componentPkg = scratch.appendingPathComponent("component.pkg")
         try ProcessRunner.run("/usr/bin/pkgbuild", [
             "--root", root.path,
             "--component-plist", componentPlist.path,
+            "--scripts", scripts.path,
             "--identifier", request.package.identifier,
             "--version", request.package.version,
             "--install-location", "/",
@@ -235,7 +248,9 @@ enum ScenePackager {
            or an admin can select one with a profile (below).
         3. Each saver shows its own scene and carries its own images. The PaperWalls app
            isn't required on the target Mac.
-        4. To ship a new version, raise the version number and package again.
+        4. To ship a new version, raise the version number and package again. The pkg
+           restarts the screen saver host so the new version loads; reopen System
+           Settings to see it.
 
         """
         if request.profileSaver != nil {

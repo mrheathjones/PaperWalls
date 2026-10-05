@@ -21,6 +21,10 @@
 #import <dlfcn.h>
 #import <objc/runtime.h>
 
+// The Swift class's Objective-C class object, bound at link time to the
+// definition in this same image.
+extern char PaperWallsSaverViewClassInThisImage __asm__("_OBJC_CLASS_$_PaperWallsSaverView");
+
 static NSString *PaperWallsBundlePathForThisImage(void) {
     Dl_info info;
     if (dladdr((const void *)&PaperWallsBundlePathForThisImage, &info) == 0 || info.dli_fname == NULL) {
@@ -46,10 +50,11 @@ static void PaperWallsRegisterSceneBundleClass(void) {
         if (principalName.length == 0 || objc_getClass(principalName.UTF8String) != NULL) {
             return;   // the main saver, or already registered
         }
-        Class base = objc_getClass("PaperWallsSaverView");
-        if (base == NULL) {
-            return;
-        }
+        // This image's own PaperWallsSaverView — not objc_getClass, which
+        // answers with whichever copy loaded first. That could be an older
+        // PaperWalls.saver or scene bundle, and the subclass would inherit
+        // its code instead of ours.
+        Class base = (__bridge Class)(void *)&PaperWallsSaverViewClassInThisImage;
         Class sceneClass = objc_allocateClassPair(base, principalName.UTF8String, 0);
         if (sceneClass == NULL) {
             return;
