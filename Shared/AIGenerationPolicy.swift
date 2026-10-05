@@ -35,6 +35,8 @@ struct AIGenerationPolicy: Equatable {
     var appleOnDevice: Bool = false
     var localModel: Bool = false
     var externalModel: Bool = false
+    /// "Improve prompts with Claude" — not a provider, but gated the same way.
+    var promptImprover: Bool = false
 
     static let off = AIGenerationPolicy()
 
@@ -43,7 +45,8 @@ struct AIGenerationPolicy: Equatable {
         AIGenerationPolicy(enabled: ManagedPreferences.bool(.aiGenerationEnabled) ?? false,
                            appleOnDevice: ManagedPreferences.bool(.aiAppleOnDeviceEnabled) ?? false,
                            localModel: ManagedPreferences.bool(.aiLocalModelEnabled) ?? false,
-                           externalModel: ManagedPreferences.bool(.aiExternalModelEnabled) ?? false)
+                           externalModel: ManagedPreferences.bool(.aiExternalModelEnabled) ?? false,
+                           promptImprover: ManagedPreferences.bool(.aiPromptImproverEnabled) ?? false)
     }
 
     func isEnabled(_ kind: AIProviderKind) -> Bool {
@@ -63,5 +66,10 @@ struct AIGenerationPolicy: Equatable {
     /// True when at least one provider can be offered.
     var offersGeneration: Bool {
         !enabledProviders.isEmpty
+    }
+
+    /// The Improve button needs the master switch too.
+    var offersPromptImprovement: Bool {
+        enabled && promptImprover
     }
 }

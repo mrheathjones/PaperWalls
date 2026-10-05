@@ -16,10 +16,10 @@ final class LocalImageEndpointTests: XCTestCase {
 
     func testEmptyAndBrokenEndpointsAreRefused() {
         XCTAssertThrowsError(try LocalImageEndpoint(baseURL: "   ").resolvedBaseURL()) {
-            XCTAssertEqual($0 as? LocalImageEndpointError, .noEndpoint)
+            XCTAssertEqual($0 as? ImageEndpointError, .noEndpoint)
         }
         XCTAssertThrowsError(try LocalImageEndpoint(baseURL: "http://").resolvedBaseURL()) {
-            XCTAssertEqual($0 as? LocalImageEndpointError, .invalidEndpoint("http://"))
+            XCTAssertEqual($0 as? ImageEndpointError, .invalidEndpoint("http://"))
         }
         XCTAssertFalse(LocalImageEndpoint(baseURL: " ").isConfigured)
     }
@@ -80,13 +80,13 @@ final class LocalImageEndpointTests: XCTestCase {
     func testEmptyOrForeignRepliesAreErrors() {
         let endpoint = LocalImageEndpoint(flavor: .automatic1111)
         XCTAssertThrowsError(try endpoint.images(fromResponse: Data("{\"images\": []}".utf8))) {
-            XCTAssertEqual($0 as? LocalImageEndpointError, .noImages)
+            XCTAssertEqual($0 as? ImageEndpointError, .noImages)
         }
         XCTAssertThrowsError(try endpoint.images(fromResponse: Data("not json".utf8))) {
-            XCTAssertEqual($0 as? LocalImageEndpointError, .badPayload)
+            XCTAssertEqual($0 as? ImageEndpointError, .badPayload)
         }
         XCTAssertThrowsError(try endpoint.images(fromResponse: Data("{\"data\": []}".utf8))) {
-            XCTAssertEqual($0 as? LocalImageEndpointError, .badPayload, "an OpenAI-shaped reply to an A1111 endpoint")
+            XCTAssertEqual($0 as? ImageEndpointError, .badPayload, "an OpenAI-shaped reply to an A1111 endpoint")
         }
     }
 

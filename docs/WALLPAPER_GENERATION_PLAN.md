@@ -1,6 +1,6 @@
 # Studio › Wallpapers — generation plan
 
-Status: phases 1–3 landed (October 2026). Phase 4 is design only.
+Status: all four phases landed (October 2026).
 
 PaperWalls already has everything needed to *compose* a wallpaper: the
 scene model (`ScreenSaverScene`), the Scene Composer UI, the frame
@@ -143,7 +143,18 @@ Keychain. Managed keys: `aiLocalModelEndpoint`, `aiLocalModelFlavor`,
 edit unless forced). ComfyUI's workflow-graph API is not covered; run it
 behind an Automatic1111-compatible shim or use Draw Things.
 
-## Phase 4 — External Model
+## Phase 4 — External Model (landed)
+
+Landed as `Shared/ExternalImageEndpoint.swift` (Google Gemini image models,
+OpenAI `gpt-image-1`, OpenAI-compatible; shapes mapped per service; shared
+`ImageAPIReply` parsers), `Shared/PromptImprover.swift` (Anthropic Messages
+API request/reply for Improve, `claude-opus-5-5` by default with
+`fallbacks: "default"` and low effort), `App/ExternalImageProvider.swift`,
+the keys below, Settings rows (service, endpoint, model, shape, per-service
+Keychain key, Test Connection; Claude model + key), and External Model /
+Improve controls in the composer. Admin-supplied keys were deliberately
+not added: admins pre-fill the service and model, users enter their own
+key.
 
 Provider picker under the toggle: **Google** (Gemini image models, the
 "Nano Banana" family), **OpenAI** (`gpt-image-1`), **OpenAI-compatible**

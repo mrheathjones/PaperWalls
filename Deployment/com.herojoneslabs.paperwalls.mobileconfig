@@ -108,6 +108,16 @@
 								<string>automatic1111</string>
 								<key>aiLocalModelImageSize</key>
 								<string>1024x1024</string>
+								<!-- External Model service (used only when aiExternalModelEnabled is true); keys never go here -->
+								<key>aiExternalProvider</key>
+								<string>google</string>
+								<key>aiExternalImageShape</key>
+								<string>landscape</string>
+								<!-- "Improve prompts with Claude" (Anthropic Messages API) -->
+								<key>aiPromptImproverEnabled</key>
+								<false/>
+								<key>aiPromptImproverModel</key>
+								<string>claude-opus-5-5</string>
 								<key>aiExternalModelEnabled</key>
 								<false/>
 								<key>showScreenSaversPage</key>

@@ -64,6 +64,12 @@ enum ManagedPreferenceKey: String, CaseIterable {
     case aiLocalModelFlavor             // automatic1111 | openAICompatible
     case aiLocalModelName               // optional model/checkpoint name
     case aiLocalModelImageSize          // "WxH" asked of the server
+    case aiExternalProvider             // google | openAI | openAICompatible
+    case aiExternalEndpoint             // OpenAI-compatible only: base URL
+    case aiExternalModelName            // optional model name (service default when empty)
+    case aiExternalImageShape           // square | landscape | portrait
+    case aiPromptImproverEnabled        // "Improve prompts with Claude"
+    case aiPromptImproverModel          // optional Claude model ID (claude-opus-5-5 when empty)
 
     // Legacy rotation keys — read ONLY by RotationPoolMigration (spec §4).
     case autoRotateSource

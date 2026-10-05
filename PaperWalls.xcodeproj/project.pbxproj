@@ -125,6 +125,14 @@
 		FF00000000000000000000C9 /* LocalImageEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C3 /* LocalImageEndpoint.swift */; };
 		FF00000000000000000000CA /* LocalImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C4 /* LocalImageProvider.swift */; };
 		FF00000000000000000000CB /* LocalImageEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C5 /* LocalImageEndpointTests.swift */; };
+		FF00000000000000000000CC /* ExternalImageEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C6 /* ExternalImageEndpoint.swift */; };
+		FF00000000000000000000CD /* ExternalImageEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C6 /* ExternalImageEndpoint.swift */; };
+		FF00000000000000000000CE /* ExternalImageEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C6 /* ExternalImageEndpoint.swift */; };
+		FF00000000000000000000CF /* PromptImprover.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C7 /* PromptImprover.swift */; };
+		FF00000000000000000000D0 /* PromptImprover.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C7 /* PromptImprover.swift */; };
+		FF00000000000000000000D1 /* PromptImprover.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C7 /* PromptImprover.swift */; };
+		FF00000000000000000000D2 /* ExternalImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C8 /* ExternalImageProvider.swift */; };
+		FF00000000000000000000D3 /* ExternalImageEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -227,6 +235,10 @@
 		DD00000000000000000000C3 /* LocalImageEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalImageEndpoint.swift; sourceTree = "<group>"; };
 		DD00000000000000000000C4 /* LocalImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalImageProvider.swift; sourceTree = "<group>"; };
 		DD00000000000000000000C5 /* LocalImageEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalImageEndpointTests.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C6 /* ExternalImageEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalImageEndpoint.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C7 /* PromptImprover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptImprover.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C8 /* ExternalImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalImageProvider.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalImageEndpointTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -311,6 +323,8 @@
 				DD00000000000000000000BC /* WallpaperPresets.swift */,
 				DD00000000000000000000C0 /* AIGenerationPolicy.swift */,
 				DD00000000000000000000C3 /* LocalImageEndpoint.swift */,
+				DD00000000000000000000C6 /* ExternalImageEndpoint.swift */,
+				DD00000000000000000000C7 /* PromptImprover.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -328,6 +342,7 @@
 				DD00000000000000000000BF /* WallpaperDesignTests.swift */,
 				DD00000000000000000000C2 /* AIGenerationPolicyTests.swift */,
 				DD00000000000000000000C5 /* LocalImageEndpointTests.swift */,
+				DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -354,6 +369,7 @@
 				DD00000000000000000000BD /* AppModel+Wallpapers.swift */,
 				DD00000000000000000000C1 /* AIBackgroundGenerator.swift */,
 				DD00000000000000000000C4 /* LocalImageProvider.swift */,
+				DD00000000000000000000C8 /* ExternalImageProvider.swift */,
 				DD0000000000000000000090 /* SceneComposer.swift */,
 				DD0000000000000000000091 /* SceneLayerControls.swift */,
 				DD0000000000000000000092 /* ComposerPickers.swift */,
@@ -580,6 +596,9 @@
 				FF00000000000000000000C4 /* AIBackgroundGenerator.swift in Sources */,
 				FF00000000000000000000C7 /* LocalImageEndpoint.swift in Sources */,
 				FF00000000000000000000CA /* LocalImageProvider.swift in Sources */,
+				FF00000000000000000000CC /* ExternalImageEndpoint.swift in Sources */,
+				FF00000000000000000000CF /* PromptImprover.swift in Sources */,
+				FF00000000000000000000D2 /* ExternalImageProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -592,6 +611,8 @@
 				FF0000000000000000000013 /* PreferencesStore.swift in Sources */,
 				FF00000000000000000000C6 /* AIGenerationPolicy.swift in Sources */,
 				FF00000000000000000000C8 /* LocalImageEndpoint.swift in Sources */,
+				FF00000000000000000000CD /* ExternalImageEndpoint.swift in Sources */,
+				FF00000000000000000000D0 /* PromptImprover.swift in Sources */,
 				FF0000000000000000000014 /* ManagedPreferences.swift in Sources */,
 				FF0000000000000000000015 /* WallpaperCatalog.swift in Sources */,
 				FF0000000000000000000021 /* WallpaperContentID.swift in Sources */,
@@ -642,6 +663,9 @@
 				FF00000000000000000000C5 /* AIGenerationPolicyTests.swift in Sources */,
 				FF00000000000000000000C9 /* LocalImageEndpoint.swift in Sources */,
 				FF00000000000000000000CB /* LocalImageEndpointTests.swift in Sources */,
+				FF00000000000000000000CE /* ExternalImageEndpoint.swift in Sources */,
+				FF00000000000000000000D1 /* PromptImprover.swift in Sources */,
+				FF00000000000000000000D3 /* ExternalImageEndpointTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -31,6 +31,14 @@ final class AIGenerationPolicyTests: XCTestCase {
         XCTAssertTrue(policy.offersGeneration)
     }
 
+    func testPromptImproverFollowsTheMasterSwitch() {
+        XCTAssertFalse(AIGenerationPolicy(enabled: false, promptImprover: true).offersPromptImprovement)
+        XCTAssertFalse(AIGenerationPolicy(enabled: true).offersPromptImprovement)
+        XCTAssertTrue(AIGenerationPolicy(enabled: true, promptImprover: true).offersPromptImprovement)
+        XCTAssertFalse(AIGenerationPolicy(enabled: true, promptImprover: true).offersGeneration,
+                       "the improver alone offers no generation")
+    }
+
     func testEachProviderHasItsOwnPreferenceKey() {
         XCTAssertEqual(Set(AIProviderKind.allCases.map(\.preferenceKey)).count, AIProviderKind.allCases.count)
         XCTAssertEqual(AIProviderKind.appleOnDevice.preferenceKey, .aiAppleOnDeviceEnabled)

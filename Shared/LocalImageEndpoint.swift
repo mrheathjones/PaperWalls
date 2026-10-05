@@ -77,15 +77,22 @@ enum LocalImagePayload: Equatable {
     case url(URL)
 }
 
-enum LocalImageEndpointError: LocalizedError, Equatable {
+enum ImageEndpointError: LocalizedError, Equatable {
     case noEndpoint
     case invalidEndpoint(String)
     case badStatus(Int, String)
     case badPayload
     case noImages
+    case missingAPIKey(String)
+    case refused
 
     var errorDescription: String? {
         switch self {
+        case .missingAPIKey(let service):
+            return "No \(service) API key is saved. Add it in Settings › AI Generation."
+        case .refused:
+            return "Claude declined to write a prompt for that description."
+
         case .noEndpoint:
             return "No Local Model endpoint is set. Enter the server's address in Settings › AI Generation."
         case .invalidEndpoint(let text):
@@ -126,7 +133,7 @@ struct LocalImageEndpoint: Equatable {
     /// plain HTTP: these are local servers.
     func resolvedBaseURL() throws -> URL {
         var text = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw LocalImageEndpointError.noEndpoint }
+        guard !text.isEmpty else { throw ImageEndpointError.noEndpoint }
         if !text.lowercased().hasPrefix("http://") && !text.lowercased().hasPrefix("https://") {
             text = "http://" + text
         }
@@ -134,7 +141,7 @@ struct LocalImageEndpoint: Equatable {
             text.removeLast()
         }
         guard let url = URL(string: text), let host = url.host, !host.isEmpty else {
-            throw LocalImageEndpointError.invalidEndpoint(baseURL)
+            throw ImageEndpointError.invalidEndpoint(baseURL)
         }
         return url
     }
@@ -185,30 +192,10 @@ struct LocalImageEndpoint: Equatable {
 
     /// The images in a generation reply.
     func images(fromResponse data: Data) throws -> [LocalImagePayload] {
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw LocalImageEndpointError.badPayload
-        }
-        var payloads: [LocalImagePayload] = []
         switch flavor {
-        case .automatic1111:
-            guard let images = object["images"] as? [String] else { throw LocalImageEndpointError.badPayload }
-            for text in images {
-                if let data = Self.decodeBase64(text) {
-                    payloads.append(.data(data))
-                }
-            }
-        case .openAICompatible:
-            guard let entries = object["data"] as? [[String: Any]] else { throw LocalImageEndpointError.badPayload }
-            for entry in entries {
-                if let text = entry["b64_json"] as? String, let data = Self.decodeBase64(text) {
-                    payloads.append(.data(data))
-                } else if let text = entry["url"] as? String, let url = URL(string: text) {
-                    payloads.append(.url(url))
-                }
-            }
+        case .automatic1111: return try ImageAPIReply.automatic1111(data)
+        case .openAICompatible: return try ImageAPIReply.openAI(data)
         }
-        guard !payloads.isEmpty else { throw LocalImageEndpointError.noImages }
-        return payloads
     }
 
     /// Accepts bare base64 and `data:image/png;base64,…` URIs.

@@ -44,19 +44,11 @@ struct LocalImageProvider: WallpaperImageProvider {
         let (data, response) = try await session.data(for: urlRequest)
         try Self.check(response, data: data)
         guard let first = try endpoint.images(fromResponse: data).first else {
-            throw LocalImageEndpointError.noImages
+            throw ImageEndpointError.noImages
         }
-        let imageData: Data
-        switch first {
-        case .data(let inline):
-            imageData = inline
-        case .url(let url):
-            let (fetched, fetchResponse) = try await session.data(from: url)
-            try Self.check(fetchResponse, data: fetched)
-            imageData = fetched
-        }
+        let imageData = try await Self.bytes(for: first, session: session)
         guard let fileExtension = Self.fileExtension(for: imageData) else {
-            throw LocalImageEndpointError.badPayload
+            throw ImageEndpointError.badPayload
         }
         return GeneratedImage(data: imageData, fileExtension: fileExtension, providerKind: .localModel)
     }
@@ -67,25 +59,44 @@ struct LocalImageProvider: WallpaperImageProvider {
             let token = KeychainStore.read(account: Self.keychainAccount)
             let (data, response) = try await session.data(for: try endpoint.healthRequest(token: token))
             try Self.check(response, data: data)
-            if let object = try? JSONSerialization.jsonObject(with: data) {
-                if let models = object as? [Any] {
-                    return .success("Connected — \(models.count) model\(models.count == 1 ? "" : "s") available")
-                }
-                if let dictionary = object as? [String: Any], let models = dictionary["data"] as? [Any] {
-                    return .success("Connected — \(models.count) model\(models.count == 1 ? "" : "s") available")
-                }
-            }
-            return .success("Connected")
+            return .success(Self.connectedMessage(for: data))
         } catch {
             return .failure(error)
         }
     }
 
-    private static func check(_ response: URLResponse, data: Data) throws {
+    // MARK: Shared networking helpers (also used by the external provider)
+
+    static func check(_ response: URLResponse, data: Data) throws {
         guard let http = response as? HTTPURLResponse else { return }
         guard (200..<300).contains(http.statusCode) else {
-            throw LocalImageEndpointError.badStatus(http.statusCode, String(decoding: data.prefix(300), as: UTF8.self))
+            throw ImageEndpointError.badStatus(http.statusCode, String(decoding: data.prefix(300), as: UTF8.self))
         }
+    }
+
+    /// Inline bytes as-is; a URL payload is fetched.
+    static func bytes(for payload: LocalImagePayload, session: URLSession) async throws -> Data {
+        switch payload {
+        case .data(let inline):
+            return inline
+        case .url(let url):
+            let (fetched, response) = try await session.data(from: url)
+            try check(response, data: fetched)
+            return fetched
+        }
+    }
+
+    /// "Connected — N models available" when the listing is readable.
+    static func connectedMessage(for data: Data) -> String {
+        guard let object = try? JSONSerialization.jsonObject(with: data) else { return "Connected" }
+        var count: Int?
+        if let list = object as? [Any] {
+            count = list.count
+        } else if let dictionary = object as? [String: Any] {
+            count = (dictionary["data"] as? [Any])?.count ?? (dictionary["models"] as? [Any])?.count
+        }
+        guard let count else { return "Connected" }
+        return "Connected — \(count) model\(count == 1 ? "" : "s") available"
     }
 
     /// The asset-store extension for the bytes, from the image's own type.

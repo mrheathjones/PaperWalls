@@ -166,7 +166,13 @@ Screen savers and Studio (same domain, same forcing rules):
 | `aiLocalModelFlavor` | string | `automatic1111` | The server's API: `automatic1111` (`/sdapi/v1/txt2img`; also Draw Things, Forge, SD.Next) or `openAICompatible` (`/v1/images/generations`) |
 | `aiLocalModelName` | string | — | Optional model/checkpoint name sent with each request; empty uses the server's default |
 | `aiLocalModelImageSize` | string | `1024x1024` | Width × height asked of the server (`1024x1024`, `1344x768`, `768x1344`, or any `WxH` between 64 and 4096). The composer's Fill / Blur / Dim handle the wallpaper's aspect ratio |
-| `aiExternalModelEnabled` | bool | `false` | Offers **External Model** generation (a cloud image API). Reserved; not offered by the app yet |
+| `aiExternalModelEnabled` | bool | `false` | Offers **External Model** generation: a cloud image service (Google Gemini image models, OpenAI, or any OpenAI-compatible endpoint). Prompts go only to the chosen service, and only when the user presses Generate. API keys live in the user's Keychain, never in this domain |
+| `aiExternalProvider` | string | `google` | Which service: `google` (`generativelanguage.googleapis.com`), `openAI` (`api.openai.com`), or `openAICompatible` (`aiExternalEndpoint`) |
+| `aiExternalEndpoint` | string | — | OpenAI-compatible only: base URL of the service, e.g. `https://images.example.com`. No scheme means `https://` |
+| `aiExternalModelName` | string | — | Optional model name; empty sends the service default (`gemini-2.5-flash-image`, `gpt-image-1`) |
+| `aiExternalImageShape` | string | `landscape` | `square`, `landscape`, or `portrait`, mapped to each service's size vocabulary. The composer's Fill / Blur / Dim handle the wallpaper's aspect ratio |
+| `aiPromptImproverEnabled` | bool | `false` | Adds an **Improve** button beside the description in Studio: Claude (Anthropic Messages API, `api.anthropic.com`) rewrites the idea into a detailed image prompt. Claude doesn't make images. Needs the user's Anthropic API key in their Keychain |
+| `aiPromptImproverModel` | string | `claude-opus-5-5` | The Claude model used by Improve |
 
 There is deliberately no idle-time key: when the screen saver starts is a
 macOS setting. Set it (and select the saver) with a `com.apple.screensaver`

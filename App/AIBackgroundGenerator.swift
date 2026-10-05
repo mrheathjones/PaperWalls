@@ -8,8 +8,10 @@ import SwiftUI
 ///
 /// Apple On-Device presents the system Image Playground sheet (Apple's
 /// own UI; the programmatic `ImageCreator` is deprecated from macOS 27).
-/// Local Model calls the server configured in Settings and shows
-/// progress inline. Nothing leaves the Mac until a button is pressed.
+/// Local Model and External Model call the service configured in
+/// Settings and show progress inline. "Improve" sends the description to
+/// Claude and replaces it with a fuller prompt. Nothing leaves the Mac
+/// until a button is pressed.
 struct AIBackgroundGenerator: View {
     let policy: AIGenerationPolicy
     /// The wallpaper's target size (a hint for providers that take one).
@@ -23,6 +25,9 @@ struct AIBackgroundGenerator: View {
     @State private var prompt = ""
     @State private var isPlaygroundPresented = false
     @State private var isGenerating = false
+    @State private var isImproving = false
+    @State private var hasExternalKey = false
+    @State private var hasClaudeKey = false
     @State private var errorMessage: String?
 
     private var trimmedPrompt: String {
@@ -37,6 +42,17 @@ struct AIBackgroundGenerator: View {
                 TextField("", text: $prompt, prompt: Text("e.g. soft blue mountains at dawn"))
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel("Image description")
+                if policy.offersPromptImprovement {
+                    if isImproving {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Button("Improve", action: improvePrompt)
+                        .disabled(trimmedPrompt.isEmpty || isImproving || isGenerating || !hasClaudeKey)
+                        .help(hasClaudeKey
+                              ? "Have Claude rewrite this into a detailed image prompt (sent to \(PromptImprover.host))"
+                              : "Add the Claude API key in Settings › AI Generation")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -63,26 +79,38 @@ struct AIBackgroundGenerator: View {
             if policy.isEnabled(.localModel) {
                 SettingsDivider()
                 ComposerRow(title: "Local Model") {
-                    HStack(spacing: 8) {
-                        if isGenerating {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-                        Button {
-                            generateLocally()
-                        } label: {
-                            Label(isGenerating ? "Generating…" : "Generate", systemImage: "server.rack")
-                        }
-                        .disabled(!localEndpoint.isConfigured || trimmedPrompt.isEmpty || isGenerating)
-                        .help(localEndpoint.isConfigured
-                              ? "Ask your local model for a background (needs a description)"
-                              : "Set the server address in Settings › AI Generation")
+                    generateButton(enabled: localEndpoint.isConfigured,
+                                   help: localEndpoint.isConfigured
+                                       ? "Ask your local model for a background (needs a description)"
+                                       : "Set the server address in Settings › AI Generation") {
+                        generate(using: LocalImageProvider(endpoint: localEndpoint))
                     }
                 }
                 if !localEndpoint.isConfigured {
                     note("No Local Model endpoint is set. Enter the server's address in Settings › AI Generation.")
                 }
             }
+
+            if policy.isEnabled(.externalModel) {
+                SettingsDivider()
+                ComposerRow(title: "External Model (\(externalEndpoint.provider.displayName))") {
+                    generateButton(enabled: externalEndpoint.isConfigured && hasExternalKey,
+                                   help: "Ask \(externalEndpoint.provider.displayName) for a background; the description is sent to \(externalEndpoint.host)") {
+                        generate(using: ExternalImageProvider(endpoint: externalEndpoint))
+                    }
+                }
+                if !hasExternalKey {
+                    note("Add the \(externalEndpoint.provider.displayName) API key in Settings › AI Generation.")
+                } else if !externalEndpoint.isConfigured {
+                    note("Enter the service's address in Settings › AI Generation.")
+                } else {
+                    note("Prompts are sent to \(externalEndpoint.host) when you press Generate.")
+                }
+            }
+        }
+        .onAppear(perform: refreshKeys)
+        .onChange(of: prefs.aiExternalProvider) { _, _ in
+            refreshKeys()
         }
         .imagePlaygroundSheet(isPresented: $isPlaygroundPresented, concepts: playgroundConcepts,
                               onCompletion: importPlaygroundImage)
@@ -94,6 +122,13 @@ struct AIBackgroundGenerator: View {
     }
 
     private var localEndpoint: LocalImageEndpoint { prefs.localImageEndpoint }
+    private var externalEndpoint: ExternalImageEndpoint { prefs.externalImageEndpoint }
+
+    /// Keys live in the Keychain, read once per appearance (not per frame).
+    private func refreshKeys() {
+        hasExternalKey = KeychainStore.read(account: externalEndpoint.provider.keychainAccount) != nil
+        hasClaudeKey = KeychainStore.read(account: PromptImprover.keychainAccount) != nil
+    }
 
     private func note(_ text: String) -> some View {
         Text(text)
@@ -102,6 +137,20 @@ struct AIBackgroundGenerator: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+    }
+
+    private func generateButton(enabled: Bool, help: String, action: @escaping () -> Void) -> some View {
+        HStack(spacing: 8) {
+            if isGenerating {
+                ProgressView()
+                    .controlSize(.small)
+            }
+            Button(action: action) {
+                Label(isGenerating ? "Generating…" : "Generate", systemImage: "server.rack")
+            }
+            .disabled(!enabled || trimmedPrompt.isEmpty || isGenerating || isImproving)
+            .help(help)
+        }
     }
 
     // MARK: Apple On-Device
@@ -120,10 +169,9 @@ struct AIBackgroundGenerator: View {
         }
     }
 
-    // MARK: Local Model
+    // MARK: Programmatic providers
 
-    private func generateLocally() {
-        let provider = LocalImageProvider(endpoint: localEndpoint)
+    private func generate(using provider: any WallpaperImageProvider) {
         let request = WallpaperGenerationRequest(prompt: trimmedPrompt, pixelSize: pixelSize)
         isGenerating = true
         Task { @MainActor in
@@ -131,6 +179,22 @@ struct AIBackgroundGenerator: View {
             do {
                 let image = try await provider.generate(request)
                 onGenerated(try ScreenSaverSceneStore.importAsset(data: image.data, fileExtension: image.fileExtension))
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    // MARK: Prompt improver
+
+    private func improvePrompt() {
+        let service = PromptImprovementService(improver: prefs.promptImprover)
+        let brief = trimmedPrompt
+        isImproving = true
+        Task { @MainActor in
+            defer { isImproving = false }
+            do {
+                prompt = try await service.improve(brief)
             } catch {
                 errorMessage = error.localizedDescription
             }

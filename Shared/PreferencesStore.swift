@@ -118,6 +118,25 @@ final class PreferencesStore: ObservableObject {
     @Published var aiLocalModelName: String = ""
     @Published var aiLocalModelImageSize: String = LocalImageSize.square.rawValue
 
+    @Published var aiExternalProvider: String = ExternalImageProviderKind.google.rawValue
+    @Published var aiExternalEndpoint: String = ""
+    @Published var aiExternalModelName: String = ""
+    @Published var aiExternalImageShape: String = ExternalImageShape.landscape.rawValue
+    @Published var aiPromptImproverEnabled: Bool = false
+    @Published var aiPromptImproverModel: String = ""
+
+    var externalImageEndpoint: ExternalImageEndpoint {
+        ExternalImageEndpoint(provider: ExternalImageProviderKind(rawValue: aiExternalProvider) ?? .google,
+                              baseURL: aiExternalEndpoint,
+                              modelName: aiExternalModelName,
+                              shape: ExternalImageShape(rawValue: aiExternalImageShape) ?? .landscape)
+    }
+
+    var promptImprover: PromptImprover {
+        let model = aiPromptImproverModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        return PromptImprover(model: model.isEmpty ? PromptImprover.defaultModel : model)
+    }
+
     var localImageEndpoint: LocalImageEndpoint {
         LocalImageEndpoint(baseURL: aiLocalModelEndpoint,
                            flavor: LocalImageAPIFlavor(rawValue: aiLocalModelFlavor) ?? .automatic1111,
@@ -129,7 +148,8 @@ final class PreferencesStore: ObservableObject {
         AIGenerationPolicy(enabled: aiGenerationEnabled,
                            appleOnDevice: aiAppleOnDeviceEnabled,
                            localModel: aiLocalModelEnabled,
-                           externalModel: aiExternalModelEnabled)
+                           externalModel: aiExternalModelEnabled,
+                           promptImprover: aiPromptImproverEnabled)
     }
 
     private var isReloading = false
@@ -203,6 +223,12 @@ final class PreferencesStore: ObservableObject {
         aiLocalModelFlavor = ManagedPreferences.string(.aiLocalModelFlavor) ?? LocalImageAPIFlavor.automatic1111.rawValue
         aiLocalModelName = ManagedPreferences.string(.aiLocalModelName) ?? ""
         aiLocalModelImageSize = ManagedPreferences.string(.aiLocalModelImageSize) ?? LocalImageSize.square.rawValue
+        aiExternalProvider = ManagedPreferences.string(.aiExternalProvider) ?? ExternalImageProviderKind.google.rawValue
+        aiExternalEndpoint = ManagedPreferences.string(.aiExternalEndpoint) ?? ""
+        aiExternalModelName = ManagedPreferences.string(.aiExternalModelName) ?? ""
+        aiExternalImageShape = ManagedPreferences.string(.aiExternalImageShape) ?? ExternalImageShape.landscape.rawValue
+        aiPromptImproverEnabled = ManagedPreferences.bool(.aiPromptImproverEnabled) ?? false
+        aiPromptImproverModel = ManagedPreferences.string(.aiPromptImproverModel) ?? ""
     }
 
     /// Persists each published property back to CFPreferences when it changes
@@ -257,6 +283,12 @@ final class PreferencesStore: ObservableObject {
         persist($aiLocalModelFlavor, .aiLocalModelFlavor) { $0 }
         persist($aiLocalModelName, .aiLocalModelName) { $0.isEmpty ? nil : $0 }
         persist($aiLocalModelImageSize, .aiLocalModelImageSize) { $0 }
+        persist($aiExternalProvider, .aiExternalProvider) { $0 }
+        persist($aiExternalEndpoint, .aiExternalEndpoint) { $0.isEmpty ? nil : $0 }
+        persist($aiExternalModelName, .aiExternalModelName) { $0.isEmpty ? nil : $0 }
+        persist($aiExternalImageShape, .aiExternalImageShape) { $0 }
+        persist($aiPromptImproverEnabled, .aiPromptImproverEnabled) { $0 }
+        persist($aiPromptImproverModel, .aiPromptImproverModel) { $0.isEmpty ? nil : $0 }
     }
 
     private func persist<Value: Equatable>(_ publisher: Published<Value>.Publisher,

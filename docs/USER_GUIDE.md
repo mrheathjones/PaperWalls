@@ -46,6 +46,32 @@ In **Settings → Auto-Rotate**:
   and offer **Next** / **Rotate** buttons. Closing the window keeps
   PaperWalls running in the menu bar.
 
+## Making your own wallpapers (Studio)
+
+Open **Studio** in the sidebar and choose the **Wallpapers** tab. Start
+from a ready-made design — Soft Gradient, Company Badge, Help Desk — or
+from a blank one. Pick a **Background** (a wallpaper from your library, an
+image of your own, a color, or a gradient), **Add Layer** to put text or an
+icon on top, and choose the size from the menu above the preview (your
+display is the default). **Save to Personal** renders the wallpaper into
+your Personal library, where you can set it like any other. Your design
+stays under **Your Designs** in Studio for later edits.
+
+**Generated backgrounds.** If AI generation is turned on in **Settings ›
+AI Generation**, choosing **An Image** as the background also offers a
+description field and a Generate button for each option that's enabled:
+
+- **Apple On-Device** opens Image Playground; everything runs on your Mac.
+- **Local Model** asks an image server you run yourself (Draw Things,
+  Automatic1111, and similar); set its address in Settings.
+- **External Model** asks a cloud service (Google, OpenAI, or a compatible
+  one) with your own API key, which stays in your Keychain.
+- **Improve** rewrites your description into a fuller prompt using Claude.
+
+Nothing is sent anywhere until you press one of those buttons, and the
+Settings page says exactly which service each one talks to. On a work
+Mac, your organization may turn some or all of these off.
+
 ## Screen savers
 
 PaperWalls can also be your screen saver.

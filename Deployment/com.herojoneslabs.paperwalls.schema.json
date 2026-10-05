@@ -459,9 +459,60 @@
     "aiExternalModelEnabled": {
       "type": "boolean",
       "title": "AI: External Model",
-      "description": "Offers External Model generation (a cloud image API). Reserved for a later release.",
+      "description": "Offers External Model generation: a cloud image service (Google Gemini image models, OpenAI, or any OpenAI-compatible endpoint). Prompts go only to the chosen service, and only when the user presses Generate. API keys live in the user's Keychain, never in this domain.",
       "options": {
         "infoText": "Key: aiExternalModelEnabled (default: false)"
+      }
+    },
+    "aiExternalProvider": {
+      "type": "string",
+      "title": "AI: External Service",
+      "description": "Which cloud image service the External Model option uses.",
+      "enum": ["google", "openAI", "openAICompatible"],
+      "options": {
+        "enum_titles": ["Google (generativelanguage.googleapis.com)", "OpenAI (api.openai.com)", "OpenAI-compatible (aiExternalEndpoint)"],
+        "infoText": "Key: aiExternalProvider (default: google)"
+      }
+    },
+    "aiExternalEndpoint": {
+      "type": "string",
+      "title": "AI: External Endpoint",
+      "description": "OpenAI-compatible only: base URL of the service, e.g. https://images.example.com. No scheme means https://.",
+      "options": {
+        "infoText": "Key: aiExternalEndpoint"
+      }
+    },
+    "aiExternalModelName": {
+      "type": "string",
+      "title": "AI: External Model Name",
+      "description": "Optional model name. Empty sends the service default (gemini-2.5-flash-image, gpt-image-1).",
+      "options": {
+        "infoText": "Key: aiExternalModelName"
+      }
+    },
+    "aiExternalImageShape": {
+      "type": "string",
+      "title": "AI: External Image Shape",
+      "description": "The shape asked of the service, mapped to its own size vocabulary.",
+      "enum": ["square", "landscape", "portrait"],
+      "options": {
+        "infoText": "Key: aiExternalImageShape (default: landscape)"
+      }
+    },
+    "aiPromptImproverEnabled": {
+      "type": "boolean",
+      "title": "AI: Improve Prompts with Claude",
+      "description": "Adds an Improve button beside the description in Studio: Claude (Anthropic Messages API, api.anthropic.com) rewrites the idea into a detailed image prompt. Claude doesn't make images. Needs the user's Anthropic API key in their Keychain.",
+      "options": {
+        "infoText": "Key: aiPromptImproverEnabled (default: false)"
+      }
+    },
+    "aiPromptImproverModel": {
+      "type": "string",
+      "title": "AI: Claude Model for Improve",
+      "description": "The Claude model ID used by Improve.",
+      "options": {
+        "infoText": "Key: aiPromptImproverModel (default: claude-opus-5-5)"
       }
     },
     "showScreenSaversPage": {

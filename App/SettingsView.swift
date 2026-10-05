@@ -384,9 +384,70 @@ struct SettingsContent: View {
                                          options: LocalImageSize.presets.map { ($0.displayName, $0.rawValue) },
                                          selection: $prefs.aiLocalModelImageSize)
                         SettingsDivider()
-                        LocalModelKeyRow()
+                        KeychainKeyRow(account: LocalImageProvider.keychainAccount,
+                                       hint: "Optional; most local servers need none")
                         SettingsDivider()
-                        LocalModelConnectionRow()
+                        ConnectionTestRow(isConfigured: prefs.localImageEndpoint.isConfigured) {
+                            await LocalImageProvider(endpoint: prefs.localImageEndpoint).testConnection()
+                        }
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "External Model",
+                                subtitle: "A cloud image service: Google (Gemini image models), OpenAI, or any OpenAI-compatible endpoint. Prompts go only to the chosen service, and only when you press Generate. Each service needs its own API key, kept in your Keychain",
+                                managedKey: .aiExternalModelEnabled) {
+                        SettingsToggle(isOn: $prefs.aiExternalModelEnabled,
+                                       disabled: prefs.isForced(.aiExternalModelEnabled) || !prefs.aiGenerationEnabled)
+                    }
+                    if prefs.aiGenerationEnabled && prefs.aiExternalModelEnabled {
+                        let external = prefs.externalImageEndpoint
+                        SettingsDivider()
+                        SettingsChipsRow(title: "Service",
+                                         managedKey: .aiExternalProvider,
+                                         options: ExternalImageProviderKind.allCases.map { ($0.displayName, $0.rawValue) },
+                                         selection: $prefs.aiExternalProvider)
+                        if external.provider == .openAICompatible {
+                            SettingsDivider()
+                            SettingsFieldRow(title: "Endpoint",
+                                             prompt: "https://images.example.com",
+                                             text: $prefs.aiExternalEndpoint,
+                                             managedKey: .aiExternalEndpoint)
+                        }
+                        SettingsDivider()
+                        SettingsFieldRow(title: "Model name",
+                                         prompt: external.provider.defaultModel.isEmpty
+                                             ? "As required by the server"
+                                             : "Optional; \(external.provider.defaultModel) when empty",
+                                         text: $prefs.aiExternalModelName,
+                                         managedKey: .aiExternalModelName)
+                        SettingsDivider()
+                        SettingsChipsRow(title: "Image shape",
+                                         managedKey: .aiExternalImageShape,
+                                         options: ExternalImageShape.allCases.map { ($0.displayName, $0.rawValue) },
+                                         selection: $prefs.aiExternalImageShape)
+                        SettingsDivider()
+                        KeychainKeyRow(account: external.provider.keychainAccount,
+                                       hint: "Required. Sent only to \(external.host)")
+                        SettingsDivider()
+                        ConnectionTestRow(isConfigured: external.isConfigured) {
+                            await ExternalImageProvider(endpoint: prefs.externalImageEndpoint).testConnection()
+                        }
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Improve prompts with Claude",
+                                subtitle: "Adds an Improve button beside the description in Studio: Claude rewrites your idea into a detailed image prompt (Claude doesn't make the image). Your text goes only to \(PromptImprover.host), and only when you press Improve",
+                                managedKey: .aiPromptImproverEnabled) {
+                        SettingsToggle(isOn: $prefs.aiPromptImproverEnabled,
+                                       disabled: prefs.isForced(.aiPromptImproverEnabled) || !prefs.aiGenerationEnabled)
+                    }
+                    if prefs.aiGenerationEnabled && prefs.aiPromptImproverEnabled {
+                        SettingsDivider()
+                        SettingsFieldRow(title: "Claude model",
+                                         prompt: "Optional; \(PromptImprover.defaultModel) when empty",
+                                         text: $prefs.aiPromptImproverModel,
+                                         managedKey: .aiPromptImproverModel)
+                        SettingsDivider()
+                        KeychainKeyRow(account: PromptImprover.keychainAccount,
+                                       hint: "Required. Sent only to \(PromptImprover.host)")
                     }
                 }
             }
@@ -781,34 +842,39 @@ struct SegmentedPills<Value: Hashable>: View {
     }
 }
 
-// MARK: - Local Model helpers
+// MARK: - AI generation helpers
 
-/// Optional bearer token for the local server, kept in the login
-/// Keychain (never in the preference domain, which ships in profiles).
-struct LocalModelKeyRow: View {
+/// An API key for one service, kept in the login Keychain (never in the
+/// preference domain, which ships in profiles).
+struct KeychainKeyRow: View {
+    let account: String
+    var title = "API key"
+    /// Shown when no key is stored.
+    let hint: String
+
     @State private var key = ""
-    @State private var hasStoredKey = KeychainStore.read(account: LocalImageProvider.keychainAccount) != nil
+    @State private var hasStoredKey = false
     @State private var status: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Text("API key")
+                Text(title)
                     .font(.system(size: 15, weight: .semibold))
-                Text(hasStoredKey ? "Stored in your Keychain" : "Optional; most local servers need none")
+                Text(hasStoredKey ? "Stored in your Keychain" : hint)
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
             HStack(spacing: 8) {
-                SecureField("", text: $key, prompt: Text(hasStoredKey ? "••••••••" : "Paste a token if your server requires one"))
+                SecureField("", text: $key, prompt: Text(hasStoredKey ? "••••••••" : "Paste the key"))
                     .textFieldStyle(.plain)
                     .font(Theme.pathMono)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
                     .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 8))
-                    .accessibilityLabel("Local model API key")
+                    .accessibilityLabel("\(title) for \(account)")
                 Button("Save") {
-                    let saved = KeychainStore.write(account: LocalImageProvider.keychainAccount, value: key)
+                    let saved = KeychainStore.write(account: account, value: key)
                     status = saved ? "Saved" : "Couldn’t write to the Keychain"
                     hasStoredKey = saved && !key.isEmpty
                     key = ""
@@ -816,7 +882,7 @@ struct LocalModelKeyRow: View {
                 .disabled(key.isEmpty)
                 if hasStoredKey {
                     Button("Remove") {
-                        KeychainStore.delete(account: LocalImageProvider.keychainAccount)
+                        KeychainStore.delete(account: account)
                         hasStoredKey = false
                         status = "Removed"
                     }
@@ -831,12 +897,23 @@ struct LocalModelKeyRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
+        .onAppear(perform: reload)
+        .onChange(of: account) { _, _ in
+            reload()
+        }
+    }
+
+    private func reload() {
+        hasStoredKey = KeychainStore.read(account: account) != nil
+        key = ""
+        status = nil
     }
 }
 
-/// "Test Connection": one GET to the server's model list.
-struct LocalModelConnectionRow: View {
-    @EnvironmentObject private var prefs: PreferencesStore
+/// "Test Connection": one GET to the service's model list.
+struct ConnectionTestRow: View {
+    let isConfigured: Bool
+    let test: () async -> Result<String, Error>
 
     @State private var isTesting = false
     @State private var result: String?
@@ -844,7 +921,7 @@ struct LocalModelConnectionRow: View {
 
     var body: some View {
         SettingsRow(title: "Connection",
-                    subtitle: result ?? "Checks that the server answers at the endpoint above") {
+                    subtitle: result ?? "Checks that the service answers with the settings above") {
             HStack(spacing: 8) {
                 if isTesting {
                     ProgressView()
@@ -853,19 +930,18 @@ struct LocalModelConnectionRow: View {
                     Image(systemName: succeeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                         .foregroundStyle(succeeded ? Color.green : Color.orange)
                 }
-                Button("Test Connection", action: test)
-                    .disabled(isTesting || !prefs.localImageEndpoint.isConfigured)
+                Button("Test Connection", action: run)
+                    .disabled(isTesting || !isConfigured)
             }
         }
     }
 
-    private func test() {
-        let provider = LocalImageProvider(endpoint: prefs.localImageEndpoint)
+    private func run() {
         isTesting = true
         result = nil
         Task { @MainActor in
             defer { isTesting = false }
-            switch await provider.testConnection() {
+            switch await test() {
             case .success(let message):
                 succeeded = true
                 result = message
