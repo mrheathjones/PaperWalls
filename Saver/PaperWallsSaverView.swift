@@ -83,6 +83,25 @@ final class PaperWallsSaverView: ScreenSaverView {
         tearDownScene()
     }
 
+    /// System Settings' live preview (macOS 27) puts the view in a window
+    /// but never calls `startAnimation`, so a preview builds its scene when
+    /// it lands in a window and drops it when it leaves.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard isPreview else { return }
+        if window != nil {
+            installScene()
+        } else {
+            tearDownScene()
+        }
+    }
+
+    /// Previews start at 0×0 and are sized later; keep the scene filling us.
+    override func resizeSubviews(withOldSize oldSize: NSSize) {
+        super.resizeSubviews(withOldSize: oldSize)
+        hostingView?.frame = bounds
+    }
+
     override func animateOneFrame() {
         // Nothing to do — see `configure()`.
     }
