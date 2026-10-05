@@ -585,7 +585,7 @@ struct SceneBackgroundControls: View {
         VStack(alignment: .leading, spacing: 18) {
             if prefs.aiPolicy.offersGeneration {
                 ComposerSection(title: "AI Prompt") {
-                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at this wallpaper's shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
+                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at \(kind == .wallpaper ? "this wallpaper's" : "your display's") shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
                         .font(Theme.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

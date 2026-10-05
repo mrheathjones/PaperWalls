@@ -58,7 +58,8 @@ struct SceneGenerator: Equatable {
     Colors are six-digit hex without "#". blur and dim are 0–1. slowZoom adds a slow Ken Burns drift.
 
     Layers, each with a kind:
-    - "clock": the live time. Options uses24Hour, showsSeconds, showsDate (a smaller date line).
+    - "clock": the live time. Options uses24Hour, showsSeconds, showsDate (a smaller date line \
+    under the time, which makes the layer about a third taller — leave room below it).
     - "text": a line of text in `text`. These placeholders are replaced live: {date} (e.g. \
     "Friday, October 2"), {computerName} (this Mac's name), {companyName} (the organization's name). \
     Keep lines short; use one text layer per line.
