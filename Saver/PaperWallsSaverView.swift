@@ -97,9 +97,13 @@ final class PaperWallsSaverView: ScreenSaverView {
     /// For a scene bundle (a renamed copy standing for one scene) the
     /// per-copy identity hook answers with the copy's own path; the main
     /// saver has no such method.
+    ///
+    /// Ask the Objective-C runtime for the class: Swift's `type(of:)`
+    /// skips runtime-created subclasses and answers PaperWallsSaverView,
+    /// which made every copy fall back to the active scene.
     private var sceneBundlePath: String? {
         let selector = NSSelectorFromString("paperwallsBundlePath")
-        guard let cls = type(of: self) as AnyObject as? NSObject.Type, cls.responds(to: selector) else {
+        guard let cls = object_getClass(self) as? NSObject.Type, cls.responds(to: selector) else {
             return nil
         }
         return cls.perform(selector)?.takeUnretainedValue() as? String
