@@ -149,6 +149,10 @@ struct SceneBackgroundTreatment: Codable, Equatable {
     var dim: Double = 0
     /// Slow zoom/pan ("Ken Burns").
     var slowZoom: Bool = false
+    /// Which part of the image Fill and Center keep when the image is a
+    /// different shape from the screen: (0, 0) keeps the top-left edge,
+    /// (1, 1) the bottom-right, the default the middle.
+    var focus: ScenePoint = .center
 }
 
 extension SceneBackgroundTreatment {
@@ -158,6 +162,7 @@ extension SceneBackgroundTreatment {
         blur = container.sceneValue(.blur, default: 0).clampedToUnit
         dim = container.sceneValue(.dim, default: 0).clampedToUnit
         slowZoom = container.sceneValue(.slowZoom, default: false)
+        focus = container.sceneValue(.focus, default: .center)
     }
 }
 

@@ -72,6 +72,16 @@ final class ExternalImageEndpointTests: XCTestCase {
         }
     }
 
+    func testMatchWallpaperResolvesFromThePixelSize() throws {
+        XCTAssertEqual(ExternalImageShape.matchWallpaper.resolved(for: CGSize(width: 2560, height: 1600)), .landscape)
+        XCTAssertEqual(ExternalImageShape.matchWallpaper.resolved(for: CGSize(width: 1200, height: 1920)), .portrait)
+        XCTAssertEqual(ExternalImageShape.matchWallpaper.resolved(for: CGSize(width: 1024, height: 1024)), .square)
+        XCTAssertEqual(ExternalImageShape.portrait.resolved(for: CGSize(width: 2560, height: 1600)), .portrait)
+        let request = try ExternalImageEndpoint(provider: .openAI).generationRequest(
+            prompt: "x", apiKey: "k", pixelSize: CGSize(width: 1200, height: 1920))
+        XCTAssertEqual(try json(request)["size"] as? String, "1024x1536")
+    }
+
     func testShapesMapToEachServicesVocabulary() {
         XCTAssertEqual(ExternalImageShape.landscape.openAISize, "1536x1024")
         XCTAssertEqual(ExternalImageShape.portrait.geminiAspectRatio, "9:16")

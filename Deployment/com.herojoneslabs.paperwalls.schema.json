@@ -451,9 +451,9 @@
     "aiLocalModelImageSize": {
       "type": "string",
       "title": "AI: Local Model Image Size",
-      "description": "Width x height asked of the server, e.g. 1024x1024, 1344x768, or 768x1344 (64–4096 each).",
+      "description": "Width x height asked of the server: match (wide, tall, or square to suit the wallpaper's shape), or an explicit size such as 1024x1024, 1344x768, or 768x1344 (64–4096 each).",
       "options": {
-        "infoText": "Key: aiLocalModelImageSize (default: 1024x1024)"
+        "infoText": "Key: aiLocalModelImageSize (default: match)"
       }
     },
     "aiExternalModelEnabled": {
@@ -494,9 +494,9 @@
       "type": "string",
       "title": "AI: External Image Shape",
       "description": "The shape asked of the service, mapped to its own size vocabulary.",
-      "enum": ["square", "landscape", "portrait"],
+      "enum": ["matchWallpaper", "square", "landscape", "portrait"],
       "options": {
-        "infoText": "Key: aiExternalImageShape (default: landscape)"
+        "infoText": "Key: aiExternalImageShape (default: matchWallpaper)"
       }
     },
     "aiPromptImproverEnabled": {

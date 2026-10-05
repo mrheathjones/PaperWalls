@@ -13,10 +13,21 @@ private struct SceneComposerKindKey: EnvironmentKey {
     static let defaultValue: SceneComposerKind = .screenSaver
 }
 
+private struct ComposerPixelSizeKey: EnvironmentKey {
+    static let defaultValue = CGSize(width: 2560, height: 1600)
+}
+
 extension EnvironmentValues {
     var composerKind: SceneComposerKind {
         get { self[SceneComposerKindKey.self] }
         set { self[SceneComposerKindKey.self] = newValue }
+    }
+
+    /// The pixel size the composition targets (a wallpaper's output size,
+    /// or the main display for a screen saver).
+    var composerPixelSize: CGSize {
+        get { self[ComposerPixelSizeKey.self] }
+        set { self[ComposerPixelSizeKey.self] = newValue }
     }
 }
 
@@ -521,6 +532,7 @@ struct SceneBackgroundControls: View {
     @Binding var background: SceneBackground
 
     @Environment(\.composerKind) private var kind
+    @Environment(\.composerPixelSize) private var pixelSize
     @State private var importError: String?
 
     enum SourceKind: String, CaseIterable, Identifiable {
@@ -578,14 +590,14 @@ struct SceneBackgroundControls: View {
 
             if prefs.aiPolicy.offersGeneration {
                 ComposerSection(title: "AI Prompt") {
-                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it.")
+                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at this wallpaper's shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
                         .font(Theme.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                     SettingsDivider()
-                    AIBackgroundGenerator(policy: prefs.aiPolicy) { assetName in
+                    AIBackgroundGenerator(policy: prefs.aiPolicy, pixelSize: pixelSize) { assetName in
                         background.source = .image(assetName: assetName)
                         background.treatment.scaleMode = .fitBlur
                     }
@@ -603,6 +615,14 @@ struct SceneBackgroundControls: View {
                         .pickerStyle(.segmented)
                         .labelsHidden()
                         .fixedSize()
+                    }
+                    if background.treatment.scaleMode == .fill || background.treatment.scaleMode == .center {
+                        SettingsDivider()
+                        ComposerSlider(title: "Focus across", value: $background.treatment.focus.x,
+                                       lowLabel: "Left", highLabel: "Right")
+                        SettingsDivider()
+                        ComposerSlider(title: "Focus down", value: $background.treatment.focus.y,
+                                       lowLabel: "Top", highLabel: "Bottom")
                     }
                     SettingsDivider()
                     ComposerSlider(title: "Blur", value: $background.treatment.blur,

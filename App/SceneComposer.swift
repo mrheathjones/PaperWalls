@@ -50,6 +50,8 @@ struct SceneComposer: View {
             }
         }
         .environment(\.composerKind, kind)
+        .environment(\.composerPixelSize, pixelSize?.wrappedValue
+                     ?? model.displayPixelSizes.first ?? CGSize(width: 2560, height: 1600))
         .onAppear(perform: selectFrontLayer)
         .onChange(of: draft.sceneID) { _, _ in
             selectFrontLayer()

@@ -13,7 +13,7 @@ struct ExternalImageProvider: WallpaperImageProvider {
     }
 
     func generate(_ request: WallpaperGenerationRequest) async throws -> GeneratedImage {
-        let urlRequest = try endpoint.generationRequest(prompt: request.prompt, apiKey: apiKey)
+        let urlRequest = try endpoint.generationRequest(prompt: request.prompt, apiKey: apiKey, pixelSize: request.pixelSize)
         let (data, response) = try await session.data(for: urlRequest)
         try LocalImageProvider.check(response, data: data)
         guard let first = try endpoint.images(fromResponse: data).first else {

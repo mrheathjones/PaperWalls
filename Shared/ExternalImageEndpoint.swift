@@ -47,6 +47,8 @@ enum ExternalImageProviderKind: String, CaseIterable, Identifiable {
 /// The rough shape asked of a cloud generator; each API has its own
 /// vocabulary for it. The composer's Fill / Blur / Dim do the rest.
 enum ExternalImageShape: String, CaseIterable, Identifiable {
+    /// The wallpaper's own shape, so Fill needs no crop.
+    case matchWallpaper
     case square
     case landscape
     case portrait
@@ -55,17 +57,29 @@ enum ExternalImageShape: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
+        case .matchWallpaper: return "Match wallpaper"
         case .square: return "Square"
         case .landscape: return "Landscape"
         case .portrait: return "Portrait"
         }
     }
 
+    /// The concrete shape for a wallpaper of `pixelSize` (landscape when
+    /// the size is unknown).
+    func resolved(for pixelSize: CGSize?) -> ExternalImageShape {
+        guard self == .matchWallpaper else { return self }
+        guard let pixelSize, pixelSize.width > 0, pixelSize.height > 0 else { return .landscape }
+        let ratio = pixelSize.width / pixelSize.height
+        if ratio > 1.15 { return .landscape }
+        if ratio < 0.87 { return .portrait }
+        return .square
+    }
+
     /// OpenAI `size` (the values gpt-image-1 accepts).
     var openAISize: String {
         switch self {
         case .square: return "1024x1024"
-        case .landscape: return "1536x1024"
+        case .landscape, .matchWallpaper: return "1536x1024"
         case .portrait: return "1024x1536"
         }
     }
@@ -74,7 +88,7 @@ enum ExternalImageShape: String, CaseIterable, Identifiable {
     var geminiAspectRatio: String {
         switch self {
         case .square: return "1:1"
-        case .landscape: return "16:9"
+        case .landscape, .matchWallpaper: return "16:9"
         case .portrait: return "9:16"
         }
     }
@@ -88,7 +102,7 @@ struct ExternalImageEndpoint: Equatable {
     /// OpenAI-compatible only: the user's base URL.
     var baseURL: String = ""
     var modelName: String = ""
-    var shape: ExternalImageShape = .landscape
+    var shape: ExternalImageShape = .matchWallpaper
 
     static let googleBase = "https://generativelanguage.googleapis.com/v1beta"
     static let openAIBase = "https://api.openai.com"
@@ -99,7 +113,7 @@ struct ExternalImageEndpoint: Equatable {
             provider: ManagedPreferences.string(.aiExternalProvider).flatMap(ExternalImageProviderKind.init(rawValue:)) ?? .google,
             baseURL: ManagedPreferences.string(.aiExternalEndpoint) ?? "",
             modelName: ManagedPreferences.string(.aiExternalModelName) ?? "",
-            shape: ManagedPreferences.string(.aiExternalImageShape).flatMap(ExternalImageShape.init(rawValue:)) ?? .landscape)
+            shape: ManagedPreferences.string(.aiExternalImageShape).flatMap(ExternalImageShape.init(rawValue:)) ?? .matchWallpaper)
     }
 
     /// The model actually sent.
@@ -142,10 +156,12 @@ struct ExternalImageEndpoint: Equatable {
         return request
     }
 
-    /// POST that asks for one image of `prompt`.
-    func generationRequest(prompt: String, apiKey: String) throws -> URLRequest {
+    /// POST that asks for one image of `prompt`. `pixelSize` is the
+    /// wallpaper's size, used when the shape is "Match wallpaper".
+    func generationRequest(prompt: String, apiKey: String, pixelSize: CGSize? = nil) throws -> URLRequest {
         let url: URL
         var body: [String: Any]
+        let shape = shape.resolved(for: pixelSize)
         switch provider {
         case .google:
             url = URL(string: "\(Self.googleBase)/models/\(effectiveModel):generateContent")!

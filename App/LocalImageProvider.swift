@@ -40,7 +40,7 @@ struct LocalImageProvider: WallpaperImageProvider {
 
     func generate(_ request: WallpaperGenerationRequest) async throws -> GeneratedImage {
         let token = KeychainStore.read(account: Self.keychainAccount)
-        let urlRequest = try endpoint.generationRequest(prompt: request.prompt, token: token)
+        let urlRequest = try endpoint.generationRequest(prompt: request.prompt, token: token, pixelSize: request.pixelSize)
         let (data, response) = try await session.data(for: urlRequest)
         try Self.check(response, data: data)
         guard let first = try endpoint.images(fromResponse: data).first else {

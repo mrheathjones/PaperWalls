@@ -200,9 +200,13 @@ struct SceneFrameView: View {
     private func backgroundImage(_ image: CGImage) -> some View {
         switch scene.background.treatment.scaleMode {
         case .fill:
+            let scale = max(size.width / CGFloat(max(1, image.width)), size.height / CGFloat(max(1, image.height)))
+            let shift = focusShift(overflow: CGSize(width: CGFloat(image.width) * scale - size.width,
+                                                    height: CGFloat(image.height) * scale - size.height))
             Image(decorative: image, scale: 1)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
+                .offset(x: shift.width, y: shift.height)
                 .frame(width: size.width, height: size.height)
                 .clipped()
         case .fit:
@@ -232,10 +236,21 @@ struct SceneFrameView: View {
                 .resizable()
                 .frame(width: size.width, height: size.height)
         case .center:
+            let shift = focusShift(overflow: CGSize(width: CGFloat(image.width) / displayScale - size.width,
+                                                    height: CGFloat(image.height) / displayScale - size.height))
             Image(decorative: image, scale: displayScale)
+                .offset(x: shift.width, y: shift.height)
                 .frame(width: size.width, height: size.height)
                 .clipped()
         }
+    }
+
+    /// How far to slide an oversized image so the treatment's focus point
+    /// is what stays on screen. No overflow on an axis means no shift.
+    private func focusShift(overflow: CGSize) -> CGSize {
+        let focus = scene.background.treatment.focus
+        return CGSize(width: -(focus.x - 0.5) * max(0, overflow.width),
+                      height: -(focus.y - 0.5) * max(0, overflow.height))
     }
 
     // MARK: - Layers

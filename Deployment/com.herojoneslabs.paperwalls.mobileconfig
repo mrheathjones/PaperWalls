@@ -107,12 +107,12 @@
 								<key>aiLocalModelFlavor</key>
 								<string>automatic1111</string>
 								<key>aiLocalModelImageSize</key>
-								<string>1024x1024</string>
+								<string>match</string>
 								<!-- External Model service (used only when aiExternalModelEnabled is true); keys never go here -->
 								<key>aiExternalProvider</key>
 								<string>google</string>
 								<key>aiExternalImageShape</key>
-								<string>landscape</string>
+								<string>matchWallpaper</string>
 								<!-- "Improve prompts with Claude" (Anthropic Messages API) -->
 								<key>aiPromptImproverEnabled</key>
 								<false/>

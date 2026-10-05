@@ -90,6 +90,21 @@ final class LocalImageEndpointTests: XCTestCase {
         }
     }
 
+    func testMatchWallpaperPicksTheSizeFromTheWallpapersShape() throws {
+        XCTAssertEqual(LocalImageSize(rawValue: "match"), .matchWallpaper)
+        XCTAssertEqual(LocalImageSize.matchWallpaper.rawValue, "match")
+        XCTAssertEqual(LocalImageSize.matchWallpaper.resolved(for: CGSize(width: 5120, height: 2880)), .wide)
+        XCTAssertEqual(LocalImageSize.matchWallpaper.resolved(for: CGSize(width: 1080, height: 1920)), .tall)
+        XCTAssertEqual(LocalImageSize.matchWallpaper.resolved(for: CGSize(width: 2000, height: 2000)), .square)
+        XCTAssertEqual(LocalImageSize.matchWallpaper.resolved(for: nil), .wide)
+        XCTAssertEqual(LocalImageSize.wide.resolved(for: CGSize(width: 10, height: 100)), .wide, "explicit sizes stay")
+        let request = try LocalImageEndpoint(baseURL: "h:1", flavor: .automatic1111).generationRequest(
+            prompt: "x", pixelSize: CGSize(width: 1080, height: 1920))
+        let body = try json(request)
+        XCTAssertEqual(body["width"] as? Int, 768)
+        XCTAssertEqual(body["height"] as? Int, 1344)
+    }
+
     func testImageSizeRoundTripsAndRejectsNonsense() {
         XCTAssertEqual(LocalImageSize(rawValue: "1344x768"), .wide)
         XCTAssertEqual(LocalImageSize(rawValue: "768 × 1344"), .tall)

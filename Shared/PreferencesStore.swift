@@ -116,12 +116,12 @@ final class PreferencesStore: ObservableObject {
     @Published var aiLocalModelEndpoint: String = ""
     @Published var aiLocalModelFlavor: String = LocalImageAPIFlavor.automatic1111.rawValue
     @Published var aiLocalModelName: String = ""
-    @Published var aiLocalModelImageSize: String = LocalImageSize.square.rawValue
+    @Published var aiLocalModelImageSize: String = LocalImageSize.matchWallpaper.rawValue
 
     @Published var aiExternalProvider: String = ExternalImageProviderKind.google.rawValue
     @Published var aiExternalEndpoint: String = ""
     @Published var aiExternalModelName: String = ""
-    @Published var aiExternalImageShape: String = ExternalImageShape.landscape.rawValue
+    @Published var aiExternalImageShape: String = ExternalImageShape.matchWallpaper.rawValue
     @Published var aiPromptImproverEnabled: Bool = false
     @Published var aiPromptImproverModel: String = ""
 
@@ -129,7 +129,7 @@ final class PreferencesStore: ObservableObject {
         ExternalImageEndpoint(provider: ExternalImageProviderKind(rawValue: aiExternalProvider) ?? .google,
                               baseURL: aiExternalEndpoint,
                               modelName: aiExternalModelName,
-                              shape: ExternalImageShape(rawValue: aiExternalImageShape) ?? .landscape)
+                              shape: ExternalImageShape(rawValue: aiExternalImageShape) ?? .matchWallpaper)
     }
 
     var promptImprover: PromptImprover {
@@ -141,7 +141,7 @@ final class PreferencesStore: ObservableObject {
         LocalImageEndpoint(baseURL: aiLocalModelEndpoint,
                            flavor: LocalImageAPIFlavor(rawValue: aiLocalModelFlavor) ?? .automatic1111,
                            modelName: aiLocalModelName,
-                           imageSize: LocalImageSize(rawValue: aiLocalModelImageSize) ?? .square)
+                           imageSize: LocalImageSize(rawValue: aiLocalModelImageSize) ?? .matchWallpaper)
     }
 
     var aiPolicy: AIGenerationPolicy {
@@ -222,11 +222,11 @@ final class PreferencesStore: ObservableObject {
         aiLocalModelEndpoint = ManagedPreferences.string(.aiLocalModelEndpoint) ?? ""
         aiLocalModelFlavor = ManagedPreferences.string(.aiLocalModelFlavor) ?? LocalImageAPIFlavor.automatic1111.rawValue
         aiLocalModelName = ManagedPreferences.string(.aiLocalModelName) ?? ""
-        aiLocalModelImageSize = ManagedPreferences.string(.aiLocalModelImageSize) ?? LocalImageSize.square.rawValue
+        aiLocalModelImageSize = ManagedPreferences.string(.aiLocalModelImageSize) ?? LocalImageSize.matchWallpaper.rawValue
         aiExternalProvider = ManagedPreferences.string(.aiExternalProvider) ?? ExternalImageProviderKind.google.rawValue
         aiExternalEndpoint = ManagedPreferences.string(.aiExternalEndpoint) ?? ""
         aiExternalModelName = ManagedPreferences.string(.aiExternalModelName) ?? ""
-        aiExternalImageShape = ManagedPreferences.string(.aiExternalImageShape) ?? ExternalImageShape.landscape.rawValue
+        aiExternalImageShape = ManagedPreferences.string(.aiExternalImageShape) ?? ExternalImageShape.matchWallpaper.rawValue
         aiPromptImproverEnabled = ManagedPreferences.bool(.aiPromptImproverEnabled) ?? false
         aiPromptImproverModel = ManagedPreferences.string(.aiPromptImproverModel) ?? ""
     }

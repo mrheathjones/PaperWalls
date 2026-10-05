@@ -71,6 +71,11 @@ screen (the **Fit + Blur** treatment, which you can change):
   one) with your own API key, which stays in your Keychain.
 - **Improve** rewrites your description into a fuller prompt using Claude.
 
+Local and External generate at your wallpaper's shape, so **Fill** shows
+everything. Apple's Image Playground always makes a square picture: keep
+**Fit + Blur**, or pick **Fill** and use the **Focus** sliders under
+Treatment to choose which part of the picture stays on screen.
+
 Nothing is sent anywhere until you press one of those buttons, and the
 Settings page says exactly which service each one talks to. On a work
 Mac, your organization may turn some or all of these off.

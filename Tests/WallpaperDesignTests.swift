@@ -128,6 +128,15 @@ final class WallpaperRenderSizeTests: XCTestCase {
 // MARK: - Image background source
 
 final class SceneScaleModeTests: XCTestCase {
+    func testFocusRoundTripsAndDefaultsToCenter() throws {
+        var treatment = SceneBackgroundTreatment()
+        treatment.focus = ScenePoint(x: 0.5, y: 1)
+        let data = try JSONEncoder().encode(treatment)
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: data).focus, ScenePoint(x: 0.5, y: 1))
+        let old = Data(#"{"scaleMode": "fill"}"#.utf8)
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: old).focus, .center)
+    }
+
     func testFitBlurRoundTripsAndUnknownModesFallBackToFill() throws {
         var treatment = SceneBackgroundTreatment()
         treatment.scaleMode = .fitBlur

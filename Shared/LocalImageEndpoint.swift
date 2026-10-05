@@ -41,12 +41,15 @@ struct LocalImageSize: Equatable, Hashable {
     static let square = LocalImageSize(width: 1024, height: 1024)
     static let wide = LocalImageSize(width: 1344, height: 768)
     static let tall = LocalImageSize(width: 768, height: 1344)
-    static let presets: [LocalImageSize] = [.square, .wide, .tall]
+    /// Sentinel: pick wide / tall / square from the wallpaper's shape.
+    static let matchWallpaper = LocalImageSize(width: 0, height: 0)
+    static let presets: [LocalImageSize] = [.matchWallpaper, .square, .wide, .tall]
 
-    var rawValue: String { "\(width)x\(height)" }
+    var rawValue: String { self == .matchWallpaper ? "match" : "\(width)x\(height)" }
 
     var displayName: String {
         switch self {
+        case .matchWallpaper: return "Match wallpaper"
         case .square: return "Square 1024"
         case .wide: return "Wide 1344 × 768"
         case .tall: return "Tall 768 × 1344"
@@ -54,8 +57,22 @@ struct LocalImageSize: Equatable, Hashable {
         }
     }
 
-    /// Parses "1344x768" (also "1344×768"); anything else is nil.
+    /// The concrete size for a wallpaper of `pixelSize` (wide when unknown).
+    func resolved(for pixelSize: CGSize?) -> LocalImageSize {
+        guard self == .matchWallpaper else { return self }
+        guard let pixelSize, pixelSize.width > 0, pixelSize.height > 0 else { return .wide }
+        let ratio = pixelSize.width / pixelSize.height
+        if ratio > 1.15 { return .wide }
+        if ratio < 0.87 { return .tall }
+        return .square
+    }
+
+    /// Parses "1344x768" (also "1344×768") or "match"; anything else is nil.
     init?(rawValue: String) {
+        if rawValue.trimmingCharacters(in: .whitespaces).lowercased() == "match" {
+            self = .matchWallpaper
+            return
+        }
         let parts = rawValue.lowercased()
             .replacingOccurrences(of: "×", with: "x")
             .split(separator: "x")
@@ -114,7 +131,7 @@ struct LocalImageEndpoint: Equatable {
     var baseURL: String = ""
     var flavor: LocalImageAPIFlavor = .automatic1111
     var modelName: String = ""
-    var imageSize: LocalImageSize = .square
+    var imageSize: LocalImageSize = .matchWallpaper
 
     /// Reads the live preference layers.
     static func current() -> LocalImageEndpoint {
@@ -122,7 +139,7 @@ struct LocalImageEndpoint: Equatable {
             baseURL: ManagedPreferences.string(.aiLocalModelEndpoint) ?? "",
             flavor: ManagedPreferences.string(.aiLocalModelFlavor).flatMap(LocalImageAPIFlavor.init(rawValue:)) ?? .automatic1111,
             modelName: ManagedPreferences.string(.aiLocalModelName) ?? "",
-            imageSize: ManagedPreferences.string(.aiLocalModelImageSize).flatMap(LocalImageSize.init(rawValue:)) ?? .square)
+            imageSize: ManagedPreferences.string(.aiLocalModelImageSize).flatMap(LocalImageSize.init(rawValue:)) ?? .matchWallpaper)
     }
 
     var isConfigured: Bool {
@@ -151,8 +168,10 @@ struct LocalImageEndpoint: Equatable {
         return URL(string: base.absoluteString + path) ?? base.appendingPathComponent(path)
     }
 
-    /// POST that asks for one image of `prompt`.
-    func generationRequest(prompt: String, token: String? = nil) throws -> URLRequest {
+    /// POST that asks for one image of `prompt`. `pixelSize` is the
+    /// wallpaper's size, used when the size is "Match wallpaper".
+    func generationRequest(prompt: String, token: String? = nil, pixelSize: CGSize? = nil) throws -> URLRequest {
+        let imageSize = imageSize.resolved(for: pixelSize)
         var request = URLRequest(url: try url(path: flavor.generationPath))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
