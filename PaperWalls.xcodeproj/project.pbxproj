@@ -661,7 +661,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -684,7 +684,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -695,7 +695,7 @@
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 19;
 				ENABLE_HARDENED_RUNTIME = YES;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.cli;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -706,7 +706,7 @@
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 19;
 				ENABLE_HARDENED_RUNTIME = YES;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.cli;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -722,7 +722,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -738,7 +738,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -755,7 +755,7 @@
 				INFOPLIST_KEY_NSPrincipalClass = PaperWallsSaverView;
 				INSTALL_PATH = "$(HOME)/Library/Screen Savers";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.saver;
 				PRODUCT_MODULE_NAME = PaperWallsSaver;
 				PRODUCT_NAME = PaperWalls;
@@ -775,7 +775,7 @@
 				INFOPLIST_KEY_NSPrincipalClass = PaperWallsSaverView;
 				INSTALL_PATH = "$(HOME)/Library/Screen Savers";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.saver;
 				PRODUCT_MODULE_NAME = PaperWallsSaver;
 				PRODUCT_NAME = PaperWalls;
