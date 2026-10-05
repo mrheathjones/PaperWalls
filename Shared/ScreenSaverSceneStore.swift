@@ -200,7 +200,15 @@ enum ScreenSaverSceneStore {
         guard assetExtensions.contains(fileExtension) else {
             throw CocoaError(.fileReadUnsupportedScheme)
         }
-        let data = try Data(contentsOf: source)
+        return try importAsset(data: try Data(contentsOf: source), fileExtension: fileExtension, in: directory)
+    }
+
+    /// Stores image bytes (e.g. a generated image) under their content hash.
+    static func importAsset(data: Data, fileExtension: String, in directory: URL = defaultDirectory) throws -> String {
+        let fileExtension = fileExtension.lowercased()
+        guard assetExtensions.contains(fileExtension) else {
+            throw CocoaError(.fileReadUnsupportedScheme)
+        }
         let hash = SHA256.hash(data: data).prefix(12).map { String(format: "%02x", $0) }.joined()
         let name = "\(hash).\(fileExtension)"
         guard let destination = assetURL(named: name, in: directory) else {

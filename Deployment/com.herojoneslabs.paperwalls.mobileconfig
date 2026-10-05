@@ -101,6 +101,13 @@
 								<false/>
 								<key>aiLocalModelEnabled</key>
 								<false/>
+								<!-- Local Model server (used only when aiLocalModelEnabled is true) -->
+								<key>aiLocalModelEndpoint</key>
+								<string>http://127.0.0.1:7860</string>
+								<key>aiLocalModelFlavor</key>
+								<string>automatic1111</string>
+								<key>aiLocalModelImageSize</key>
+								<string>1024x1024</string>
 								<key>aiExternalModelEnabled</key>
 								<false/>
 								<key>showScreenSaversPage</key>

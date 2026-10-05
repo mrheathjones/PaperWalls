@@ -658,9 +658,9 @@ struct SceneBackgroundControls: View {
                     Button("Choose Image…", action: chooseImage)
                 }
             }
-            if prefs.aiPolicy.isEnabled(.appleOnDevice) {
+            if prefs.aiPolicy.offersGeneration {
                 SettingsDivider()
-                ImagePlaygroundBackgroundRow { assetName in
+                AIBackgroundGenerator(policy: prefs.aiPolicy) { assetName in
                     background.source = .image(assetName: assetName)
                 }
             }

@@ -113,6 +113,17 @@ final class PreferencesStore: ObservableObject {
     @Published var aiAppleOnDeviceEnabled: Bool = false
     @Published var aiLocalModelEnabled: Bool = false
     @Published var aiExternalModelEnabled: Bool = false
+    @Published var aiLocalModelEndpoint: String = ""
+    @Published var aiLocalModelFlavor: String = LocalImageAPIFlavor.automatic1111.rawValue
+    @Published var aiLocalModelName: String = ""
+    @Published var aiLocalModelImageSize: String = LocalImageSize.square.rawValue
+
+    var localImageEndpoint: LocalImageEndpoint {
+        LocalImageEndpoint(baseURL: aiLocalModelEndpoint,
+                           flavor: LocalImageAPIFlavor(rawValue: aiLocalModelFlavor) ?? .automatic1111,
+                           modelName: aiLocalModelName,
+                           imageSize: LocalImageSize(rawValue: aiLocalModelImageSize) ?? .square)
+    }
 
     var aiPolicy: AIGenerationPolicy {
         AIGenerationPolicy(enabled: aiGenerationEnabled,
@@ -188,6 +199,10 @@ final class PreferencesStore: ObservableObject {
         aiAppleOnDeviceEnabled = ManagedPreferences.bool(.aiAppleOnDeviceEnabled) ?? false
         aiLocalModelEnabled = ManagedPreferences.bool(.aiLocalModelEnabled) ?? false
         aiExternalModelEnabled = ManagedPreferences.bool(.aiExternalModelEnabled) ?? false
+        aiLocalModelEndpoint = ManagedPreferences.string(.aiLocalModelEndpoint) ?? ""
+        aiLocalModelFlavor = ManagedPreferences.string(.aiLocalModelFlavor) ?? LocalImageAPIFlavor.automatic1111.rawValue
+        aiLocalModelName = ManagedPreferences.string(.aiLocalModelName) ?? ""
+        aiLocalModelImageSize = ManagedPreferences.string(.aiLocalModelImageSize) ?? LocalImageSize.square.rawValue
     }
 
     /// Persists each published property back to CFPreferences when it changes
@@ -238,6 +253,10 @@ final class PreferencesStore: ObservableObject {
         persist($aiAppleOnDeviceEnabled, .aiAppleOnDeviceEnabled) { $0 }
         persist($aiLocalModelEnabled, .aiLocalModelEnabled) { $0 }
         persist($aiExternalModelEnabled, .aiExternalModelEnabled) { $0 }
+        persist($aiLocalModelEndpoint, .aiLocalModelEndpoint) { $0.isEmpty ? nil : $0 }
+        persist($aiLocalModelFlavor, .aiLocalModelFlavor) { $0 }
+        persist($aiLocalModelName, .aiLocalModelName) { $0.isEmpty ? nil : $0 }
+        persist($aiLocalModelImageSize, .aiLocalModelImageSize) { $0 }
     }
 
     private func persist<Value: Equatable>(_ publisher: Published<Value>.Publisher,

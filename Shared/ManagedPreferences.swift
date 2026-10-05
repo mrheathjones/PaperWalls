@@ -58,8 +58,12 @@ enum ManagedPreferenceKey: String, CaseIterable {
     // switch hides every AI control regardless of the sub-toggles.
     case aiGenerationEnabled            // master switch
     case aiAppleOnDeviceEnabled         // Image Playground (Apple Intelligence, on-device)
-    case aiLocalModelEnabled            // a local image-generation endpoint (phase 3)
+    case aiLocalModelEnabled            // a local image-generation server
     case aiExternalModelEnabled         // a cloud image API (phase 4)
+    case aiLocalModelEndpoint           // base URL, e.g. http://127.0.0.1:7860
+    case aiLocalModelFlavor             // automatic1111 | openAICompatible
+    case aiLocalModelName               // optional model/checkpoint name
+    case aiLocalModelImageSize          // "WxH" asked of the server
 
     // Legacy rotation keys — read ONLY by RotationPoolMigration (spec §4).
     case autoRotateSource

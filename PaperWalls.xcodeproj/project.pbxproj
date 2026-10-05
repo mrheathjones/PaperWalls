@@ -117,9 +117,14 @@
 		FF00000000000000000000C1 /* WallpaperDesignTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000BF /* WallpaperDesignTests.swift */; };
 		FF00000000000000000000C2 /* AIGenerationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C0 /* AIGenerationPolicy.swift */; };
 		FF00000000000000000000C3 /* AIGenerationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C0 /* AIGenerationPolicy.swift */; };
-		FF00000000000000000000C4 /* ImagePlaygroundGeneration.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C1 /* ImagePlaygroundGeneration.swift */; };
+		FF00000000000000000000C4 /* AIBackgroundGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C1 /* AIBackgroundGenerator.swift */; };
 		FF00000000000000000000C5 /* AIGenerationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C2 /* AIGenerationPolicyTests.swift */; };
 		FF00000000000000000000C6 /* AIGenerationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C0 /* AIGenerationPolicy.swift */; };
+		FF00000000000000000000C7 /* LocalImageEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C3 /* LocalImageEndpoint.swift */; };
+		FF00000000000000000000C8 /* LocalImageEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C3 /* LocalImageEndpoint.swift */; };
+		FF00000000000000000000C9 /* LocalImageEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C3 /* LocalImageEndpoint.swift */; };
+		FF00000000000000000000CA /* LocalImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C4 /* LocalImageProvider.swift */; };
+		FF00000000000000000000CB /* LocalImageEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C5 /* LocalImageEndpointTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -217,8 +222,11 @@
 		DD00000000000000000000BE /* StudioWallpapersTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioWallpapersTab.swift; sourceTree = "<group>"; };
 		DD00000000000000000000BF /* WallpaperDesignTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperDesignTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000C0 /* AIGenerationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGenerationPolicy.swift; sourceTree = "<group>"; };
-		DD00000000000000000000C1 /* ImagePlaygroundGeneration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePlaygroundGeneration.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C1 /* AIBackgroundGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIBackgroundGenerator.swift; sourceTree = "<group>"; };
 		DD00000000000000000000C2 /* AIGenerationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGenerationPolicyTests.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C3 /* LocalImageEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalImageEndpoint.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C4 /* LocalImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalImageProvider.swift; sourceTree = "<group>"; };
+		DD00000000000000000000C5 /* LocalImageEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalImageEndpointTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -302,6 +310,7 @@
 				DD00000000000000000000BB /* WallpaperDesignStore.swift */,
 				DD00000000000000000000BC /* WallpaperPresets.swift */,
 				DD00000000000000000000C0 /* AIGenerationPolicy.swift */,
+				DD00000000000000000000C3 /* LocalImageEndpoint.swift */,
 				DD0000000000000000000008 /* RemoteCatalog.swift */,
 				DD0000000000000000000009 /* SystemWallpapers.swift */,
 			);
@@ -318,6 +327,7 @@
 				DD00000000000000000000AC /* WallpaperDeploymentTests.swift */,
 				DD00000000000000000000BF /* WallpaperDesignTests.swift */,
 				DD00000000000000000000C2 /* AIGenerationPolicyTests.swift */,
+				DD00000000000000000000C5 /* LocalImageEndpointTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -342,7 +352,8 @@
 				DD00000000000000000000AB /* StudioWallpaperPackageView.swift */,
 				DD00000000000000000000BE /* StudioWallpapersTab.swift */,
 				DD00000000000000000000BD /* AppModel+Wallpapers.swift */,
-				DD00000000000000000000C1 /* ImagePlaygroundGeneration.swift */,
+				DD00000000000000000000C1 /* AIBackgroundGenerator.swift */,
+				DD00000000000000000000C4 /* LocalImageProvider.swift */,
 				DD0000000000000000000090 /* SceneComposer.swift */,
 				DD0000000000000000000091 /* SceneLayerControls.swift */,
 				DD0000000000000000000092 /* ComposerPickers.swift */,
@@ -566,7 +577,9 @@
 				FF00000000000000000000BF /* AppModel+Wallpapers.swift in Sources */,
 				FF00000000000000000000C0 /* StudioWallpapersTab.swift in Sources */,
 				FF00000000000000000000C2 /* AIGenerationPolicy.swift in Sources */,
-				FF00000000000000000000C4 /* ImagePlaygroundGeneration.swift in Sources */,
+				FF00000000000000000000C4 /* AIBackgroundGenerator.swift in Sources */,
+				FF00000000000000000000C7 /* LocalImageEndpoint.swift in Sources */,
+				FF00000000000000000000CA /* LocalImageProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -578,6 +591,7 @@
 				FF0000000000000000000012 /* WallpaperEngine.swift in Sources */,
 				FF0000000000000000000013 /* PreferencesStore.swift in Sources */,
 				FF00000000000000000000C6 /* AIGenerationPolicy.swift in Sources */,
+				FF00000000000000000000C8 /* LocalImageEndpoint.swift in Sources */,
 				FF0000000000000000000014 /* ManagedPreferences.swift in Sources */,
 				FF0000000000000000000015 /* WallpaperCatalog.swift in Sources */,
 				FF0000000000000000000021 /* WallpaperContentID.swift in Sources */,
@@ -626,6 +640,8 @@
 				FF00000000000000000000C1 /* WallpaperDesignTests.swift in Sources */,
 				FF00000000000000000000C3 /* AIGenerationPolicy.swift in Sources */,
 				FF00000000000000000000C5 /* AIGenerationPolicyTests.swift in Sources */,
+				FF00000000000000000000C9 /* LocalImageEndpoint.swift in Sources */,
+				FF00000000000000000000CB /* LocalImageEndpointTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

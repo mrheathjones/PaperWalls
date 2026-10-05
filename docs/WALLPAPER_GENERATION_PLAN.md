@@ -1,6 +1,6 @@
 # Studio › Wallpapers — generation plan
 
-Status: phases 1 and 2 landed (October 2026). Phases 3–4 are design only.
+Status: phases 1–3 landed (October 2026). Phase 4 is design only.
 
 PaperWalls already has everything needed to *compose* a wallpaper: the
 scene model (`ScreenSaverScene`), the Scene Composer UI, the frame
@@ -81,10 +81,9 @@ to obtain the *background* of that scene — nothing else changes.
 
 Landed as `Shared/AIGenerationPolicy.swift` (pure gating + tests), the four
 managed keys below, a Settings › AI Generation card, and
-`ImagePlaygroundBackgroundRow` under Background › An Image in the
-composer. The provider protocol below arrives with the first programmatic
-provider (phase 3); the Apple path needs none, since the system sheet
-owns the whole flow.
+the generator rows under Background › An Image in the composer. The
+Apple path needs no provider protocol, since the system sheet owns the
+whole flow.
 
 ```swift
 protocol WallpaperImageProvider {
@@ -125,15 +124,24 @@ Preference keys (all managed-aware, default `false`):
 Settings › "AI Generation" card: master toggle, then the three rows
 disabled while the master is off, each with its own settings beneath.
 
-## Phase 3 — Local Model
+## Phase 3 — Local Model (landed)
+
+Landed as `Shared/LocalImageEndpoint.swift` (pure request building and
+reply parsing for both API dialects, with tests), `App/LocalImageProvider.swift`
+(the `WallpaperImageProvider` protocol, the URLSession provider, and a
+Keychain helper for an optional bearer token), the four endpoint keys
+below, Settings rows (endpoint, API, model, size, key, Test Connection),
+and a Local Model button in the composer's generator rows.
 
 No bundled CoreML Stable Diffusion (gigabytes of weights, and the project
 has no SPM). "Local" means a local HTTP endpoint the user already runs:
 Draw Things, ComfyUI, Automatic1111 (`/sdapi/v1/txt2img`), or any
 OpenAI-compatible `/v1/images/generations`. Settings: base URL, API
-flavor picker, model name, optional size. Keys (if any) go to the
+flavor picker, model name, optional size. An optional bearer token goes to the
 Keychain. Managed keys: `aiLocalModelEndpoint`, `aiLocalModelFlavor`,
-`aiLocalModelName` (admin can pre-fill; user can edit unless forced).
+`aiLocalModelName`, `aiLocalModelImageSize` (admin can pre-fill; user can
+edit unless forced). ComfyUI's workflow-graph API is not covered; run it
+behind an Automatic1111-compatible shim or use Draw Things.
 
 ## Phase 4 — External Model
 

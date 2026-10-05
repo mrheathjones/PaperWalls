@@ -355,6 +355,39 @@ struct SettingsContent: View {
                         SettingsToggle(isOn: $prefs.aiAppleOnDeviceEnabled,
                                        disabled: prefs.isForced(.aiAppleOnDeviceEnabled) || !prefs.aiGenerationEnabled)
                     }
+                    SettingsDivider()
+                    SettingsRow(title: "Local Model",
+                                subtitle: "An image-generation server on this Mac or your network: Draw Things, Automatic1111, Forge, SD.Next, or any OpenAI-compatible endpoint. Prompts go only to the address below, and only when you press Generate",
+                                managedKey: .aiLocalModelEnabled) {
+                        SettingsToggle(isOn: $prefs.aiLocalModelEnabled,
+                                       disabled: prefs.isForced(.aiLocalModelEnabled) || !prefs.aiGenerationEnabled)
+                    }
+                    if prefs.aiGenerationEnabled && prefs.aiLocalModelEnabled {
+                        SettingsDivider()
+                        SettingsFieldRow(title: "Endpoint",
+                                         prompt: "http://127.0.0.1:7860",
+                                         text: $prefs.aiLocalModelEndpoint,
+                                         managedKey: .aiLocalModelEndpoint)
+                        SettingsDivider()
+                        SettingsChipsRow(title: "API",
+                                         managedKey: .aiLocalModelFlavor,
+                                         options: LocalImageAPIFlavor.allCases.map { ($0.displayName, $0.rawValue) },
+                                         selection: $prefs.aiLocalModelFlavor)
+                        SettingsDivider()
+                        SettingsFieldRow(title: "Model name",
+                                         prompt: "Optional; the server's default when empty",
+                                         text: $prefs.aiLocalModelName,
+                                         managedKey: .aiLocalModelName)
+                        SettingsDivider()
+                        SettingsChipsRow(title: "Image size",
+                                         managedKey: .aiLocalModelImageSize,
+                                         options: LocalImageSize.presets.map { ($0.displayName, $0.rawValue) },
+                                         selection: $prefs.aiLocalModelImageSize)
+                        SettingsDivider()
+                        LocalModelKeyRow()
+                        SettingsDivider()
+                        LocalModelConnectionRow()
+                    }
                 }
             }
 
@@ -745,5 +778,101 @@ struct SegmentedPills<Value: Hashable>: View {
         }
         .padding(3)
         .background(Theme.chipFill, in: Capsule())
+    }
+}
+
+// MARK: - Local Model helpers
+
+/// Optional bearer token for the local server, kept in the login
+/// Keychain (never in the preference domain, which ships in profiles).
+struct LocalModelKeyRow: View {
+    @State private var key = ""
+    @State private var hasStoredKey = KeychainStore.read(account: LocalImageProvider.keychainAccount) != nil
+    @State private var status: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text("API key")
+                    .font(.system(size: 15, weight: .semibold))
+                Text(hasStoredKey ? "Stored in your Keychain" : "Optional; most local servers need none")
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 8) {
+                SecureField("", text: $key, prompt: Text(hasStoredKey ? "••••••••" : "Paste a token if your server requires one"))
+                    .textFieldStyle(.plain)
+                    .font(Theme.pathMono)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 8))
+                    .accessibilityLabel("Local model API key")
+                Button("Save") {
+                    let saved = KeychainStore.write(account: LocalImageProvider.keychainAccount, value: key)
+                    status = saved ? "Saved" : "Couldn’t write to the Keychain"
+                    hasStoredKey = saved && !key.isEmpty
+                    key = ""
+                }
+                .disabled(key.isEmpty)
+                if hasStoredKey {
+                    Button("Remove") {
+                        KeychainStore.delete(account: LocalImageProvider.keychainAccount)
+                        hasStoredKey = false
+                        status = "Removed"
+                    }
+                }
+            }
+            if let status {
+                Text(status)
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+    }
+}
+
+/// "Test Connection": one GET to the server's model list.
+struct LocalModelConnectionRow: View {
+    @EnvironmentObject private var prefs: PreferencesStore
+
+    @State private var isTesting = false
+    @State private var result: String?
+    @State private var succeeded = false
+
+    var body: some View {
+        SettingsRow(title: "Connection",
+                    subtitle: result ?? "Checks that the server answers at the endpoint above") {
+            HStack(spacing: 8) {
+                if isTesting {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if result != nil {
+                    Image(systemName: succeeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(succeeded ? Color.green : Color.orange)
+                }
+                Button("Test Connection", action: test)
+                    .disabled(isTesting || !prefs.localImageEndpoint.isConfigured)
+            }
+        }
+    }
+
+    private func test() {
+        let provider = LocalImageProvider(endpoint: prefs.localImageEndpoint)
+        isTesting = true
+        result = nil
+        Task { @MainActor in
+            defer { isTesting = false }
+            switch await provider.testConnection() {
+            case .success(let message):
+                succeeded = true
+                result = message
+            case .failure(let error):
+                succeeded = false
+                result = error.localizedDescription
+            }
+        }
     }
 }
