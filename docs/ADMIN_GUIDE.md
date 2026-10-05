@@ -146,13 +146,14 @@ is also in `Deployment/`.
 | --- | --- | --- | --- |
 | `screenSaverEnabled` | bool | `true` | Master switch for the PaperWalls screen saver; `false` makes the saver show a solid color and nothing else |
 | `activeScreenSaverSceneID` | string | — | The scene the saver runs: a scene's UUID from the user's library, or `managed` for the scene provisioned by `managedScreenSaverScene`. Forcing it disables **Set Active** |
-| `managedScreenSaverScene` | string (JSON) | — | An organization-provided scene, shown as a read-only **Managed** entry (ID `managed`). Build it in Studio and use the card's **Copy Scene for MDM** action. In `managed.json` it may be an inline object instead of a string |
+| `managedScreenSaverScene` | string (JSON) | — | An organization-provided scene, shown as a read-only **Managed** entry (ID `managed`). Build it in Studio and use the card's **Copy Scene for MDM** action (shown in Admin mode). In `managed.json` it may be an inline object instead of a string |
 | `allowedScreenSaverSceneIDs` | array of strings | — | Optional allow-list of scene IDs that may be active; other scenes stay visible but can't be set active |
 | `allowScreenSaverCreation` | bool | `true` | `false` = users can't create, edit, rename, or delete scenes (Studio's ScreenSaver tab is unavailable); they can still browse, preview, and Set Active |
 | `showScreenSaversPage` | bool | `true` | Shows/hides the ScreenSavers page in the sidebar's Library section |
 | `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
 | `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (a "coming soon" placeholder today) |
 | `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
+| `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers) and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
 
 See §12 for how these interact with lock tiers and how the saver is deployed.
 
@@ -410,7 +411,8 @@ screen saver by profile.
 ### Provisioning a company screen saver
 
 1. On any Mac, build the scene in Studio and save it.
-2. On its card in ScreenSavers choose **Copy Scene for MDM**.
+2. Turn on **Settings › Admin › Admin mode**, then on the scene's card in
+   ScreenSavers choose **Copy Scene for MDM**.
 3. Paste the JSON as the value of `managedScreenSaverScene` (a string in a
    profile; `managed.json` also accepts it as an inline object).
 4. Force `activeScreenSaverSceneID` = `managed` to make it the one that runs.
@@ -485,6 +487,45 @@ bundle (a clock on a coral gradient), not a live view of the active scene.
 macOS caches a saver's tile by bundle: after replacing the saver with a
 build whose thumbnail changed, the old tile can persist until the bundle is
 renamed or the Mac restarts.
+
+### Packaging screen savers for deployment (Admin mode)
+
+The managed scene above runs *inside* PaperWalls. To ship scenes as ordinary
+screen savers that don't need the app, turn on **Settings › Admin › Admin
+mode** and open **Studio › Package** (or choose **Package for Deployment…** on
+a card):
+
+1. Tick one or more screen savers. Each becomes its own saver; edit the name
+   it shows in System Settings (default "*Company* – *Scene*").
+2. Set the package name and version. The pkg identifier is
+   `com.herojoneslabs.paperwalls.savers.<name>`. Raise the version for each
+   change you ship.
+3. Optionally pick signing identities from your keychain: a Developer ID
+   Application certificate for the savers (hardened runtime + timestamp) and a
+   Developer ID Installer certificate for the pkg. Without them the savers are
+   signed ad hoc and the pkg is unsigned. Jamf Pro installs that as-is; MDM
+   `InstallEnterpriseApplication` needs a signed pkg.
+4. **Build Package…** and choose a folder. You get:
+
+   | Item | What it is |
+   |---|---|
+   | `<Name>-<version>.pkg` | Installs every saver to `/Library/Screen Savers` (not relocatable) |
+   | `Savers/` | The same bundles, for tools that copy files |
+   | `MDM/` | Optional `managedScreenSaverScene` JSON per scene |
+   | `Profiles/` | Optional reference profile selecting one saver (same caveat as the next section) |
+   | `DEPLOY.txt` | Contents, signing state, notarization commands, removal steps |
+
+Each saver carries its own copy of the images its scene uses (a chosen
+wallpaper, the current rotation pool, imported icons), so it looks the same on
+every Mac. "Current desktop" scenes follow each Mac's own wallpaper. The
+company name is baked in at build time. Deployed savers use the identifier
+prefix `com.herojoneslabs.paperwalls.saver.deployed.`, so they never clash
+with a user's own per-scene tiles. Installing a newer version doesn't remove
+savers you dropped from the package. Remove them with the commands in
+`DEPLOY.txt`, or set `REMOVE_DEPLOYED_SAVERS=true` in `uninstall.sh`.
+
+Notarize by signing both parts, then running the `notarytool` commands from
+`DEPLOY.txt`. The app doesn't notarize for you.
 
 ### Verifying a new macOS version
 

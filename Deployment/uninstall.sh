@@ -17,6 +17,7 @@
 #          it ignores its arguments and always performs the removal.
 # Version: 1.0 - Initial Script
 #          1.1 - Remove the screen saver and its per-user data
+#          1.2 - Optionally remove savers built with Studio › Package
 #
 #
 #
@@ -50,6 +51,7 @@ readonly RMDIR=$(which rmdir)
 readonly DSCL=$(which dscl)
 readonly FIND=$(which find)
 readonly PKGUTIL=$(which pkgutil)
+readonly PLISTBUDDY="/usr/libexec/PlistBuddy"
 readonly PKILL=$(which pkill)
 readonly PGREP=$(which pgrep)
 readonly LAUNCHCTL=$(which launchctl)
@@ -61,7 +63,7 @@ readonly ORG_PLIST_DOMAIN="com.herojoneslabs"
 
 # Script metadata
 readonly SCRIPT_NAME=$("${BASENAME}" "$0")
-readonly SCRIPT_VERSION="1.1"
+readonly SCRIPT_VERSION="1.2"
 readonly LOG_LABEL="${ORG_PLIST_DOMAIN}.paperwalls.uninstall"
 readonly TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 readonly JAMF_LOG="/var/log/jamf.log"
@@ -115,12 +117,19 @@ readonly SYSTEM_MANAGED_DIR="/Library/Application Support/PaperWalls"   # admin 
 #   REMOVE_MANAGED_CONFIG    The admin's local /Library/Application Support/
 #                            PaperWalls/managed.json. Off by default — you
 #                            likely manage that separately (or via a profile).
+#   REMOVE_DEPLOYED_SAVERS   Savers built with Studio › Package and installed
+#                            to /Library/Screen Savers (matched by bundle
+#                            identifier, never by name), plus their pkg
+#                            receipts. Off by default — they run without the
+#                            app and are usually deployed and removed on
+#                            their own.
 # ===================================================================
 readonly REMOVE_USER_CACHES="true"
 readonly REMOVE_SCREEN_SAVERS="false"
 readonly REMOVE_PERSONAL_LIBRARY="false"
 readonly REMOVE_USER_PREFERENCES="false"
 readonly REMOVE_MANAGED_CONFIG="false"
+readonly REMOVE_DEPLOYED_SAVERS="false"
 
 ##################################
 ### End User Defined Variables ###
@@ -305,6 +314,37 @@ forget_receipt() {
     fi
 }
 
+# Studio › Package savers: bundle identifier prefix and pkg receipt prefix.
+readonly DEPLOYED_SAVER_ID_PREFIX="${APP_BUNDLE_ID}.saver.deployed."
+readonly DEPLOYED_PKG_ID_PREFIX="${APP_BUNDLE_ID}.savers."
+
+# Remove savers built with Studio › Package (when REMOVE_DEPLOYED_SAVERS=true).
+remove_deployed_savers() {
+    [[ "${REMOVE_DEPLOYED_SAVERS}" == "true" ]] || return 0
+    local saver identifier receipt removed=false
+    for saver in "/Library/Screen Savers/"*.saver
+    do
+        [[ -d "${saver}" ]] || continue
+        identifier=$("${PLISTBUDDY}" -c "Print :CFBundleIdentifier" "${saver}/Contents/Info.plist" 2>/dev/null) || continue
+        if [[ "${identifier}" == "${DEPLOYED_SAVER_ID_PREFIX}"* ]]
+        then
+            log_info "Removing deployed screen saver: ${saver}"
+            "${RM}" -rf "${saver}"
+            removed=true
+        fi
+    done
+    while IFS= read -r receipt
+    do
+        [[ -n "${receipt}" ]] || continue
+        log_info "Forgetting pkg receipt: ${receipt}"
+        "${PKGUTIL}" --forget "${receipt}" >/dev/null 2>&1 || true
+    done < <("${PKGUTIL}" --pkgs="${DEPLOYED_PKG_ID_PREFIX//./\\.}.*" 2>/dev/null)
+    if [[ "${removed}" == "true" ]]
+    then
+        "${PKILL}" -x "${SAVER_HOST_PROCESS}" 2>/dev/null || true
+    fi
+}
+
 # If the per-user PaperWalls dir has nothing left in it, remove the empty shell.
 remove_dir_if_empty() {
     local dir="$1"
@@ -408,6 +448,7 @@ remove_payload
 forget_receipt
 remove_user_data
 remove_managed_config
+remove_deployed_savers
 
 log_info "PaperWalls uninstall complete"
 log_info "  Removed: app, CLI, LaunchAgents, screen saver, pkg receipt${REMOVE_USER_CACHES:+, user caches}"

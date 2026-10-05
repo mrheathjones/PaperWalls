@@ -382,6 +382,14 @@
         "infoText": "Key: allowScreenSaverCreation (default: true)"
       }
     },
+    "adminModeEnabled": {
+      "type": "boolean",
+      "title": "Admin Mode",
+      "description": "Enables the admin tools: Studio's Package tab (build an installer package of screen savers for deployment) and the Copy Scene for MDM card action. Leave disabled (or force false) on end-user Macs.",
+      "options": {
+        "infoText": "Key: adminModeEnabled (default: false)"
+      }
+    },
     "showScreenSaversPage": {
       "type": "boolean",
       "title": "Show ScreenSavers Page",

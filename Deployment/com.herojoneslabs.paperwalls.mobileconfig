@@ -91,6 +91,9 @@
 								<!-- false = browse + Set Active only -->
 								<key>allowScreenSaverCreation</key>
 								<true/>
+								<!-- admin tools (Studio › Package, Copy Scene for MDM); keep false on end-user Macs -->
+								<key>adminModeEnabled</key>
+								<false/>
 								<key>showScreenSaversPage</key>
 								<true/>
 								<key>showStudio</key>
