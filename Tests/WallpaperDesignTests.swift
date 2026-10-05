@@ -128,6 +128,16 @@ final class WallpaperRenderSizeTests: XCTestCase {
 // MARK: - Image background source
 
 final class SceneScaleModeTests: XCTestCase {
+    func testZoomRoundTripsAndIsClamped() throws {
+        var treatment = SceneBackgroundTreatment()
+        treatment.zoom = 2.5
+        let data = try JSONEncoder().encode(treatment)
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: data).zoom, 2.5)
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: Data(#"{"zoom": 9}"#.utf8)).zoom, 4)
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: Data(#"{"zoom": 0.2}"#.utf8)).zoom, 1)
+        XCTAssertEqual(try JSONDecoder().decode(SceneBackgroundTreatment.self, from: Data("{}".utf8)).zoom, 1)
+    }
+
     func testFocusRoundTripsAndDefaultsToCenter() throws {
         var treatment = SceneBackgroundTreatment()
         treatment.focus = ScenePoint(x: 0.5, y: 1)

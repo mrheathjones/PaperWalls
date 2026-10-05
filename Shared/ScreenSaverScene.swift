@@ -153,6 +153,8 @@ struct SceneBackgroundTreatment: Codable, Equatable {
     /// different shape from the screen: (0, 0) keeps the top-left edge,
     /// (1, 1) the bottom-right, the default the middle.
     var focus: ScenePoint = .center
+    /// Fill and Center magnification, 1 (none) to 4, around the focus.
+    var zoom: Double = 1
 }
 
 extension SceneBackgroundTreatment {
@@ -163,6 +165,7 @@ extension SceneBackgroundTreatment {
         dim = container.sceneValue(.dim, default: 0).clampedToUnit
         slowZoom = container.sceneValue(.slowZoom, default: false)
         focus = container.sceneValue(.focus, default: .center)
+        zoom = min(4, max(1, container.sceneValue(.zoom, default: 1)))
     }
 }
 

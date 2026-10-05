@@ -71,6 +71,11 @@ screen (the **Fit + Blur** treatment, which you can change):
   one) with your own API key, which stays in your Keychain.
 - **Improve** rewrites your description into a fuller prompt using Claude.
 
+The preview is live: drag a text or icon layer to move it, drag the
+picture to pan it, and scroll, swipe up or down, or pinch to zoom in on
+part of it (zooming switches the treatment to **Fill**; the Focus and Zoom
+sliders under Treatment show the same values).
+
 Local and External generate at your wallpaper's shape, so **Fill** shows
 everything. Apple's Image Playground always makes a square picture: keep
 **Fit + Blur**, or pick **Fill** and use the **Focus** sliders under

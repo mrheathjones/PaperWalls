@@ -192,14 +192,19 @@ struct SceneComposer: View {
     }
 
     private var preview: some View {
-        SaverSceneView(scene: draft.scene, resources: model.sceneResources)
-            .aspectRatio(previewAspect, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                    .strokeBorder(Theme.hairline)
-            }
-            .accessibilityLabel("Live preview")
+        VStack(spacing: 6) {
+            InteractiveScenePreview(scene: $draft.scene, resources: model.sceneResources)
+                .aspectRatio(previewAspect, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                        .strokeBorder(Theme.hairline)
+                }
+                .accessibilityLabel("Live preview")
+            Text("Drag a layer to move it · drag the picture to pan · scroll or pinch to zoom")
+                .font(Theme.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Layers

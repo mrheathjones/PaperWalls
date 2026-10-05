@@ -200,12 +200,15 @@ struct SceneFrameView: View {
     private func backgroundImage(_ image: CGImage) -> some View {
         switch scene.background.treatment.scaleMode {
         case .fill:
-            let scale = max(size.width / CGFloat(max(1, image.width)), size.height / CGFloat(max(1, image.height)))
+            let zoom = scene.background.treatment.zoom
+            let scale = max(size.width / CGFloat(max(1, image.width)), size.height / CGFloat(max(1, image.height))) * zoom
             let shift = focusShift(overflow: CGSize(width: CGFloat(image.width) * scale - size.width,
                                                     height: CGFloat(image.height) * scale - size.height))
             Image(decorative: image, scale: 1)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
+                .frame(width: size.width, height: size.height)
+                .scaleEffect(zoom)
                 .offset(x: shift.width, y: shift.height)
                 .frame(width: size.width, height: size.height)
                 .clipped()
@@ -236,9 +239,11 @@ struct SceneFrameView: View {
                 .resizable()
                 .frame(width: size.width, height: size.height)
         case .center:
-            let shift = focusShift(overflow: CGSize(width: CGFloat(image.width) / displayScale - size.width,
-                                                    height: CGFloat(image.height) / displayScale - size.height))
+            let zoom = scene.background.treatment.zoom
+            let shift = focusShift(overflow: CGSize(width: CGFloat(image.width) / displayScale * zoom - size.width,
+                                                    height: CGFloat(image.height) / displayScale * zoom - size.height))
             Image(decorative: image, scale: displayScale)
+                .scaleEffect(zoom)
                 .offset(x: shift.width, y: shift.height)
                 .frame(width: size.width, height: size.height)
                 .clipped()

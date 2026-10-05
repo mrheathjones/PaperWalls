@@ -563,6 +563,22 @@ struct SceneBackgroundControls: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if prefs.aiPolicy.offersGeneration {
+                ComposerSection(title: "AI Prompt") {
+                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at this wallpaper's shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
+                        .font(Theme.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                    SettingsDivider()
+                    AIBackgroundGenerator(policy: prefs.aiPolicy, pixelSize: pixelSize) { assetName in
+                        background.source = .image(assetName: assetName)
+                        background.treatment.scaleMode = .fitBlur
+                    }
+                }
+            }
+
             ComposerSection(title: "Background") {
                 if case .unsupported = background.source {
                     Text("This background was made with a newer version of PaperWalls. Choose another to replace it.")
@@ -588,22 +604,6 @@ struct SceneBackgroundControls: View {
                     }
             }
 
-            if prefs.aiPolicy.offersGeneration {
-                ComposerSection(title: "AI Prompt") {
-                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at this wallpaper's shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
-                        .font(Theme.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                    SettingsDivider()
-                    AIBackgroundGenerator(policy: prefs.aiPolicy, pixelSize: pixelSize) { assetName in
-                        background.source = .image(assetName: assetName)
-                        background.treatment.scaleMode = .fitBlur
-                    }
-                }
-            }
-
             if usesImage {
                 ComposerSection(title: "Treatment") {
                     ComposerRow(title: "Fit") {
@@ -623,6 +623,9 @@ struct SceneBackgroundControls: View {
                         SettingsDivider()
                         ComposerSlider(title: "Focus down", value: $background.treatment.focus.y,
                                        lowLabel: "Top", highLabel: "Bottom")
+                        SettingsDivider()
+                        ComposerSlider(title: "Zoom", value: $background.treatment.zoom,
+                                       range: InteractiveScenePreview.zoomRange, lowLabel: "1×", highLabel: "4×")
                     }
                     SettingsDivider()
                     ComposerSlider(title: "Blur", value: $background.treatment.blur,
