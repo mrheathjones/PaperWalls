@@ -227,4 +227,17 @@ final class SceneDeploymentTests: XCTestCase {
         XCTAssertEqual(profile["PayloadOrganization"] as? String, "Acme")
         XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
     }
+
+    func testIdentityListParsing() {
+        let output = """
+          1) 0123456789ABCDEF0123456789ABCDEF01234567 "Developer ID Application: Example Org (ABCDE12345)"
+          2) 89ABCDEF0123456789ABCDEF0123456789ABCDEF "Developer ID Installer: Example Org (ABCDE12345)"
+          3) 0123456789ABCDEF0123456789ABCDEF01234567 "Developer ID Application: Example Org (ABCDE12345)"
+             3 valid identities found
+        """
+        XCTAssertEqual(SceneDeployment.identityNames(fromFindIdentityOutput: output), [
+            "Developer ID Application: Example Org (ABCDE12345)",
+            "Developer ID Installer: Example Org (ABCDE12345)",
+        ])
+    }
 }

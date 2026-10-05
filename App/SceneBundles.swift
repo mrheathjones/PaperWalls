@@ -141,8 +141,10 @@ final class SceneBundleManager {
         var twoX: Data?
     }
 
+    /// Renders from the snapshot's own (absolute) paths — for a deployed
+    /// bundle, before the paths are made bundle-relative.
     @MainActor
-    private static func renderThumbnails(for snapshot: ScreenSaverSnapshot) async -> Thumbnails {
+    static func renderThumbnails(for snapshot: ScreenSaverSnapshot) async -> Thumbnails {
         guard let scene = snapshot.scene else { return Thumbnails() }
         let resources = SceneResources(
             wallpaperURL: { id in snapshot.wallpaperPaths[id].map { URL(fileURLWithPath: $0) } },
@@ -171,34 +173,8 @@ final class SceneBundleManager {
             try fileManager.createDirectory(at: scratch, withIntermediateDirectories: true)
             defer { try? fileManager.removeItem(at: scratch) }
 
-            let staged = scratch.appendingPathComponent(item.spec.bundleName)
-            try fileManager.copyItem(at: templateURL, to: staged)
-
-            // Identity
-            let infoURL = staged.appendingPathComponent("Contents/Info.plist")
-            let infoData = try Data(contentsOf: infoURL)
-            guard let template = try PropertyListSerialization.propertyList(from: infoData, format: nil) as? [String: Any] else {
-                throw CocoaError(.propertyListReadCorrupt)
-            }
-            let info = item.spec.infoDictionary(fromTemplate: template)
-            try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0).write(to: infoURL)
-
-            // Content
-            let resources = staged.appendingPathComponent("Contents/Resources", isDirectory: true)
-            try fileManager.createDirectory(at: resources, withIntermediateDirectories: true)
-            try item.snapshot.write(to: resources.appendingPathComponent(ScreenSaverSnapshot.bundledFilename))
-            // The template's catalog also holds a "thumbnail"; the loose
-            // PNGs must be the only one so the tile shows this scene.
-            try? fileManager.removeItem(at: resources.appendingPathComponent("Assets.car"))
-            if let data = thumbnails.oneX {
-                try data.write(to: resources.appendingPathComponent("thumbnail.png"))
-            }
-            if let data = thumbnails.twoX {
-                try data.write(to: resources.appendingPathComponent("thumbnail@2x.png"))
-            }
-
-            // The edits broke the template's signature; sign the copy ad hoc.
-            try codesign(staged)
+            let staged = try stage(spec: item.spec, snapshot: item.snapshot, thumbnails: thumbnails,
+                                   templateURL: templateURL, in: scratch)
 
             let destination = directory.appendingPathComponent(item.spec.bundleName)
             try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -209,20 +185,65 @@ final class SceneBundleManager {
         }.value
     }
 
-    nonisolated private static func codesign(_ url: URL) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
-        process.arguments = ["--force", "--deep", "--sign", "-", url.path]
-        let errorPipe = Pipe()
-        process.standardError = errorPipe
-        process.standardOutput = FileHandle.nullDevice
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            let message = String(data: errorPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            throw NSError(domain: "codesign", code: Int(process.terminationStatus),
-                          userInfo: [NSLocalizedDescriptionKey: message.trimmingCharacters(in: .whitespacesAndNewlines)])
+    /// Copies the template into `folder` as `spec`'s bundle: new identity,
+    /// the snapshot, the thumbnails, any `media` (copied into Resources),
+    /// then signed — ad hoc unless `signingIdentity` names a certificate.
+    /// Shared by the per-user tiles and Studio › Package.
+    nonisolated static func stage(spec: SceneBundleSpec,
+                                  snapshot: ScreenSaverSnapshot,
+                                  thumbnails: Thumbnails,
+                                  templateURL: URL,
+                                  in folder: URL,
+                                  extraInfo: [String: Any] = [:],
+                                  media: [SceneDeployment.MediaFile] = [],
+                                  signingIdentity: String? = nil) throws -> URL {
+        let fileManager = FileManager.default
+        let staged = folder.appendingPathComponent(spec.bundleName)
+        try fileManager.copyItem(at: templateURL, to: staged)
+
+        // Identity
+        let infoURL = staged.appendingPathComponent("Contents/Info.plist")
+        let infoData = try Data(contentsOf: infoURL)
+        guard let template = try PropertyListSerialization.propertyList(from: infoData, format: nil) as? [String: Any] else {
+            throw CocoaError(.propertyListReadCorrupt)
         }
+        let info = spec.infoDictionary(fromTemplate: template).merging(extraInfo) { _, new in new }
+        try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0).write(to: infoURL)
+
+        // Content
+        let resources = staged.appendingPathComponent("Contents/Resources", isDirectory: true)
+        try fileManager.createDirectory(at: resources, withIntermediateDirectories: true)
+        try snapshot.write(to: resources.appendingPathComponent(ScreenSaverSnapshot.bundledFilename))
+        for file in media {
+            let target = resources.appendingPathComponent(file.destination)
+            try fileManager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try fileManager.copyItem(at: URL(fileURLWithPath: file.source), to: target)
+        }
+        // The template's catalog also holds a "thumbnail"; the loose
+        // PNGs must be the only one so the tile shows this scene.
+        try? fileManager.removeItem(at: resources.appendingPathComponent("Assets.car"))
+        if let data = thumbnails.oneX {
+            try data.write(to: resources.appendingPathComponent("thumbnail.png"))
+        }
+        if let data = thumbnails.twoX {
+            try data.write(to: resources.appendingPathComponent("thumbnail@2x.png"))
+        }
+
+        // The edits broke the template's signature; sign the copy.
+        try codesign(staged, identity: signingIdentity)
+        return staged
+    }
+
+    /// Ad hoc by default. A real identity also gets the hardened runtime
+    /// and a secure timestamp, which notarization requires.
+    nonisolated static func codesign(_ url: URL, identity: String? = nil) throws {
+        var arguments = ["--force", "--deep"]
+        if let identity, !identity.isEmpty {
+            arguments += ["--sign", identity, "--options", "runtime", "--timestamp"]
+        } else {
+            arguments += ["--sign", "-"]
+        }
+        try ProcessRunner.run("/usr/bin/codesign", arguments + [url.path])
     }
 
     // MARK: - The plain saver
@@ -248,5 +269,39 @@ final class SceneBundleManager {
             try FileManager.default.removeItem(at: userSaverURL)
         }
         try FileManager.default.copyItem(at: templateURL, to: userSaverURL)
+    }
+}
+
+/// Runs a command-line tool to completion; a non-zero exit throws with
+/// the tool's error output.
+enum ProcessRunner {
+    @discardableResult
+    static func run(_ tool: String, _ arguments: [String]) throws -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: tool)
+        process.arguments = arguments
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
+        try process.run()
+        // Drain both pipes before waiting so a chatty tool can't fill one
+        // and stall.
+        var errorOutput = Data()
+        let errorRead = DispatchGroup()
+        errorRead.enter()
+        DispatchQueue.global(qos: .utility).async {
+            errorOutput = errorPipe.fileHandleForReading.readDataToEndOfFile()
+            errorRead.leave()
+        }
+        let output = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        errorRead.wait()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            let message = String(data: errorOutput, encoding: .utf8) ?? ""
+            throw NSError(domain: (tool as NSString).lastPathComponent, code: Int(process.terminationStatus),
+                          userInfo: [NSLocalizedDescriptionKey: message.trimmingCharacters(in: .whitespacesAndNewlines)])
+        }
+        return String(data: output, encoding: .utf8) ?? ""
     }
 }

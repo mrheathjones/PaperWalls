@@ -62,6 +62,17 @@ enum SceneDeployment {
 
         return (portable, media)
     }
+
+    /// Names from `security find-identity -v` lines:  1) <SHA1> "Name"
+    static func identityNames(fromFindIdentityOutput output: String) -> [String] {
+        var names: [String] = []
+        for line in output.split(separator: "\n") {
+            guard let open = line.firstIndex(of: "\""), let close = line.lastIndex(of: "\""), open < close else { continue }
+            let name = String(line[line.index(after: open)..<close])
+            if !names.contains(name) { names.append(name) }
+        }
+        return names
+    }
 }
 
 /// One installer package holding one or more deployed scene bundles.
