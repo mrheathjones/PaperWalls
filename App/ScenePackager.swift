@@ -258,7 +258,7 @@ enum ScenePackager {
         DEPLOYING
         1. Upload the pkg to Jamf Pro (or your MDM) and scope a policy to the target Macs.
         2. Each saver appears under System Settings › Screen Saver. Users can pick one,
-           or PaperWalls can keep one selected (ENFORCE, below).
+           or ENFORCE (below) can select one and lock it.
         3. Each saver shows its own scene and carries its own images. The PaperWalls app
            isn't required on the target Mac.
         4. To ship a new version, raise the version number and package again. The pkg
