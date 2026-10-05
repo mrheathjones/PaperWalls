@@ -122,6 +122,9 @@ final class AppModel: ObservableObject {
     /// Studio › Assets: the organization's logos and icons (admin mode
     /// manages them; any composer can pick them).
     @Published var brandAssets: [BrandAsset] = []
+    /// The organization's assets from `brandAssetsFolderPath` (read-only;
+    /// rescanned with the managed config).
+    @Published var managedBrandAssets = ManagedBrandAssetFolder()
     @Published var wallpaperDesignThumbnails: [String: NSImage] = [:]
     /// The Scene Composer's working state. A separate object so editing
     /// (every slider tick) doesn't republish the whole app model.
@@ -156,6 +159,7 @@ final class AppModel: ObservableObject {
         reloadScreenSavers()
         reloadWallpaperDesigns()
         reloadBrandAssets()
+        reloadManagedBrandAssets()
 
         // Never strand the user on a page whose gate just flipped off
         // (spec §10). Published values land after this fires, so check on
@@ -414,6 +418,7 @@ final class AppModel: ObservableObject {
         refreshLockState()
         rescan()
         reloadScreenSavers()
+        reloadManagedBrandAssets()
         enforcePageVisibility()
         checkPersonalFolderSourceSwitch()
         syncRemoteFeedsIfNeeded()

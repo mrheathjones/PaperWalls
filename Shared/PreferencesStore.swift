@@ -106,6 +106,7 @@ final class PreferencesStore: ObservableObject {
     @Published var enforcedScreenSaverPath: String = ""
     /// Unlocks the admin tools (Studio › Package, "Copy Scene for MDM").
     @Published var adminModeEnabled: Bool = false
+    @Published var brandAssetsFolderPath: String = ""
 
     // AI generation (Studio › Wallpapers): master switch + one toggle per
     // provider. `aiPolicy` is the resolved view the composer reads.
@@ -215,6 +216,7 @@ final class PreferencesStore: ObservableObject {
         allowedScreenSaverSceneIDs = ManagedPreferences.stringArray(.allowedScreenSaverSceneIDs)
         enforcedScreenSaverPath = ManagedPreferences.string(.enforcedScreenSaverPath) ?? ""
         adminModeEnabled = ManagedPreferences.bool(.adminModeEnabled) ?? false
+        brandAssetsFolderPath = ManagedPreferences.string(.brandAssetsFolderPath) ?? ""
         aiGenerationEnabled = ManagedPreferences.bool(.aiGenerationEnabled) ?? false
         aiAppleOnDeviceEnabled = ManagedPreferences.bool(.aiAppleOnDeviceEnabled) ?? false
         aiLocalModelEnabled = ManagedPreferences.bool(.aiLocalModelEnabled) ?? false
@@ -275,6 +277,7 @@ final class PreferencesStore: ObservableObject {
         persist($allowedScreenSaverSceneIDs, .allowedScreenSaverSceneIDs) { ($0?.isEmpty ?? true) ? nil : $0 }
         persist($enforcedScreenSaverPath, .enforcedScreenSaverPath) { $0.isEmpty ? nil : $0 }
         persist($adminModeEnabled, .adminModeEnabled) { $0 }
+        persist($brandAssetsFolderPath, .brandAssetsFolderPath) { $0.isEmpty ? nil : $0 }
         persist($aiGenerationEnabled, .aiGenerationEnabled) { $0 }
         persist($aiAppleOnDeviceEnabled, .aiAppleOnDeviceEnabled) { $0 }
         persist($aiLocalModelEnabled, .aiLocalModelEnabled) { $0 }

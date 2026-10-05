@@ -398,6 +398,14 @@
         "infoText": "Key: adminModeEnabled (default: false)"
       }
     },
+    "brandAssetsFolderPath": {
+      "type": "string",
+      "title": "Brand Assets Folder",
+      "description": "Absolute path to a folder of the organization's logos and icons (e.g. /Library/CompanyBrand), scanned non-recursively for .png/.jpg/.jpeg/.heic/.tiff/.gif. Its images appear as read-only Brand Assets in Studio's composer on every Mac (and under Studio › Assets in Admin mode). Names come from the file names. Deploy the images separately.",
+      "options": {
+        "infoText": "Key: brandAssetsFolderPath"
+      }
+    },
     "aiGenerationEnabled": {
       "type": "boolean",
       "title": "Enable AI Generation",

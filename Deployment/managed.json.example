@@ -4,6 +4,7 @@
     "lockMode": "soft",
     "selectedWallpaperID": "bundled-aurora-veil",
     "externalWallpaperFolderPath": "/Library/CompanyWallpapers",
+    "brandAssetsFolderPath": "/Library/CompanyBrand",
     "activeScreenSaverSceneID": "managed",
     "managedScreenSaverScene": {
       "name": "Company Screen Saver",

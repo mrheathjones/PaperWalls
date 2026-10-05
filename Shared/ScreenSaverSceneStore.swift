@@ -203,14 +203,20 @@ enum ScreenSaverSceneStore {
         return try importAsset(data: try Data(contentsOf: source), fileExtension: fileExtension, in: directory)
     }
 
+    /// The content-addressed name image bytes get in the store, or nil for
+    /// an unsupported extension.
+    static func assetName(forData data: Data, fileExtension: String) -> String? {
+        let fileExtension = fileExtension.lowercased()
+        guard assetExtensions.contains(fileExtension) else { return nil }
+        let hash = SHA256.hash(data: data).prefix(12).map { String(format: "%02x", $0) }.joined()
+        return "\(hash).\(fileExtension)"
+    }
+
     /// Stores image bytes (e.g. a generated image) under their content hash.
     static func importAsset(data: Data, fileExtension: String, in directory: URL = defaultDirectory) throws -> String {
-        let fileExtension = fileExtension.lowercased()
-        guard assetExtensions.contains(fileExtension) else {
+        guard let name = assetName(forData: data, fileExtension: fileExtension) else {
             throw CocoaError(.fileReadUnsupportedScheme)
         }
-        let hash = SHA256.hash(data: data).prefix(12).map { String(format: "%02x", $0) }.joined()
-        let name = "\(hash).\(fileExtension)"
         guard let destination = assetURL(named: name, in: directory) else {
             throw CocoaError(.fileWriteInvalidFileName)
         }

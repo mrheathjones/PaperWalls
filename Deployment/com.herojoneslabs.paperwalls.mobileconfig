@@ -94,6 +94,9 @@
 								<!-- admin tools (Studio › Assets, Studio › Package, Copy Scene for MDM); keep false on end-user Macs -->
 								<key>adminModeEnabled</key>
 								<false/>
+								<!-- folder of the organization's logos/icons, offered as Brand Assets in Studio's composer (deploy the images separately) -->
+								<key>brandAssetsFolderPath</key>
+								<string>/Library/CompanyBrand</string>
 								<!-- AI-generated wallpaper backgrounds (Studio › Wallpapers); master switch + one toggle per provider, all off by default -->
 								<key>aiGenerationEnabled</key>
 								<false/>

@@ -115,6 +115,66 @@ final class BrandAssetStoreTests: XCTestCase {
         XCTAssertEqual(BrandAssetStore.uniqueName("Logo", existing: []), "Logo")
     }
 
+    // MARK: Managed folder (brandAssetsFolderPath)
+
+    private func makeManagedFolder(_ files: [String: String]) throws -> URL {
+        let folder = directory.appendingPathComponent("Brand", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for (name, contents) in files {
+            try Data(contents.utf8).write(to: folder.appendingPathComponent(name))
+        }
+        return folder
+    }
+
+    func testManagedFolderScanListsImagesSortedWithNamesAndKinds() throws {
+        let folder = try makeManagedFolder(["zeta-icon.png": "z", "acme-logo-white.png": "a", "notes.txt": "n", "hero.jpeg": "h"])
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("Sub"), withIntermediateDirectories: true)
+        try Data("s".utf8).write(to: folder.appendingPathComponent("Sub/inner-logo.png"))
+        let scanned = BrandAssetStore.scanManagedFolder(folder.path)
+        XCTAssertEqual(scanned.assets.map(\.name), ["Acme Logo White", "Hero", "Zeta Icon"])
+        XCTAssertEqual(scanned.assets.map(\.kind), [.logo, .image, .icon])
+        XCTAssertTrue(scanned.assets.allSatisfy(\.isManaged))
+        XCTAssertEqual(scanned.sources.count, 3)
+        XCTAssertEqual(scanned.sources[scanned.assets[0].assetName]?.lastPathComponent, "acme-logo-white.png")
+    }
+
+    func testManagedAssetNameMatchesTheStoreImportName() throws {
+        let folder = try makeManagedFolder(["logo.png": "same bytes"])
+        let scanned = BrandAssetStore.scanManagedFolder(folder.path)
+        let imported = try ScreenSaverSceneStore.importAsset(from: folder.appendingPathComponent("logo.png"),
+                                                             in: directory.appendingPathComponent("Store"))
+        XCTAssertEqual(scanned.assets.first?.assetName, imported)
+        XCTAssertEqual(scanned.assets.first?.id, BrandAsset.managedIDPrefix + imported)
+    }
+
+    func testManagedFolderListsIdenticalBytesOnceAndNumbersClashingNames() throws {
+        // logo-copy.png sorts first, so it is the listed copy of the shared bytes.
+        let folder = try makeManagedFolder(["logo.png": "same", "logo-copy.png": "same",
+                                            "mark.png": "m1", "mark.jpg": "m2"])
+        let scanned = BrandAssetStore.scanManagedFolder(folder.path)
+        XCTAssertEqual(scanned.assets.count, 3)
+        XCTAssertEqual(Set(scanned.assets.map(\.name)), ["Logo Copy", "Mark", "Mark 2"])
+    }
+
+    func testMissingOrBlankManagedFolderIsEmpty() {
+        XCTAssertTrue(BrandAssetStore.scanManagedFolder("").isEmpty)
+        XCTAssertTrue(BrandAssetStore.scanManagedFolder("   ").isEmpty)
+        XCTAssertTrue(BrandAssetStore.scanManagedFolder(directory.appendingPathComponent("nope").path).isEmpty)
+    }
+
+    func testManagedEntriesAreNeverSaved() {
+        XCTAssertThrowsError(try BrandAssetStore.save(BrandAsset(id: BrandAsset.managedIDPrefix + "a.png", name: "A", assetName: "a.png"),
+                                                      in: directory))
+    }
+
+    func testMergedListsLibraryFirstAndSkipsManagedDuplicates() {
+        let mine = makeAsset(name: "Mine", assetName: "shared.png")
+        let managedDup = BrandAsset(id: "managed:shared.png", name: "Theirs", assetName: "shared.png")
+        let managedNew = BrandAsset(id: "managed:new.png", name: "New", assetName: "new.png")
+        let merged = BrandAssetStore.merged(library: [mine], managed: [managedDup, managedNew])
+        XCTAssertEqual(merged.map(\.name), ["Mine", "New"])
+    }
+
     // MARK: Scene references
 
     func testReferencedAssetNamesCoverBackgroundAndIcons() {

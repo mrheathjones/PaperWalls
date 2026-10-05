@@ -460,6 +460,12 @@ struct SettingsContent: View {
                         SettingsToggle(isOn: $prefs.adminModeEnabled,
                                        disabled: prefs.isForced(.adminModeEnabled))
                     }
+                    SettingsDivider()
+                    SettingsFieldRow(title: "Brand assets folder",
+                                     prompt: "/Library/CompanyBrand",
+                                     text: $prefs.brandAssetsFolderPath,
+                                     managedKey: .brandAssetsFolderPath,
+                                     onBrowse: { browseForFolder { prefs.brandAssetsFolderPath = $0 } })
                 }
             }
                 SettingsSection(label: "Support", collapsible: true) {

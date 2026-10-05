@@ -495,13 +495,13 @@ struct IconLayerControls: View {
                 SettingsDivider()
                 ComposerColorRow(title: "Color", hex: $icon.colorHex)
             }
-            if !model.brandAssets.isEmpty {
+            if !model.allBrandAssets.isEmpty {
                 SettingsDivider()
                 ComposerRow(title: "Brand Assets") {
                     EmptyView()
                 }
-                BrandAssetPicker(selectedAssetName: icon.imageAssetName) { asset in
-                    icon.imageAssetName = asset.assetName
+                BrandAssetPicker(selectedAssetName: icon.imageAssetName) { assetName in
+                    icon.imageAssetName = assetName
                 }
             }
             SettingsDivider()
@@ -705,13 +705,13 @@ struct SceneBackgroundControls: View {
                     ? "Your auto-rotate sources are empty right now, so the background will be black. Choose sources in Settings → Auto-Rotate."
                     : "Fades through the \(model.rotationPool.count) wallpapers in your auto-rotate sources (Settings → Auto-Rotate).")
         case .image(let name):
-            if !model.brandAssets.isEmpty {
+            if !model.allBrandAssets.isEmpty {
                 SettingsDivider()
                 ComposerRow(title: "Brand Assets") {
                     EmptyView()
                 }
-                BrandAssetPicker(selectedAssetName: name) { asset in
-                    background.source = .image(assetName: asset.assetName)
+                BrandAssetPicker(selectedAssetName: name) { assetName in
+                    background.source = .image(assetName: assetName)
                 }
             }
             SettingsDivider()

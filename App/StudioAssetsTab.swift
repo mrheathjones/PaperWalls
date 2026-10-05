@@ -3,9 +3,10 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Studio › Assets (admin mode): the organization's logos and icons.
-/// Anything added here shows up as a "Brand Assets" strip in the Scene
-/// Composer's Icon and Background controls, so scenes can use the right
-/// variation (light, dark, mono, square…) without hunting for files.
+/// Anything added here — or deployed to the folder `brandAssetsFolderPath`
+/// names — shows up as a "Brand Assets" strip in the Scene Composer's Icon
+/// and Background controls, so scenes can use the right variation (light,
+/// dark, mono, square…) without hunting for files.
 struct StudioAssetsTab: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var prefs: PreferencesStore
@@ -25,6 +26,22 @@ struct StudioAssetsTab: View {
         return model.brandAssets.filter { $0.kind == filter }
     }
 
+    /// The organization's assets not already in the user's library.
+    private var managed: [BrandAsset] {
+        let taken = Set(model.brandAssets.map(\.assetName))
+        let visible = model.managedBrandAssets.assets.filter { !taken.contains($0.assetName) }
+        guard let filter else { return visible }
+        return visible.filter { $0.kind == filter }
+    }
+
+    private var managedFolderPath: String {
+        prefs.brandAssetsFolderPath.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var showsFilter: Bool {
+        !model.brandAssets.isEmpty || !model.managedBrandAssets.isEmpty
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             SettingsSection(label: "Brand assets") {
@@ -36,8 +53,21 @@ struct StudioAssetsTab: View {
                 }
             }
 
+            if showsFilter {
+                SegmentedPills(options: filterOptions, selection: $filter)
+            }
+
             SettingsSection(label: libraryLabel) {
-                if model.brandAssets.isEmpty {
+                if model.brandAssets.isEmpty && !model.managedBrandAssets.isEmpty {
+                    // The organization's assets are the main event below;
+                    // keep the empty library to one line.
+                    SettingsCard {
+                        SettingsRow(title: "Nothing of your own yet",
+                                    subtitle: "Add images above, or choose Add to My Library on an organization asset to get an editable copy") {
+                            EmptyView()
+                        }
+                    }
+                } else if model.brandAssets.isEmpty {
                     SettingsCard {
                         EmptyStateView(systemImage: "seal",
                                        title: "No brand assets yet",
@@ -45,22 +75,57 @@ struct StudioAssetsTab: View {
                                        actionLabel: "Add Images…",
                                        action: chooseImages)
                     }
+                } else if filtered.isEmpty {
+                    EmptyStateView(systemImage: "line.3.horizontal.decrease.circle",
+                                   title: "No \(filter?.pluralName.lowercased() ?? "assets") yet",
+                                   message: "Change an asset's kind from its menu, or add more images.")
                 } else {
+                    LazyVGrid(columns: columns, spacing: 20) {
+                        ForEach(filtered) { asset in
+                            BrandAssetCard(asset: asset,
+                                           onRename: {
+                                               renameText = asset.name
+                                               renaming = asset
+                                           },
+                                           onDelete: { deleting = asset },
+                                           onAddToLibrary: nil)
+                        }
+                    }
+                }
+            }
+
+            if !managedFolderPath.isEmpty {
+                SettingsSection(label: "Organization assets") {
                     VStack(alignment: .leading, spacing: 16) {
-                        SegmentedPills(options: filterOptions, selection: $filter)
-                        if filtered.isEmpty {
+                        HStack(spacing: 8) {
+                            ManagedBadge()
+                            Text(managedFolderPath)
+                                .font(Theme.pathMono)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        if model.managedBrandAssets.isEmpty {
+                            SettingsCard {
+                                EmptyStateView(systemImage: "folder.badge.questionmark",
+                                               title: "No images in the managed folder",
+                                               message: "The folder is missing, unreadable, or has no PNG, JPEG, HEIC, TIFF, or GIF files. It's checked again each time PaperWalls becomes active.")
+                            }
+                        } else if managed.isEmpty {
                             EmptyStateView(systemImage: "line.3.horizontal.decrease.circle",
-                                           title: "No \(filter?.pluralName.lowercased() ?? "assets") yet",
-                                           message: "Change an asset's kind from its menu, or add more images.")
+                                           title: filter == nil ? "All managed assets are in your library" : "No managed \(filter?.pluralName.lowercased() ?? "")",
+                                           message: filter == nil
+                                               ? "Each one already has a copy under Library, so it's listed there."
+                                               : "Managed assets are sorted by their file names.")
                         } else {
                             LazyVGrid(columns: columns, spacing: 20) {
-                                ForEach(filtered) { asset in
+                                ForEach(managed) { asset in
                                     BrandAssetCard(asset: asset,
-                                                   onRename: {
-                                                       renameText = asset.name
-                                                       renaming = asset
-                                                   },
-                                                   onDelete: { deleting = asset })
+                                                   onRename: {},
+                                                   onDelete: {},
+                                                   onAddToLibrary: {
+                                                       perform { try model.addManagedBrandAssetToLibrary(asset) }
+                                                   })
                                 }
                             }
                         }
@@ -147,8 +212,11 @@ struct StudioAssetsTab: View {
         if usage.inOpenDraft {
             parts.append("the scene you're composing")
         }
+        let stillManaged = model.managedBrandAssets.sources[asset.assetName] != nil
         if parts.isEmpty {
-            return "The image is removed from your Mac. This can't be undone."
+            return stillManaged
+                ? "Your copy is removed. The image stays available from your organization's folder."
+                : "The image is removed from your Mac. This can't be undone."
         }
         return "Used by \(parts.joined(separator: " and ")). They keep the image; it just leaves the library."
     }
@@ -243,6 +311,8 @@ struct BrandAssetCard: View {
     let asset: BrandAsset
     let onRename: () -> Void
     let onDelete: () -> Void
+    /// Managed (read-only) assets offer this instead of rename/delete.
+    var onAddToLibrary: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -258,7 +328,7 @@ struct BrandAssetCard: View {
                         .font(Theme.cardName)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Text(asset.kind.displayName)
+                    Text(asset.isManaged ? "\(asset.kind.displayName) · Managed" : asset.kind.displayName)
                         .font(Theme.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -277,7 +347,7 @@ struct BrandAssetCard: View {
         .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .contextMenu { menuItems }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(asset.name), \(asset.kind.displayName)")
+        .accessibilityLabel("\(asset.name), \(asset.kind.displayName)\(asset.isManaged ? ", managed" : "")")
     }
 
     private var actionsMenu: some View {
@@ -298,19 +368,28 @@ struct BrandAssetCard: View {
 
     @ViewBuilder
     private var menuItems: some View {
-        Button("Rename…", action: onRename)
-        Picker("Kind", selection: Binding(
-            get: { asset.kind },
-            set: { try? model.setBrandAssetKind(id: asset.id, kind: $0) })) {
-            ForEach(BrandAssetKind.allCases) { kind in
-                Text(kind.displayName).tag(kind)
+        if asset.isManaged {
+            if let onAddToLibrary {
+                Button("Add to My Library", action: onAddToLibrary)
             }
+            Button("Reveal in Finder") {
+                model.revealBrandAsset(asset)
+            }
+        } else {
+            Button("Rename…", action: onRename)
+            Picker("Kind", selection: Binding(
+                get: { asset.kind },
+                set: { try? model.setBrandAssetKind(id: asset.id, kind: $0) })) {
+                ForEach(BrandAssetKind.allCases) { kind in
+                    Text(kind.displayName).tag(kind)
+                }
+            }
+            Button("Reveal in Finder") {
+                model.revealBrandAsset(asset)
+            }
+            Divider()
+            Button("Delete…", role: .destructive, action: onDelete)
         }
-        Button("Reveal in Finder") {
-            model.revealBrandAsset(asset)
-        }
-        Divider()
-        Button("Delete…", role: .destructive, action: onDelete)
     }
 }
 
@@ -372,22 +451,28 @@ struct BrandAssetImage: View {
 
 // MARK: - Composer picker
 
-/// The "Brand Assets" strip inside the composer: every library asset,
-/// selectable in one click. Shown only when the library has something.
+/// The "Brand Assets" strip inside the composer: the user's library plus
+/// the organization's folder, selectable in one click. Shown only when
+/// there is something to show. Selecting hands back the name a scene
+/// refers to the image by (a managed image is copied into the Studio
+/// asset store first).
 struct BrandAssetPicker: View {
     @EnvironmentObject private var model: AppModel
 
     /// The scene's current image, to mark the matching asset.
     let selectedAssetName: String?
-    let onSelect: (BrandAsset) -> Void
+    let onSelect: (String) -> Void
 
     var body: some View {
-        if !model.brandAssets.isEmpty {
+        let assets = model.allBrandAssets
+        if !assets.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
-                    ForEach(model.brandAssets) { asset in
+                    ForEach(assets) { asset in
                         Button {
-                            onSelect(asset)
+                            if let assetName = model.useBrandAsset(asset) {
+                                onSelect(assetName)
+                            }
                         } label: {
                             BrandAssetImage(url: model.brandAssetURL(asset), maxPixelSize: 240)
                                 .padding(8)
@@ -402,7 +487,7 @@ struct BrandAssetPicker: View {
                                 .contentShape(RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
                         }
                         .buttonStyle(.plain)
-                        .help("\(asset.name) · \(asset.kind.displayName)")
+                        .help("\(asset.name) · \(asset.kind.displayName)\(asset.isManaged ? " · Managed" : "")")
                         .accessibilityLabel(asset.name)
                     }
                 }

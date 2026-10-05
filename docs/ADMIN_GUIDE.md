@@ -155,6 +155,7 @@ is also in `Deployment/`.
 | `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (the wallpaper composer) |
 | `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
 | `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers or wallpapers), **Package for Deployment…** on cards, and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
+| `brandAssetsFolderPath` | string | — | Folder of the organization's logos and icons (e.g. `/Library/CompanyBrand`), scanned non-recursively for `.png .jpg .jpeg .heic .tiff .gif`. Offered as read-only **Brand Assets** in Studio's composer on every Mac. Deploy the images separately — see §12 |
 | `aiGenerationEnabled` | bool | `false` | Master switch for AI-generated wallpaper backgrounds in Studio › Wallpapers. `false` hides every AI control regardless of the provider toggles |
 | `aiAppleOnDeviceEnabled` | bool | `false` | Offers **Apple On-Device** generation (Image Playground via Apple Intelligence; runs entirely on the Mac). Needs Apple silicon with Apple Intelligence on |
 | `aiLocalModelEnabled` | bool | `false` | Offers **Local Model** generation: an image server on the Mac or the network (Draw Things, Automatic1111, Forge, SD.Next, or any OpenAI-compatible endpoint). Prompts go only to `aiLocalModelEndpoint`, and only when the user presses Generate |
@@ -559,12 +560,37 @@ turn on **Settings › Admin › Admin mode** and open **Studio › Assets**.
   unless a saved screen saver, wallpaper design, or open draft still uses
   it — those keep working and the dialog says what uses it.
 
-The library is per user (`~/Library/Application Support/PaperWalls/Studio/BrandAssets/`)
-and only the admin's Mac needs it: what reaches other Macs is the rendered
-wallpaper, the packaged saver, or the `managedScreenSaverScene` JSON, none
-of which depend on the library. Keep `adminModeEnabled` forced `false` on
-end-user Macs; the composer's Brand Assets strip simply doesn't appear on
-a Mac whose library is empty.
+The library is per user (`~/Library/Application Support/PaperWalls/Studio/BrandAssets/`).
+What reaches other Macs — the rendered wallpaper, the packaged saver, the
+`managedScreenSaverScene` JSON — never depends on it, so for an admin who
+composes everything centrally that is all you need. Keep `adminModeEnabled`
+forced `false` on end-user Macs.
+
+**Fleet-wide assets (`brandAssetsFolderPath`).** To give every user the
+organization's artwork in their own composer, deploy a folder of images
+(e.g. `/Library/CompanyBrand`, readable by everyone; a pkg or your MDM's
+file distribution both work) and set `brandAssetsFolderPath` to it in the
+profile or `managed.json`. Then:
+
+- The folder is scanned one level deep for `.png .jpg .jpeg .heic .tiff .gif`
+  (hidden files skipped). Each image is named from its file name
+  (`acme-logo-white.png` → "Acme Logo White") and sorted into Logo / Icon /
+  Image by words like `logo`, `wordmark`, `icon`, `glyph` in the name, so
+  name the files the way you want them listed.
+- Every user sees them in the composer's **Brand Assets** strip (no Admin
+  mode needed). In Admin mode they also appear under **Studio › Assets ›
+  Organization assets**, read-only, with **Add to My Library** to
+  take a copy into the editable library.
+- Using one copies the image into the user's Studio asset store (content-
+  addressed), so scenes, deployed bundles, and the `managed` scene keep
+  working if the folder is later changed or removed. Byte-identical files
+  are listed once, and a managed image already in the user's library is
+  shown once, from the library.
+- The folder is rescanned with every managed-config reload (profile or
+  `managed.json` change, app activation), so a folder deployed after launch
+  appears when the user next switches to the app. An empty, missing, or
+  unreadable folder shows a note on the Assets tab and no strip in the
+  composer.
 
 ### Packaging screen savers for deployment (Admin mode)
 

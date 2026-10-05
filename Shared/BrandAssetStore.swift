@@ -60,6 +60,15 @@ struct BrandAsset: Codable, Identifiable, Equatable {
 }
 
 extension BrandAsset {
+    /// IDs of entries that come from the organization's folder
+    /// (`brandAssetsFolderPath`) rather than the user's library.
+    static let managedIDPrefix = "managed:"
+
+    /// Read-only, admin-provided entry (never written to disk).
+    var isManaged: Bool { id.hasPrefix(BrandAsset.managedIDPrefix) }
+}
+
+extension BrandAsset {
     // Fields added later decode leniently so older files still load.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -180,6 +189,70 @@ enum BrandAssetStore {
     /// "Logo" → "Logo 2" when the name is taken (case-insensitive).
     static func uniqueName(_ name: String, existing: [String]) -> String {
         ScreenSaverSceneStore.uniqueName(name, existing: existing)
+    }
+}
+
+// MARK: - Managed folder (brandAssetsFolderPath)
+
+/// The organization's assets, read from a folder an admin deploys to the
+/// Mac. Entries are regular `BrandAsset`s with managed IDs; the image bytes
+/// stay in the folder until a scene uses one, at which point the app copies
+/// them into the Studio asset store (see `AppModel.useBrandAsset`).
+struct ManagedBrandAssetFolder: Equatable {
+    var assets: [BrandAsset] = []
+    /// Where each managed asset's image lives, by `assetName`.
+    var sources: [String: URL] = [:]
+
+    var isEmpty: Bool { assets.isEmpty }
+}
+
+extension BrandAssetStore {
+    /// Lists the folder's image files (one level, hidden files skipped),
+    /// sorted by file name. Names and kinds come from the file names —
+    /// `acme-logo-white.png` → "Acme Logo White", Logo. Byte-identical files
+    /// are listed once. A missing or unreadable folder is simply empty.
+    static func scanManagedFolder(_ path: String) -> ManagedBrandAssetFolder {
+        let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return ManagedBrandAssetFolder() }
+        let folder = URL(fileURLWithPath: (trimmed as NSString).expandingTildeInPath, isDirectory: true)
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .contentModificationDateKey]
+        guard let urls = try? FileManager.default.contentsOfDirectory(at: folder,
+                                                                      includingPropertiesForKeys: Array(keys),
+                                                                      options: [.skipsHiddenFiles]) else {
+            return ManagedBrandAssetFolder()
+        }
+        var result = ManagedBrandAssetFolder()
+        var names: [String] = []
+        let sorted = urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        for url in sorted {
+            let ext = url.pathExtension.lowercased()
+            guard ScreenSaverSceneStore.assetExtensions.contains(ext),
+                  let values = try? url.resourceValues(forKeys: keys),
+                  values.isRegularFile == true,
+                  let data = try? Data(contentsOf: url, options: .mappedIfSafe),
+                  let assetName = ScreenSaverSceneStore.assetName(forData: data, fileExtension: ext),
+                  result.sources[assetName] == nil else { continue }
+            let stem = url.deletingPathExtension().lastPathComponent
+            let name = uniqueName(suggestedName(forFileStem: stem), existing: names)
+            let modified = values.contentModificationDate ?? Date()
+            result.assets.append(BrandAsset(id: BrandAsset.managedIDPrefix + assetName,
+                                            name: name,
+                                            kind: .suggested(forFileStem: stem),
+                                            assetName: assetName,
+                                            createdAt: modified,
+                                            modifiedAt: modified))
+            result.sources[assetName] = url
+            names.append(name)
+        }
+        return result
+    }
+
+    /// The user's own entries first, then the organization's — minus any
+    /// managed image the user already has in the library (same bytes), so
+    /// a logo never shows twice.
+    static func merged(library: [BrandAsset], managed: [BrandAsset]) -> [BrandAsset] {
+        let taken = Set(library.map(\.assetName))
+        return library + managed.filter { !taken.contains($0.assetName) }
     }
 }
 
