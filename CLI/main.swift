@@ -60,7 +60,12 @@ func printUsage(toStandardError: Bool) {
           run by the watch LaunchAgent; default interval 15s.
 
       \(toolName) screensaver
-          Print what the PaperWalls screen saver is set to show (read-only).
+          Print what the PaperWalls screen saver is set to show, and which
+          saver macOS has selected (read-only).
+
+      \(toolName) screensaver enforce
+          Select the saver in enforcedScreenSaverPath for every Space and
+          display now (manage also does this). Run as the logged-in user.
 
       \(toolName) version
       \(toolName) help
@@ -205,6 +210,33 @@ func describe(_ snapshot: ScreenSaverSnapshot) -> String {
     case .noneSelected: return "none selected (built-in default)"
     case .disabled: return "disabled (solid color)"
     case .hardLock: return "hard lock (solid color)"
+    }
+}
+
+/// `screensaver enforce`: apply enforcedScreenSaverPath now, with an exit
+/// code a Jamf policy can act on.
+func runScreenSaverEnforce() -> Never {
+    // The store is per user; as root this would edit root's.
+    guard getuid() != 0 else {
+        fail("screensaver enforce must run as the logged-in user, not root", code: ExitCode.refusedRoot)
+    }
+    let path = (ManagedPreferences.string(.enforcedScreenSaverPath) ?? "").trimmingCharacters(in: .whitespaces)
+    guard !path.isEmpty else {
+        fail("enforcedScreenSaverPath isn't set in \(ManagedPreferences.domain)", code: ExitCode.usage)
+    }
+    guard FileManager.default.fileExists(atPath: path) else {
+        fail("enforcedScreenSaverPath '\(path)' isn't installed", code: ExitCode.invalidFile)
+    }
+    do {
+        switch try ScreenSaverSelection.enforce(path) {
+        case .alreadyEnforced:
+            print("\(path) is already selected everywhere")
+        case .enforced(let changed):
+            print("selected \(path) (\(changed) Space/display entr\(changed == 1 ? "y" : "ies") updated)")
+        }
+        exit(ExitCode.ok)
+    } catch {
+        fail("could not enforce the screen saver selection: \(error.localizedDescription)", code: ExitCode.applyFailed)
     }
 }
 
@@ -467,8 +499,11 @@ case "manage":
 case "watch":
     runWatch(Array(argumentList.dropFirst()))
 case "screensaver":
+    if argumentList.count == 2, argumentList[1] == "enforce" {
+        runScreenSaverEnforce()
+    }
     guard argumentList.count == 1 else {
-        fail("screensaver takes no arguments", code: ExitCode.usage)
+        fail("usage: screensaver [enforce]", code: ExitCode.usage)
     }
     runScreenSaver()
 case "version", "--version", "-v":
