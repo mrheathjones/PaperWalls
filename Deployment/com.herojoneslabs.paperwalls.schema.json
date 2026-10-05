@@ -398,6 +398,38 @@
         "infoText": "Key: adminModeEnabled (default: false)"
       }
     },
+    "aiGenerationEnabled": {
+      "type": "boolean",
+      "title": "Enable AI Generation",
+      "description": "Master switch for AI-generated wallpaper backgrounds in Studio. When disabled, no AI control appears regardless of the provider toggles. Force false to keep generation off a fleet.",
+      "options": {
+        "infoText": "Key: aiGenerationEnabled (default: false)"
+      }
+    },
+    "aiAppleOnDeviceEnabled": {
+      "type": "boolean",
+      "title": "AI: Apple On-Device",
+      "description": "Offers Apple On-Device generation (Image Playground via Apple Intelligence). Runs entirely on the Mac; nothing leaves the device. Requires Apple silicon with Apple Intelligence enabled.",
+      "options": {
+        "infoText": "Key: aiAppleOnDeviceEnabled (default: false)"
+      }
+    },
+    "aiLocalModelEnabled": {
+      "type": "boolean",
+      "title": "AI: Local Model",
+      "description": "Offers Local Model generation (a local image-generation endpoint). Reserved for a later release.",
+      "options": {
+        "infoText": "Key: aiLocalModelEnabled (default: false)"
+      }
+    },
+    "aiExternalModelEnabled": {
+      "type": "boolean",
+      "title": "AI: External Model",
+      "description": "Offers External Model generation (a cloud image API). Reserved for a later release.",
+      "options": {
+        "infoText": "Key: aiExternalModelEnabled (default: false)"
+      }
+    },
     "showScreenSaversPage": {
       "type": "boolean",
       "title": "Show ScreenSavers Page",
@@ -417,7 +449,7 @@
     "showStudioWallpapersTab": {
       "type": "boolean",
       "title": "Show Studio Wallpapers Tab",
-      "description": "Shows or hides Studio's Wallpapers tab (currently a 'coming soon' placeholder). If both Studio tabs are hidden, Studio is hidden.",
+      "description": "Shows or hides Studio's Wallpapers tab (the wallpaper composer). If both Studio tabs are hidden, Studio is hidden.",
       "options": {
         "infoText": "Key: showStudioWallpapersTab (default: true)"
       }

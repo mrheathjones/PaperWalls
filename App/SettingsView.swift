@@ -1,4 +1,5 @@
 import AppKit
+import ImagePlayground
 import SwiftUI
 
 /// Settings as a sidebar page in the main window.
@@ -30,6 +31,7 @@ struct SettingsView: View {
 /// style. Keys forced by a configuration profile render disabled with a
 /// "Managed by your organization" badge.
 struct SettingsContent: View {
+    @Environment(\.supportsImagePlayground) private var supportsImagePlayground
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var prefs: PreferencesStore
 
@@ -336,6 +338,26 @@ struct SettingsContent: View {
                                      text: allowedIDsBinding,
                                      managedKey: .allowedWallpaperIDs)
                 }
+            SettingsSection(label: "AI Generation") {
+                SettingsCard {
+                    SettingsRow(title: "Enable AI Generation",
+                                subtitle: "Master switch for generated wallpaper backgrounds in Studio. Off hides every AI control, whatever the options below say",
+                                managedKey: .aiGenerationEnabled) {
+                        SettingsToggle(isOn: $prefs.aiGenerationEnabled,
+                                       disabled: prefs.isForced(.aiGenerationEnabled))
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Apple On-Device",
+                                subtitle: supportsImagePlayground
+                                    ? "Image Playground, powered by Apple Intelligence. Everything runs on this Mac; nothing is sent anywhere"
+                                    : "Image Playground, powered by Apple Intelligence. Not available on this Mac: turn on Apple Intelligence in System Settings › Apple Intelligence & Siri",
+                                managedKey: .aiAppleOnDeviceEnabled) {
+                        SettingsToggle(isOn: $prefs.aiAppleOnDeviceEnabled,
+                                       disabled: prefs.isForced(.aiAppleOnDeviceEnabled) || !prefs.aiGenerationEnabled)
+                    }
+                }
+            }
+
                 SettingsSection(label: "Admin") {
                 SettingsCard {
                     SettingsRow(title: "Admin mode",

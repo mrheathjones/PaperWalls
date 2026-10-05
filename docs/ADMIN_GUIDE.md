@@ -155,6 +155,10 @@ is also in `Deployment/`.
 | `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (the wallpaper composer) |
 | `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
 | `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers or wallpapers), **Package for Deployment…** on cards, and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
+| `aiGenerationEnabled` | bool | `false` | Master switch for AI-generated wallpaper backgrounds in Studio › Wallpapers. `false` hides every AI control regardless of the provider toggles |
+| `aiAppleOnDeviceEnabled` | bool | `false` | Offers **Apple On-Device** generation (Image Playground via Apple Intelligence; runs entirely on the Mac). Needs Apple silicon with Apple Intelligence on |
+| `aiLocalModelEnabled` | bool | `false` | Offers **Local Model** generation (a local image-generation endpoint). Reserved; not offered by the app yet |
+| `aiExternalModelEnabled` | bool | `false` | Offers **External Model** generation (a cloud image API). Reserved; not offered by the app yet |
 
 See §12 for how these interact with lock tiers and how the saver is deployed.
 

@@ -107,6 +107,20 @@ final class PreferencesStore: ObservableObject {
     /// Unlocks the admin tools (Studio › Package, "Copy Scene for MDM").
     @Published var adminModeEnabled: Bool = false
 
+    // AI generation (Studio › Wallpapers): master switch + one toggle per
+    // provider. `aiPolicy` is the resolved view the composer reads.
+    @Published var aiGenerationEnabled: Bool = false
+    @Published var aiAppleOnDeviceEnabled: Bool = false
+    @Published var aiLocalModelEnabled: Bool = false
+    @Published var aiExternalModelEnabled: Bool = false
+
+    var aiPolicy: AIGenerationPolicy {
+        AIGenerationPolicy(enabled: aiGenerationEnabled,
+                           appleOnDevice: aiAppleOnDeviceEnabled,
+                           localModel: aiLocalModelEnabled,
+                           externalModel: aiExternalModelEnabled)
+    }
+
     private var isReloading = false
     private var cancellables: Set<AnyCancellable> = []
 
@@ -170,6 +184,10 @@ final class PreferencesStore: ObservableObject {
         allowedScreenSaverSceneIDs = ManagedPreferences.stringArray(.allowedScreenSaverSceneIDs)
         enforcedScreenSaverPath = ManagedPreferences.string(.enforcedScreenSaverPath) ?? ""
         adminModeEnabled = ManagedPreferences.bool(.adminModeEnabled) ?? false
+        aiGenerationEnabled = ManagedPreferences.bool(.aiGenerationEnabled) ?? false
+        aiAppleOnDeviceEnabled = ManagedPreferences.bool(.aiAppleOnDeviceEnabled) ?? false
+        aiLocalModelEnabled = ManagedPreferences.bool(.aiLocalModelEnabled) ?? false
+        aiExternalModelEnabled = ManagedPreferences.bool(.aiExternalModelEnabled) ?? false
     }
 
     /// Persists each published property back to CFPreferences when it changes
@@ -216,6 +234,10 @@ final class PreferencesStore: ObservableObject {
         persist($allowedScreenSaverSceneIDs, .allowedScreenSaverSceneIDs) { ($0?.isEmpty ?? true) ? nil : $0 }
         persist($enforcedScreenSaverPath, .enforcedScreenSaverPath) { $0.isEmpty ? nil : $0 }
         persist($adminModeEnabled, .adminModeEnabled) { $0 }
+        persist($aiGenerationEnabled, .aiGenerationEnabled) { $0 }
+        persist($aiAppleOnDeviceEnabled, .aiAppleOnDeviceEnabled) { $0 }
+        persist($aiLocalModelEnabled, .aiLocalModelEnabled) { $0 }
+        persist($aiExternalModelEnabled, .aiExternalModelEnabled) { $0 }
     }
 
     private func persist<Value: Equatable>(_ publisher: Published<Value>.Publisher,

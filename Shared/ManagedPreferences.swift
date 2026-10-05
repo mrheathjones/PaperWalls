@@ -54,6 +54,13 @@ enum ManagedPreferenceKey: String, CaseIterable {
     // Admin tools.
     case adminModeEnabled               // unlocks Studio › Package (deployable savers)
 
+    // AI generation (Studio › Wallpapers). All default OFF; the master
+    // switch hides every AI control regardless of the sub-toggles.
+    case aiGenerationEnabled            // master switch
+    case aiAppleOnDeviceEnabled         // Image Playground (Apple Intelligence, on-device)
+    case aiLocalModelEnabled            // a local image-generation endpoint (phase 3)
+    case aiExternalModelEnabled         // a cloud image API (phase 4)
+
     // Legacy rotation keys — read ONLY by RotationPoolMigration (spec §4).
     case autoRotateSource
     case rotateIncludeBundled

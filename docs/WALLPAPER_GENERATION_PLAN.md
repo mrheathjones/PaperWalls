@@ -1,6 +1,6 @@
 # Studio › Wallpapers — generation plan
 
-Status: phase 1 in progress (October 2026). Phases 2–4 are design only.
+Status: phases 1 and 2 landed (October 2026). Phases 3–4 are design only.
 
 PaperWalls already has everything needed to *compose* a wallpaper: the
 scene model (`ScreenSaverScene`), the Scene Composer UI, the frame
@@ -77,7 +77,14 @@ to obtain the *background* of that scene — nothing else changes.
 * Export filename sanitization; render-size option list.
 * Existing Studio tab visibility tests unchanged.
 
-## Phase 2 — Provider abstraction + Apple On-Device
+## Phase 2 — Apple On-Device (landed)
+
+Landed as `Shared/AIGenerationPolicy.swift` (pure gating + tests), the four
+managed keys below, a Settings › AI Generation card, and
+`ImagePlaygroundBackgroundRow` under Background › An Image in the
+composer. The provider protocol below arrives with the first programmatic
+provider (phase 3); the Apple path needs none, since the system sheet
+owns the whole flow.
 
 ```swift
 protocol WallpaperImageProvider {

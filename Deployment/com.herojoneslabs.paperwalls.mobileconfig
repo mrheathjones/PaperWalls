@@ -94,6 +94,15 @@
 								<!-- admin tools (Studio › Package, Copy Scene for MDM); keep false on end-user Macs -->
 								<key>adminModeEnabled</key>
 								<false/>
+								<!-- AI-generated wallpaper backgrounds (Studio › Wallpapers); master switch + one toggle per provider, all off by default -->
+								<key>aiGenerationEnabled</key>
+								<false/>
+								<key>aiAppleOnDeviceEnabled</key>
+								<false/>
+								<key>aiLocalModelEnabled</key>
+								<false/>
+								<key>aiExternalModelEnabled</key>
+								<false/>
 								<key>showScreenSaversPage</key>
 								<true/>
 								<key>showStudio</key>

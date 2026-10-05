@@ -516,6 +516,8 @@ struct IconLayerControls: View {
 struct SceneBackgroundControls: View {
     @EnvironmentObject private var model: AppModel
 
+    @EnvironmentObject private var prefs: PreferencesStore
+
     @Binding var background: SceneBackground
 
     @Environment(\.composerKind) private var kind
@@ -656,6 +658,12 @@ struct SceneBackgroundControls: View {
                     Button("Choose Image…", action: chooseImage)
                 }
             }
+            if prefs.aiPolicy.isEnabled(.appleOnDevice) {
+                SettingsDivider()
+                ImagePlaygroundBackgroundRow { assetName in
+                    background.source = .image(assetName: assetName)
+                }
+            }
         case .solid(let colorHex):
             SettingsDivider()
             ComposerColorRow(title: "Color", hex: Binding(get: { colorHex },
@@ -766,7 +774,11 @@ struct SceneBackgroundControls: View {
                     background.source = .rotatingPool(intervalSeconds: SceneBackgroundSource.defaultRotationInterval)
                 case .image:
                     background.source = .image(assetName: "")
-                    chooseImage()
+                    // With a generator on offer, let the user pick a path;
+                    // otherwise the file chooser is the only one.
+                    if !prefs.aiPolicy.offersGeneration {
+                        chooseImage()
+                    }
                 case .solid:
                     background.source = .solid(colorHex: "0B0B0F")
                 case .gradient:
