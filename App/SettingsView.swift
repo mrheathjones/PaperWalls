@@ -455,7 +455,7 @@ struct SettingsContent: View {
                 SettingsSection(label: "Admin", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Admin mode",
-                                subtitle: "Adds Studio › Package for building deployable screen saver and wallpaper packages, “Package for Deployment…” on cards, and “Copy Scene for MDM” on screen saver cards",
+                                subtitle: "Adds Studio › Assets (your organization's logos and icons for the composer), Studio › Package for building deployable screen saver and wallpaper packages, “Package for Deployment…” on cards, and “Copy Scene for MDM” on screen saver cards",
                                 managedKey: .adminModeEnabled) {
                         SettingsToggle(isOn: $prefs.adminModeEnabled,
                                        disabled: prefs.isForced(.adminModeEnabled))

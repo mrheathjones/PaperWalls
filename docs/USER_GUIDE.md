@@ -57,6 +57,10 @@ display is the default). **Save to Personal** renders the wallpaper into
 your Personal library, where you can set it like any other. Your design
 stays under **Your Designs** in Studio for later edits.
 
+**Brand assets.** If your organization's logos and icons have been added
+to Studio (an admin tool), a **Brand Assets** strip appears in the **Icon**
+section of a layer and under **Background › Image**. Click one to use it.
+
 **Generated backgrounds.** If AI generation is turned on in **Settings ›
 AI Generation**, an **AI Prompt** section appears under Background, whatever
 the background currently is. Describe the image, then press the Generate

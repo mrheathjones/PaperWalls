@@ -119,6 +119,9 @@ final class AppModel: ObservableObject {
     @Published var studioTab: StudioTab = .screenSaver
     // Studio › Wallpapers designs (see AppModel+Wallpapers.swift).
     @Published var wallpaperDesigns: [StoredWallpaperDesign] = []
+    /// Studio › Assets: the organization's logos and icons (admin mode
+    /// manages them; any composer can pick them).
+    @Published var brandAssets: [BrandAsset] = []
     @Published var wallpaperDesignThumbnails: [String: NSImage] = [:]
     /// The Scene Composer's working state. A separate object so editing
     /// (every slider tick) doesn't republish the whole app model.
@@ -152,6 +155,7 @@ final class AppModel: ObservableObject {
         restorePersistedRotationClock()
         reloadScreenSavers()
         reloadWallpaperDesigns()
+        reloadBrandAssets()
 
         // Never strand the user on a page whose gate just flipped off
         // (spec §10). Published values land after this fires, so check on

@@ -134,6 +134,11 @@
 		FF00000000000000000000D2 /* ExternalImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C8 /* ExternalImageProvider.swift */; };
 		FF00000000000000000000D3 /* ExternalImageEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */; };
 		FF00000000000000000000D4 /* ScenePreviewInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CA /* ScenePreviewInteraction.swift */; };
+		FF00000000000000000000D5 /* BrandAssetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CB /* BrandAssetStore.swift */; };
+		FF00000000000000000000D6 /* BrandAssetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CB /* BrandAssetStore.swift */; };
+		FF00000000000000000000D7 /* AppModel+BrandAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CC /* AppModel+BrandAssets.swift */; };
+		FF00000000000000000000D8 /* StudioAssetsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CD /* StudioAssetsTab.swift */; };
+		FF00000000000000000000D9 /* BrandAssetStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CE /* BrandAssetStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -241,6 +246,10 @@
 		DD00000000000000000000C8 /* ExternalImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalImageProvider.swift; sourceTree = "<group>"; };
 		DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalImageEndpointTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000CA /* ScenePreviewInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenePreviewInteraction.swift; sourceTree = "<group>"; };
+		DD00000000000000000000CB /* BrandAssetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandAssetStore.swift; sourceTree = "<group>"; };
+		DD00000000000000000000CC /* AppModel+BrandAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+BrandAssets.swift"; sourceTree = "<group>"; };
+		DD00000000000000000000CD /* StudioAssetsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioAssetsTab.swift; sourceTree = "<group>"; };
+		DD00000000000000000000CE /* BrandAssetStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandAssetStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -322,6 +331,7 @@
 				DD00000000000000000000A5 /* SceneDeployment.swift */,
 				DD00000000000000000000A9 /* WallpaperDeployment.swift */,
 				DD00000000000000000000BB /* WallpaperDesignStore.swift */,
+				DD00000000000000000000CB /* BrandAssetStore.swift */,
 				DD00000000000000000000BC /* WallpaperPresets.swift */,
 				DD00000000000000000000C0 /* AIGenerationPolicy.swift */,
 				DD00000000000000000000C3 /* LocalImageEndpoint.swift */,
@@ -345,6 +355,7 @@
 				DD00000000000000000000C2 /* AIGenerationPolicyTests.swift */,
 				DD00000000000000000000C5 /* LocalImageEndpointTests.swift */,
 				DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */,
+				DD00000000000000000000CE /* BrandAssetStoreTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -366,9 +377,11 @@
 				DD0000000000000000000083 /* ScreenSaversPage.swift */,
 				DD0000000000000000000084 /* StudioPage.swift */,
 				DD00000000000000000000A7 /* StudioPackageTab.swift */,
+				DD00000000000000000000CD /* StudioAssetsTab.swift */,
 				DD00000000000000000000AB /* StudioWallpaperPackageView.swift */,
 				DD00000000000000000000BE /* StudioWallpapersTab.swift */,
 				DD00000000000000000000BD /* AppModel+Wallpapers.swift */,
+				DD00000000000000000000CC /* AppModel+BrandAssets.swift */,
 				DD00000000000000000000C1 /* AIBackgroundGenerator.swift */,
 				DD00000000000000000000C4 /* LocalImageProvider.swift */,
 				DD00000000000000000000C8 /* ExternalImageProvider.swift */,
@@ -580,6 +593,8 @@
 				FF0000000000000000000085 /* ScreenSaversPage.swift in Sources */,
 				FF0000000000000000000086 /* StudioPage.swift in Sources */,
 				FF00000000000000000000B1 /* StudioPackageTab.swift in Sources */,
+				FF00000000000000000000D8 /* StudioAssetsTab.swift in Sources */,
+				FF00000000000000000000D7 /* AppModel+BrandAssets.swift in Sources */,
 				FF0000000000000000000090 /* SceneComposer.swift in Sources */,
 				FF00000000000000000000D4 /* ScenePreviewInteraction.swift in Sources */,
 				FF0000000000000000000091 /* SceneLayerControls.swift in Sources */,
@@ -593,6 +608,7 @@
 				FF00000000000000000000B8 /* WallpaperPackager.swift in Sources */,
 				FF00000000000000000000B9 /* StudioWallpaperPackageView.swift in Sources */,
 				FF00000000000000000000BB /* WallpaperDesignStore.swift in Sources */,
+				FF00000000000000000000D5 /* BrandAssetStore.swift in Sources */,
 				FF00000000000000000000BD /* WallpaperPresets.swift in Sources */,
 				FF00000000000000000000BF /* AppModel+Wallpapers.swift in Sources */,
 				FF00000000000000000000C0 /* StudioWallpapersTab.swift in Sources */,
@@ -661,6 +677,8 @@
 				FF00000000000000000000B7 /* WallpaperDeployment.swift in Sources */,
 				FF00000000000000000000BA /* WallpaperDeploymentTests.swift in Sources */,
 				FF00000000000000000000BC /* WallpaperDesignStore.swift in Sources */,
+				FF00000000000000000000D6 /* BrandAssetStore.swift in Sources */,
+				FF00000000000000000000D9 /* BrandAssetStoreTests.swift in Sources */,
 				FF00000000000000000000BE /* WallpaperPresets.swift in Sources */,
 				FF00000000000000000000C1 /* WallpaperDesignTests.swift in Sources */,
 				FF00000000000000000000C3 /* AIGenerationPolicy.swift in Sources */,

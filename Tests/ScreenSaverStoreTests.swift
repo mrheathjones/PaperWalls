@@ -300,14 +300,15 @@ final class StudioTabVisibilityTests: XCTestCase {
         XCTAssertTrue(tabs(wallpapers: false, canCreate: false).isEmpty)
     }
 
-    func testPackageTabFollowsAdminMode() {
-        XCTAssertEqual(tabs(admin: true), [.wallpapers, .screenSaver, .package])
+    func testAdminTabsFollowAdminMode() {
+        XCTAssertEqual(tabs(admin: true), [.wallpapers, .screenSaver, .assets, .package])
         XCTAssertFalse(tabs().contains(.package))
+        XCTAssertFalse(tabs().contains(.assets))
     }
 
-    func testPackageTabSurvivesHiddenStudio() {
-        XCTAssertEqual(tabs(studio: false, admin: true), [.package])
-        XCTAssertEqual(tabs(canCreate: false, admin: true), [.wallpapers, .package])
+    func testAdminTabsSurviveHiddenStudio() {
+        XCTAssertEqual(tabs(studio: false, admin: true), [.assets, .package])
+        XCTAssertEqual(tabs(canCreate: false, admin: true), [.wallpapers, .assets, .package])
     }
 }
 

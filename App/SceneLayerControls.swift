@@ -430,6 +430,8 @@ struct TextLayerControls: View {
 }
 
 struct IconLayerControls: View {
+    @EnvironmentObject private var model: AppModel
+
     @Binding var icon: IconLayer
 
     @State private var importError: String?
@@ -448,12 +450,21 @@ struct IconLayerControls: View {
             if let assetName = icon.imageAssetName {
                 ComposerRow(title: "Image") {
                     HStack(spacing: 8) {
-                        Text(assetName)
-                            .font(Theme.pathMono)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .frame(maxWidth: 180)
+                        if let asset = model.brandAsset(forAssetName: assetName) {
+                            Text(asset.name)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .frame(maxWidth: 180)
+                        } else {
+                            Text(assetName)
+                                .font(Theme.pathMono)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .frame(maxWidth: 180)
+                        }
                         Button("Use a Symbol") {
                             icon.imageAssetName = nil
                         }
@@ -483,6 +494,15 @@ struct IconLayerControls: View {
                 }
                 SettingsDivider()
                 ComposerColorRow(title: "Color", hex: $icon.colorHex)
+            }
+            if !model.brandAssets.isEmpty {
+                SettingsDivider()
+                ComposerRow(title: "Brand Assets") {
+                    EmptyView()
+                }
+                BrandAssetPicker(selectedAssetName: icon.imageAssetName) { asset in
+                    icon.imageAssetName = asset.assetName
+                }
             }
             SettingsDivider()
             ComposerRow(title: "Use your own image") {
@@ -685,15 +705,33 @@ struct SceneBackgroundControls: View {
                     ? "Your auto-rotate sources are empty right now, so the background will be black. Choose sources in Settings → Auto-Rotate."
                     : "Fades through the \(model.rotationPool.count) wallpapers in your auto-rotate sources (Settings → Auto-Rotate).")
         case .image(let name):
+            if !model.brandAssets.isEmpty {
+                SettingsDivider()
+                ComposerRow(title: "Brand Assets") {
+                    EmptyView()
+                }
+                BrandAssetPicker(selectedAssetName: name) { asset in
+                    background.source = .image(assetName: asset.assetName)
+                }
+            }
             SettingsDivider()
             ComposerRow(title: "Image") {
                 HStack(spacing: 8) {
-                    Text(name.isEmpty ? "No image chosen" : name)
-                        .font(Theme.pathMono)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: 180)
+                    if let asset = model.brandAsset(forAssetName: name) {
+                        Text(asset.name)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: 180)
+                    } else {
+                        Text(name.isEmpty ? "No image chosen" : name)
+                            .font(Theme.pathMono)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: 180)
+                    }
                     Button("Choose Image…", action: chooseImage)
                 }
             }

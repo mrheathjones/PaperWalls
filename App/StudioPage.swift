@@ -23,7 +23,7 @@ struct StudioPage: View {
         switch currentTab {
         case .screenSaver: return studio.draft != nil
         case .wallpapers: return studio.wallpaperDraft != nil
-        case .package, nil: return false
+        case .assets, .package, nil: return false
         }
     }
 
@@ -56,6 +56,8 @@ struct StudioPage: View {
                 StudioWallpapersTab(studio: studio)
             case .screenSaver:
                 StudioScreenSaverTab(studio: studio)
+            case .assets:
+                StudioAssetsTab()
             case .package:
                 StudioPackageTab(studio: studio)
             case nil:

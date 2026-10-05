@@ -274,14 +274,16 @@ failed · `5` ran as root (refused — the desktop is a per-user setting) ·
 | `~/Library/Application Support/PaperWalls/RemoteCache/` | Feed caches (verified manifests + assets) |
 | `~/Library/Application Support/PaperWalls/SystemWallpapers/` | Downloaded Apple wallpapers + catalog copy |
 | `~/Library/Application Support/PaperWalls/content-id-cache.json` | Folder-wallpaper hash cache |
-| `~/Library/Application Support/PaperWalls/Studio/ScreenSavers/` | The user's screen savers: one `<uuid>.json` per scene, `Thumbnails/` (cache), `Assets/` (images imported into scenes). **User data, not a cache** |
+| `~/Library/Application Support/PaperWalls/Studio/ScreenSavers/` | The user's screen savers: one `<uuid>.json` per scene, `Thumbnails/` (cache), `Assets/` (images imported into scenes, including every brand asset's image). **User data, not a cache** |
+| `~/Library/Application Support/PaperWalls/Studio/BrandAssets/` | Studio › Assets library: one `<uuid>.json` per asset (name, kind, which `Assets/` file it is). **User data** |
 | `~/Library/Application Support/PaperWalls/Studio/ActiveScreenSaver.json` | The resolved scene published for the saver (cache; rewritten by the app and `manage`) |
 | `~/Library/Screen Savers/PaperWalls – <Scene>.saver` | Generated per-scene copies of the saver for scenes shown as their own tile (derived; the app regenerates them) |
 | `~/Library/Screen Savers/PaperWalls.saver` | Only when installed from the app's Settings ("Install for Me") on a Mac without the pkg |
 | `/Library/Application Support/PaperWalls/managed.json` | Optional local admin config (admin-writable) |
 
-Deleting any per-user cache is safe — the app rebuilds it. `Personal/` and
-`Studio/ScreenSavers/*.json` (+ `Assets/`) are the user's own content.
+Deleting any per-user cache is safe — the app rebuilds it. `Personal/`,
+`Studio/ScreenSavers/*.json` (+ `Assets/`), `Studio/Wallpapers/`, and
+`Studio/BrandAssets/` are the user's own content.
 
 ---
 
@@ -534,6 +536,35 @@ bundle (a clock on a coral gradient), not a live view of the active scene.
 macOS caches a saver's tile by bundle: after replacing the saver with a
 build whose thumbnail changed, the old tile can persist until the bundle is
 renamed or the Mac restarts.
+
+### Brand assets (Admin mode)
+
+Scenes often need the organization's artwork — a logo for the lobby saver,
+a white variant for dark backgrounds, an app icon for a help-desk
+wallpaper. Rather than choosing the file every time, keep them in Studio:
+turn on **Settings › Admin › Admin mode** and open **Studio › Assets**.
+
+- **Add Images…** (or drop files or a folder on the tab) copies each image
+  into the Studio asset store and lists it with a name taken from the file
+  name (`acme-logo-white.png` → "Acme Logo White") and a kind guessed from
+  it (Logo, Icon, or Image). Rename or change the kind from the card's
+  menu. Add as many variations as you need; the same bytes are stored once.
+- In the composer, every **Icon** layer and the **Background › Image**
+  source show a **Brand Assets** strip. One click uses the asset; the
+  scene refers to the image file, exactly as if it had been chosen with
+  **Choose Image…**, so savers, wallpapers, deployed bundles, and `managed`
+  scenes all render it without any extra step. Packaging embeds the image
+  files a scene uses (`Resources/Media/Assets/`).
+- **Delete…** removes the library entry. The image file is deleted too,
+  unless a saved screen saver, wallpaper design, or open draft still uses
+  it — those keep working and the dialog says what uses it.
+
+The library is per user (`~/Library/Application Support/PaperWalls/Studio/BrandAssets/`)
+and only the admin's Mac needs it: what reaches other Macs is the rendered
+wallpaper, the packaged saver, or the `managedScreenSaverScene` JSON, none
+of which depend on the library. Keep `adminModeEnabled` forced `false` on
+end-user Macs; the composer's Brand Assets strip simply doesn't appear on
+a Mac whose library is empty.
 
 ### Packaging screen savers for deployment (Admin mode)
 

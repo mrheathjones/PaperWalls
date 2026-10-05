@@ -225,6 +225,8 @@ struct SceneDraft: Equatable {
 enum StudioTab: String, CaseIterable, Identifiable {
     case wallpapers
     case screenSaver
+    /// Admin mode only: the organization's logos and icons for scenes.
+    case assets
     /// Admin mode only: build deployable packages from library scenes.
     case package
 
@@ -234,15 +236,16 @@ enum StudioTab: String, CaseIterable, Identifiable {
         switch self {
         case .wallpapers: return "Wallpapers"
         case .screenSaver: return "ScreenSaver"
+        case .assets: return "Assets"
         case .package: return "Package"
         }
     }
 
     /// Pure hide logic. The ScreenSaver tab is the composer, so it is
-    /// unavailable whenever creation is. Package follows admin mode alone —
-    /// hiding Studio or turning off creation on an admin's Mac must not
-    /// take packaging away. An empty result hides Studio (and the whole
-    /// Tools section) entirely.
+    /// unavailable whenever creation is. Assets and Package follow admin
+    /// mode alone — hiding Studio or turning off creation on an admin's Mac
+    /// must not take the admin tools away. An empty result hides Studio
+    /// (and the whole Tools section) entirely.
     static func visibleTabs(showStudio: Bool,
                             showWallpapersTab: Bool,
                             showScreenSaverTab: Bool,
@@ -253,7 +256,7 @@ enum StudioTab: String, CaseIterable, Identifiable {
             if showWallpapersTab { tabs.append(.wallpapers) }
             if showScreenSaverTab && canCreate { tabs.append(.screenSaver) }
         }
-        if adminMode { tabs.append(.package) }
+        if adminMode { tabs.append(contentsOf: [.assets, .package]) }
         return tabs
     }
 }
