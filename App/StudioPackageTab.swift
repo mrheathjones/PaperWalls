@@ -345,12 +345,15 @@ struct StudioPackageTab: View {
         .frame(maxWidth: 300)
     }
 
-    /// "Embeds 12 images · 84 MB", or a note that the scene follows the
-    /// target Mac's desktop picture.
+    /// "Embeds 12 images · 84 MB". A "Current desktop" background is never
+    /// embedded, so say plainly that it follows each target Mac.
     private func mediaSummary(_ saver: StoredScreenSaver) -> String {
         let (_, media) = SceneDeployment.portable(model.sceneSnapshot(for: saver))
-        if case .currentDesktop = saver.scene.background.source, media.isEmpty {
-            return "Shows each Mac's current desktop picture"
+        var desktopNote = ""
+        if case .currentDesktop = saver.scene.background.source {
+            desktopNote = "Background: each Mac's own desktop picture, not this one"
+            if media.isEmpty { return desktopNote }
+            desktopNote = " · " + desktopNote
         }
         guard !media.isEmpty else { return "No images to embed" }
         let bytes = media.reduce(Int64(0)) { total, file in
@@ -363,6 +366,6 @@ struct StudioPackageTab: View {
             count += " from your rotation pool"
         }
         let warning = bytes > largeMediaBytes ? " — large; consider a smaller rotation pool" : ""
-        return "Embeds \(count) · \(size)\(warning)"
+        return "Embeds \(count) · \(size)\(warning)\(desktopNote)"
     }
 }

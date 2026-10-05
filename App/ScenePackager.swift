@@ -211,7 +211,13 @@ enum ScenePackager {
     nonisolated static func deployNotes(_ request: Request, includesMDM: Bool) -> String {
         let package = request.package
         let saverLines = request.items
-            .map { "  • \(SceneDeployment.installDirectory)/\($0.spec.bundleName)" }
+            .map { item -> String in
+                var line = "  • \(SceneDeployment.installDirectory)/\(item.spec.bundleName)"
+                if case .currentDesktop? = item.snapshot.scene?.background.source {
+                    line += "\n      (background: each Mac's own desktop picture)"
+                }
+                return line
+            }
             .joined(separator: "\n")
         let signed = request.appIdentity.map { "Savers signed with \($0) (hardened runtime)." }
             ?? "Savers are signed ad hoc."
