@@ -13,7 +13,9 @@ import Foundation
 //   6  wallpaper selection is locked (lockSelection)
 
 let toolName = "paperwallscli"
-let toolVersion = "1.0.0"
+/// The version stamped into the binary's embedded Info.plist at build
+/// time — the same MARKETING_VERSION as the app and the pkg.
+let toolVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
 
 enum ExitCode {
     static let ok: Int32 = 0

@@ -693,7 +693,9 @@
 		CC0000000000000000000004 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
 				CURRENT_PROJECT_VERSION = 20;
+				GENERATE_INFOPLIST_FILE = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.cli;
@@ -704,7 +706,9 @@
 		CC0000000000000000000005 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
 				CURRENT_PROJECT_VERSION = 20;
+				GENERATE_INFOPLIST_FILE = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.herojoneslabs.paperwalls.cli;

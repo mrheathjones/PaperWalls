@@ -430,7 +430,10 @@ fi
 # Component plist: mark every bundle (the app, and the screen saver when
 # included) non-relocatable so the installer always puts it at its payload
 # path instead of "upgrading" a stray copy (e.g. a dev build) that
-# LaunchServices knows about elsewhere on the disk.
+# LaunchServices knows about elsewhere on the disk. Also turn off the
+# version check: otherwise an installed copy with a higher version (an old
+# 1.0 dev build, or a newer release when rolling back) makes Installer skip
+# the bundle silently, and the receipt no longer matches the app on disk.
 COMPONENTS="$WORK/components.plist"
 pkgbuild --analyze --root "$STAGING" "$COMPONENTS" >/dev/null
 component_index=0
@@ -441,6 +444,9 @@ do
     /usr/libexec/PlistBuddy -c "Set :${component_index}:BundleIsRelocatable false" "$COMPONENTS" 2>/dev/null \
         || /usr/libexec/PlistBuddy -c "Add :${component_index}:BundleIsRelocatable bool false" "$COMPONENTS" \
         || die "could not set BundleIsRelocatable in $COMPONENTS"
+    /usr/libexec/PlistBuddy -c "Set :${component_index}:BundleIsVersionChecked false" "$COMPONENTS" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Add :${component_index}:BundleIsVersionChecked bool false" "$COMPONENTS" \
+        || die "could not set BundleIsVersionChecked in $COMPONENTS"
     component_index=$(( component_index + 1 ))
 done
 [[ "$component_index" -gt 0 ]] || die "pkgbuild found no bundle components in $STAGING"
