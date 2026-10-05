@@ -357,6 +357,18 @@ final class StudioSession: ObservableObject {
     /// A request held back because the draft has unsaved changes.
     @Published var pendingRequest: StudioRequest?
 
+    /// Studio › Wallpapers: the design being composed (nil shows the "New
+    /// Wallpaper" chooser) and the pixel size the next save renders at.
+    @Published var wallpaperDraft: SceneDraft?
+    @Published var wallpaperPixelSize: CGSize = .zero
+
+    /// Picks the main display's size the first time the tab is shown.
+    func ensureWallpaperPixelSize(displayPixelSizes: [CGSize]) {
+        if wallpaperPixelSize == .zero {
+            wallpaperPixelSize = WallpaperRenderSize.defaultPixelSize(displayPixelSizes: displayPixelSizes)
+        }
+    }
+
     /// Studio › Package: which flavor is showing, the ticked scene IDs (in
     /// the order ticked) and any edited saver names, and the same for
     /// wallpapers (ticked wallpaper IDs, edited file names). Kept for the
@@ -400,11 +412,24 @@ enum ScreenSaverThumbnailer {
         let image: CGImage?
     }
 
-    static func render(_ scene: ScreenSaverScene, resources: SceneResources, scale: CGFloat = 2) async -> CGImage? {
+    /// `size` is in points; the output is `size × scale` pixels. Images are
+    /// decoded at most `maxImagePixels` on their long edge — enough for a
+    /// card, or a whole display for a wallpaper.
+    static func render(_ scene: ScreenSaverScene, resources: SceneResources, scale: CGFloat = 2,
+                       size: CGSize = Self.size, maxImagePixels: Int = 960) async -> CGImage? {
         var background = SceneFrameBackground()
         if let url = backgroundURL(for: scene, resources: resources) {
             background.current = await Task.detached(priority: .utility) {
-                ImageBox(image: SceneImageLoader.downsampledImage(at: url, maxPixelSize: 960))
+                ImageBox(image: SceneImageLoader.downsampledImage(at: url, maxPixelSize: maxImagePixels))
+            }.value.image
+        }
+        var assets: [String: CGImage] = [:]
+        for layer in scene.layers {
+            guard layer.isVisible, case .icon(let icon) = layer.content,
+                  let name = icon.imageAssetName, assets[name] == nil,
+                  let url = resources.assetURL(name) else { continue }
+            assets[name] = await Task.detached(priority: .utility) {
+                ImageBox(image: SceneImageLoader.downsampledImage(at: url, maxPixelSize: maxImagePixels))
             }.value.image
         }
         let renderer = ImageRenderer(content: SceneFrameView(scene: scene,
@@ -412,7 +437,8 @@ enum ScreenSaverThumbnailer {
                                                              time: 0,
                                                              size: size,
                                                              background: background,
-                                                             tokens: resources.tokens))
+                                                             tokens: resources.tokens,
+                                                             assetImage: { assets[$0] }))
         renderer.scale = scale
         return renderer.cgImage
     }
@@ -433,6 +459,7 @@ enum ScreenSaverThumbnailer {
         case .currentDesktop: return resources.currentDesktopURL()
         case .wallpaper(let id): return resources.wallpaperURL(id)
         case .rotatingPool: return resources.rotationURLs().first
+        case .image(let name): return resources.assetURL(name)
         case .solid, .gradient, .unsupported: return nil
         }
     }

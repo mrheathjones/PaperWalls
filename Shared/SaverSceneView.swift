@@ -82,6 +82,8 @@ struct SaverSceneView: View {
             backgroundURLs = [resources.wallpaperURL(id)].compactMap { $0 }
         case .rotatingPool:
             backgroundURLs = resources.rotationURLs()
+        case .image(let name):
+            backgroundURLs = [resources.assetURL(name)].compactMap { $0 }
         case .solid, .gradient, .unsupported:
             backgroundURLs = []
         }
@@ -178,7 +180,7 @@ struct SceneFrameView: View {
                                     Color(sceneHex: endHex, fallback: .black)],
                            startPoint: UnitPoint(x: 0.5 - direction.x, y: 0.5 - direction.y),
                            endPoint: UnitPoint(x: 0.5 + direction.x, y: 0.5 + direction.y))
-        case .currentDesktop, .wallpaper, .rotatingPool:
+        case .currentDesktop, .wallpaper, .rotatingPool, .image:
             ZStack {
                 Color.black
                 if let current = background.current {

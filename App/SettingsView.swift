@@ -290,7 +290,7 @@ struct SettingsContent: View {
                     }
                     SettingsDivider()
                     SettingsRow(title: "Studio: Wallpapers tab",
-                                subtitle: "Coming soon",
+                                subtitle: "The composer for building wallpapers from colors, gradients, images, text, and icons",
                                 managedKey: .showStudioWallpapersTab) {
                         SettingsToggle(isOn: $prefs.showStudioWallpapersTab,
                                        disabled: prefs.isForced(.showStudioWallpapersTab) || !prefs.showStudio)

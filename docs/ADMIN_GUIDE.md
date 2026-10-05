@@ -152,7 +152,7 @@ is also in `Deployment/`.
 | `allowScreenSaverCreation` | bool | `true` | `false` = users can't create, edit, rename, or delete scenes (Studio's ScreenSaver tab is unavailable); they can still browse, preview, and Set Active |
 | `showScreenSaversPage` | bool | `true` | Shows/hides the ScreenSavers page in the sidebar's Library section |
 | `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
-| `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (a "coming soon" placeholder today) |
+| `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (the wallpaper composer) |
 | `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
 | `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers or wallpapers), **Package for Deployment…** on cards, and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
 

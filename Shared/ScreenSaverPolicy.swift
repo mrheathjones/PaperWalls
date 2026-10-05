@@ -133,7 +133,8 @@ extension ScreenSaverSnapshot {
             }
         case .rotatingPool:
             snapshot.rotationPaths = rotationPaths()
-        case .currentDesktop, .solid, .gradient, .unsupported:
+        case .currentDesktop, .solid, .gradient, .image, .unsupported:
+            // An image background resolves through `assetsDirectory`.
             break
         }
         return snapshot
@@ -184,11 +185,16 @@ struct SceneDraft: Equatable {
 
     /// An existing library entry opened for editing.
     init(editing stored: StoredScreenSaver) {
-        self.sceneID = stored.id
-        self.name = stored.name
-        self.scene = stored.scene
-        self.baselineName = stored.name
-        self.baselineScene = stored.scene
+        self.init(editingID: stored.id, name: stored.name, scene: stored.scene)
+    }
+
+    /// An existing entry (screen saver or wallpaper design) opened for editing.
+    init(editingID id: String, name: String, scene: ScreenSaverScene) {
+        self.sceneID = id
+        self.name = name
+        self.scene = scene
+        self.baselineName = name
+        self.baselineScene = scene
         self.presetName = nil
     }
 

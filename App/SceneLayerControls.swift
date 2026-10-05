@@ -1,6 +1,25 @@
 import AppKit
 import SwiftUI
 
+/// What the composer is making. The control views hide what doesn't
+/// apply: a wallpaper is a still image, so no motion and no live
+/// (current-desktop / rotating) backgrounds.
+enum SceneComposerKind {
+    case screenSaver
+    case wallpaper
+}
+
+private struct SceneComposerKindKey: EnvironmentKey {
+    static let defaultValue: SceneComposerKind = .screenSaver
+}
+
+extension EnvironmentValues {
+    var composerKind: SceneComposerKind {
+        get { self[SceneComposerKindKey.self] }
+        set { self[SceneComposerKindKey.self] = newValue }
+    }
+}
+
 // Scene Composer controls (spec §10: UI-to-value rules). Every control
 // binds straight to the scene model — a Picker for the motion, Slow–Fast
 // sliders for relative speeds, toggles for options. Exact numbers live
@@ -154,6 +173,7 @@ extension Color {
 struct SceneLayerControls: View {
     @Binding var layer: SceneLayer
 
+    @Environment(\.composerKind) private var kind
     @State private var showsAdvanced = false
 
     var body: some View {
@@ -174,30 +194,32 @@ struct SceneLayerControls: View {
                                lowLabel: "Faint", highLabel: "Solid")
             }
 
-            ComposerSection(title: "Motion") {
-                ComposerRow(title: "Motion") {
-                    Picker("Motion", selection: $layer.motion.kind) {
-                        ForEach(SceneMotion.Kind.allCases) { kind in
-                            Text(kind.displayName).tag(kind)
+            if kind == .screenSaver {
+                ComposerSection(title: "Motion") {
+                    ComposerRow(title: "Motion") {
+                        Picker("Motion", selection: $layer.motion.kind) {
+                            ForEach(SceneMotion.Kind.allCases) { kind in
+                                Text(kind.displayName).tag(kind)
+                            }
                         }
+                        .labelsHidden()
+                        .fixedSize()
                     }
-                    .labelsHidden()
-                    .fixedSize()
-                }
-                if layer.motion.kind != .still {
-                    SettingsDivider()
-                    ComposerSlider(title: "Speed", value: $layer.motion.speed,
-                                   lowLabel: "Slow", highLabel: "Fast")
-                }
-                if usesIntensity {
-                    SettingsDivider()
-                    ComposerSlider(title: intensityTitle, value: $layer.motion.intensity,
-                                   lowLabel: "Subtle", highLabel: "Strong")
-                }
-                if layer.motion.kind == .bounce {
-                    SettingsDivider()
-                    ComposerRow(title: "Change color on bounce") {
-                        SettingsToggle(isOn: $layer.motion.changesColorOnBounce)
+                    if layer.motion.kind != .still {
+                        SettingsDivider()
+                        ComposerSlider(title: "Speed", value: $layer.motion.speed,
+                                       lowLabel: "Slow", highLabel: "Fast")
+                    }
+                    if usesIntensity {
+                        SettingsDivider()
+                        ComposerSlider(title: intensityTitle, value: $layer.motion.intensity,
+                                       lowLabel: "Subtle", highLabel: "Strong")
+                    }
+                    if layer.motion.kind == .bounce {
+                        SettingsDivider()
+                        ComposerRow(title: "Change color on bounce") {
+                            SettingsToggle(isOn: $layer.motion.changesColorOnBounce)
+                        }
                     }
                 }
             }
@@ -212,10 +234,12 @@ struct SceneLayerControls: View {
                     ComposerPercentField(title: "Down", value: $layer.position.y)
                     SettingsDivider()
                     ComposerPercentField(title: "Opacity", value: $layer.opacity)
-                    SettingsDivider()
-                    ComposerPercentField(title: "Speed", value: $layer.motion.speed)
-                    SettingsDivider()
-                    ComposerPercentField(title: "Motion strength", value: $layer.motion.intensity)
+                    if kind == .screenSaver {
+                        SettingsDivider()
+                        ComposerPercentField(title: "Speed", value: $layer.motion.speed)
+                        SettingsDivider()
+                        ComposerPercentField(title: "Motion strength", value: $layer.motion.intensity)
+                    }
                 }
                 .padding(.top, 8)
             }
@@ -494,10 +518,14 @@ struct SceneBackgroundControls: View {
 
     @Binding var background: SceneBackground
 
+    @Environment(\.composerKind) private var kind
+    @State private var importError: String?
+
     enum SourceKind: String, CaseIterable, Identifiable {
         case currentDesktop
         case wallpaper
         case rotatingPool
+        case image
         case solid
         case gradient
 
@@ -508,6 +536,7 @@ struct SceneBackgroundControls: View {
             case .currentDesktop: return "Current Desktop"
             case .wallpaper: return "A Wallpaper"
             case .rotatingPool: return "Rotating"
+            case .image: return "An Image"
             case .solid: return "Color"
             case .gradient: return "Gradient"
             }
@@ -530,7 +559,7 @@ struct SceneBackgroundControls: View {
                 }
                 ComposerRow(title: "Show") {
                     Picker("Background", selection: kindBinding) {
-                        ForEach(SourceKind.allCases) { kind in
+                        ForEach(availableKinds) { kind in
                             Text(kind.displayName).tag(Optional(kind))
                         }
                     }
@@ -538,6 +567,11 @@ struct SceneBackgroundControls: View {
                     .fixedSize()
                 }
                 sourceRows
+                    .alert("Couldn’t Add Image", isPresented: errorPresented) {
+                        Button("OK", role: .cancel) {}
+                    } message: {
+                        Text(importError ?? "")
+                    }
             }
 
             if usesImage {
@@ -558,18 +592,28 @@ struct SceneBackgroundControls: View {
                     SettingsDivider()
                     ComposerSlider(title: "Dim", value: $background.treatment.dim,
                                    lowLabel: "Bright", highLabel: "Dark")
-                    SettingsDivider()
-                    ComposerRow(title: "Slow zoom") {
-                        SettingsToggle(isOn: $background.treatment.slowZoom)
+                    if kind == .screenSaver {
+                        SettingsDivider()
+                        ComposerRow(title: "Slow zoom") {
+                            SettingsToggle(isOn: $background.treatment.slowZoom)
+                        }
                     }
                 }
             }
         }
     }
 
+    /// Live backgrounds only make sense for a screen saver.
+    private var availableKinds: [SourceKind] {
+        switch kind {
+        case .screenSaver: return SourceKind.allCases
+        case .wallpaper: return [.wallpaper, .image, .solid, .gradient]
+        }
+    }
+
     private var usesImage: Bool {
         switch background.source {
-        case .currentDesktop, .wallpaper, .rotatingPool: return true
+        case .currentDesktop, .wallpaper, .rotatingPool, .image: return true
         case .solid, .gradient, .unsupported: return false
         }
     }
@@ -599,6 +643,19 @@ struct SceneBackgroundControls: View {
             noteRow(model.rotationPool.isEmpty
                     ? "Your auto-rotate sources are empty right now, so the background will be black. Choose sources in Settings → Auto-Rotate."
                     : "Fades through the \(model.rotationPool.count) wallpapers in your auto-rotate sources (Settings → Auto-Rotate).")
+        case .image(let name):
+            SettingsDivider()
+            ComposerRow(title: "Image") {
+                HStack(spacing: 8) {
+                    Text(name.isEmpty ? "No image chosen" : name)
+                        .font(Theme.pathMono)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: 180)
+                    Button("Choose Image…", action: chooseImage)
+                }
+            }
         case .solid(let colorHex):
             SettingsDivider()
             ComposerColorRow(title: "Color", hex: Binding(get: { colorHex },
@@ -659,6 +716,27 @@ struct SceneBackgroundControls: View {
         .frame(height: 104)
     }
 
+    /// The image is copied into the Studio asset store, so the scene
+    /// doesn't depend on where the original file lives.
+    private func chooseImage() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.image]
+        panel.prompt = "Choose"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            background.source = .image(assetName: try ScreenSaverSceneStore.importAsset(from: url))
+        } catch {
+            importError = "That file couldn’t be added. Choose a PNG, JPEG, HEIC, TIFF, or GIF image."
+        }
+    }
+
+    private var errorPresented: Binding<Bool> {
+        Binding(get: { importError != nil }, set: { if !$0 { importError = nil } })
+    }
+
     // MARK: Bindings
 
     private var currentKind: SourceKind? {
@@ -666,6 +744,7 @@ struct SceneBackgroundControls: View {
         case .currentDesktop: return .currentDesktop
         case .wallpaper: return .wallpaper
         case .rotatingPool: return .rotatingPool
+        case .image: return .image
         case .solid: return .solid
         case .gradient: return .gradient
         case .unsupported: return nil
@@ -685,6 +764,9 @@ struct SceneBackgroundControls: View {
                     background.source = .wallpaper(id: model.allBrowseWallpapers.first?.id ?? "")
                 case .rotatingPool:
                     background.source = .rotatingPool(intervalSeconds: SceneBackgroundSource.defaultRotationInterval)
+                case .image:
+                    background.source = .image(assetName: "")
+                    chooseImage()
                 case .solid:
                     background.source = .solid(colorHex: "0B0B0F")
                 case .gradient:

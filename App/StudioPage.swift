@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Studio (spec §10): the composing plane. It holds no library — what is
-/// made here is saved to the ScreenSavers page. One tab per kind of
-/// creation; a single visible tab shows without the tab control.
+/// made here is saved to the ScreenSavers page or the Personal wallpaper
+/// library. One tab per kind of creation; a single visible tab shows
+/// without the tab control.
 struct StudioPage: View {
     @EnvironmentObject private var model: AppModel
 
@@ -19,7 +20,11 @@ struct StudioPage: View {
     /// While composing, the page itself doesn't scroll — the composer pins
     /// its preview and scrolls only the edit form.
     private var isComposing: Bool {
-        currentTab == .screenSaver && studio.draft != nil
+        switch currentTab {
+        case .screenSaver: return studio.draft != nil
+        case .wallpapers: return studio.wallpaperDraft != nil
+        case .package, nil: return false
+        }
     }
 
     var body: some View {
@@ -48,7 +53,7 @@ struct StudioPage: View {
 
             switch currentTab {
             case .wallpapers:
-                StudioWallpapersTab()
+                StudioWallpapersTab(studio: studio)
             case .screenSaver:
                 StudioScreenSaverTab(studio: studio)
             case .package:
@@ -56,34 +61,6 @@ struct StudioPage: View {
             case nil:
                 EmptyView()
             }
-        }
-    }
-}
-
-// MARK: - Wallpapers tab
-
-/// Placeholder. A future generative wallpaper feature replaces this
-/// view's body — the tab, its gate, and its routing already exist.
-struct StudioWallpapersTab: View {
-    var body: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "wand.and.stars")
-                .font(.system(size: 44))
-                .foregroundStyle(Theme.accent)
-            Text("Coming Soon")
-                .font(.system(size: 22, weight: .bold))
-            Text("Create your own wallpapers right here in Studio. This is where wallpaper generation will live.")
-                .font(Theme.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 90)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous)
-                .strokeBorder(Theme.hairline)
         }
     }
 }

@@ -45,9 +45,13 @@ enum SceneDeployment {
             return target
         }
 
-        // Only the imported icons this scene uses — not the whole store.
+        // Only the imported images this scene uses — not the whole store.
         let assetsFolder = "\(mediaFolder)/Assets"
         var assetNames: [String] = []
+        if case .image(let name)? = snapshot.scene?.background.source,
+           snapshot.assetURL(named: name) != nil {
+            assetNames.append(name)
+        }
         for layer in snapshot.scene?.layers ?? [] {
             if case .icon(let icon) = layer.content, let name = icon.imageAssetName,
                snapshot.assetURL(named: name) != nil, !assetNames.contains(name) {

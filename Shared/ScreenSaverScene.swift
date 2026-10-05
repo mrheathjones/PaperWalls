@@ -57,6 +57,9 @@ enum SceneBackgroundSource: Equatable {
     case rotatingPool(intervalSeconds: Double)
     case solid(colorHex: String)
     case gradient(startHex: String, endHex: String, angleDegrees: Double)
+    /// An image imported into the Studio asset store (the same store icon
+    /// images use — see `SceneResources.assetURL`).
+    case image(assetName: String)
     /// A kind this version doesn't know — preserved as-is, drawn as black.
     case unsupported(kind: String, payload: SceneJSONValue)
 
@@ -81,6 +84,8 @@ extension SceneBackgroundSource: Codable {
             self = .gradient(startHex: container.sceneValue("startHex", default: "1D2E3F"),
                              endHex: container.sceneValue("endHex", default: "000000"),
                              angleDegrees: container.sceneValue("angleDegrees", default: 90))
+        case "image":
+            self = .image(assetName: container.sceneValue("assetName", default: ""))
         default:
             self = .unsupported(kind: kind, payload: try SceneJSONValue(from: decoder))
         }
@@ -105,6 +110,9 @@ extension SceneBackgroundSource: Codable {
             try container.encode(startHex, forKey: "startHex")
             try container.encode(endHex, forKey: "endHex")
             try container.encode(angleDegrees, forKey: "angleDegrees")
+        case .image(let assetName):
+            try container.encode("image", forKey: .kind)
+            try container.encode(assetName, forKey: "assetName")
         case .unsupported(_, let payload):
             try payload.encode(to: encoder)
         }

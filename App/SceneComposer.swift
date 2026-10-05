@@ -2,12 +2,17 @@ import SwiftUI
 
 /// The Scene Composer (spec §10): live preview on top, the layers list
 /// and the selected item's controls below. Edits apply to the draft held
-/// by `StudioSession`; Save writes it to the ScreenSavers library.
+/// by `StudioSession`. In screen-saver mode Save writes the scene to the
+/// ScreenSavers library; in wallpaper mode it renders a PNG into the
+/// Personal library and keeps the design for later edits.
 struct SceneComposer: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var prefs: PreferencesStore
 
     @Binding var draft: SceneDraft
+    var kind: SceneComposerKind = .screenSaver
+    /// Wallpaper mode: the pixel size the next save renders at.
+    var pixelSize: Binding<CGSize>?
 
     enum Selection: Hashable {
         case background
@@ -18,6 +23,8 @@ struct SceneComposer: View {
     @State private var confirmingDiscard = false
     @State private var errorMessage: String?
     @State private var savedName: String?
+    @State private var savedDesign: StoredWallpaperDesign?
+    @State private var isSaving = false
 
     var body: some View {
         // The preview stays put; only the edit form below it scrolls, so
@@ -42,6 +49,7 @@ struct SceneComposer: View {
                 }
             }
         }
+        .environment(\.composerKind, kind)
         .onAppear(perform: selectFrontLayer)
         .onChange(of: draft.sceneID) { _, _ in
             selectFrontLayer()
@@ -51,7 +59,8 @@ struct SceneComposer: View {
             Button("Discard Changes", role: .destructive, action: close)
             Button("Keep Editing", role: .cancel) {}
         }
-        .alert("Couldn’t Save Screen Saver", isPresented: errorPresented) {
+        .alert(kind == .wallpaper ? "Couldn’t Save Wallpaper" : "Couldn’t Save Screen Saver",
+               isPresented: errorPresented) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
@@ -66,6 +75,21 @@ struct SceneComposer: View {
             Button("Keep Editing", role: .cancel) {}
         } message: {
             Text("“\(savedName ?? "")” is in your library.")
+        }
+        .alert("Saved to Personal", isPresented: savedDesignPresented) {
+            if let design = savedDesign, let wallpaper = model.exportedWallpaper(for: design),
+               !model.selectionLocked {
+                Button("Set as Wallpaper") {
+                    model.apply(wallpaper)
+                }
+            }
+            Button("Show in Personal") {
+                model.studio.wallpaperDraft = nil
+                model.page = .personal
+            }
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("“\(savedDesign?.exportedFilename ?? "")” is in your Personal wallpapers.")
         }
     }
 
@@ -84,18 +108,23 @@ struct SceneComposer: View {
                     RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                         .strokeBorder(Theme.hairline)
                 }
-                .accessibilityLabel("Screen saver name")
-            if draft.isDirty {
+                .accessibilityLabel(kind == .wallpaper ? "Wallpaper name" : "Screen saver name")
+            if draft.isDirty || sizeChanged {
                 CapsuleBadge(text: "Unsaved changes", systemImage: "pencil")
             }
             Spacer(minLength: 12)
+            if kind == .wallpaper, let pixelSize {
+                sizeMenu(pixelSize)
+            }
             Button {
                 ScenePreviewPresenter.show(scene: draft.scene, resources: model.sceneResources,
                                            title: draft.name, fullscreen: true)
             } label: {
-                Label("Test Fullscreen", systemImage: "play.fill")
+                Label(kind == .wallpaper ? "Preview Fullscreen" : "Test Fullscreen", systemImage: "play.fill")
             }
-            .help("Run this scene fullscreen — any key or click exits")
+            .help(kind == .wallpaper
+                  ? "Show this wallpaper fullscreen — any key or click exits"
+                  : "Run this scene fullscreen — any key or click exits")
             Button(draft.resetLabel) {
                 draft.reset()
                 selectFrontLayer()
@@ -108,17 +137,61 @@ struct SceneComposer: View {
                     close()
                 }
             }
-            Button("Save", action: save)
+            if isSaving {
+                ProgressView()
+                    .controlSize(.small)
+            }
+            Button(kind == .wallpaper ? "Save to Personal" : "Save", action: save)
                 .buttonStyle(.borderedProminent)
                 .tint(Theme.accent)
-                .disabled(!draft.canSave)
+                .disabled(!canSave || isSaving)
                 .keyboardShortcut("s", modifiers: .command)
         }
     }
 
+    /// Wallpaper mode: the render size isn't part of the scene, but
+    /// changing it is a reason to save again.
+    private var sizeChanged: Bool {
+        guard kind == .wallpaper, let pixelSize, let id = draft.sceneID,
+              let design = model.wallpaperDesign(withID: id) else { return false }
+        return design.pixelSize != pixelSize.wrappedValue
+    }
+
+    private var canSave: Bool {
+        draft.canSave || (sizeChanged && !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+
+    private func sizeMenu(_ pixelSize: Binding<CGSize>) -> some View {
+        Menu {
+            ForEach(WallpaperRenderSize.options(displayPixelSizes: model.displayPixelSizes)) { option in
+                Button {
+                    pixelSize.wrappedValue = option.pixelSize
+                } label: {
+                    if option.pixelSize == pixelSize.wrappedValue {
+                        Label(option.label, systemImage: "checkmark")
+                    } else {
+                        Text(option.label)
+                    }
+                }
+            }
+        } label: {
+            Label(WallpaperRenderSize.label(for: pixelSize.wrappedValue), systemImage: "aspectratio")
+        }
+        .fixedSize()
+        .help("The pixel size the wallpaper is saved at")
+        .accessibilityLabel("Wallpaper size")
+    }
+
+    private var previewAspect: CGFloat {
+        if kind == .wallpaper, let size = pixelSize?.wrappedValue, size.width > 0, size.height > 0 {
+            return size.width / size.height
+        }
+        return 16.0 / 10.0
+    }
+
     private var preview: some View {
         SaverSceneView(scene: draft.scene, resources: model.sceneResources)
-            .aspectRatio(16.0 / 10.0, contentMode: .fit)
+            .aspectRatio(previewAspect, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
@@ -146,8 +219,10 @@ struct SceneComposer: View {
             SettingsDivider()
             HStack(spacing: 8) {
                 Menu {
-                    Button("Clock") { add(.clock()) }
-                    Button("Text") { add(.text()) }
+                    if kind == .screenSaver {
+                        Button("Clock") { add(.clock()) }
+                    }
+                    Button("Text") { add(.text(kind == .wallpaper ? "Your text here" : "Be right back")) }
                     Button("Icon") { add(.icon()) }
                 } label: {
                     Label("Add Layer", systemImage: "plus")
@@ -289,20 +364,38 @@ struct SceneComposer: View {
     }
 
     private func save() {
-        do {
-            savedName = try model.saveStudioDraft()?.name
-        } catch {
-            errorMessage = error.localizedDescription
+        switch kind {
+        case .screenSaver:
+            do {
+                savedName = try model.saveStudioDraft()?.name
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        case .wallpaper:
+            isSaving = true
+            Task { @MainActor in
+                defer { isSaving = false }
+                do {
+                    savedDesign = try await model.saveWallpaperDraft()
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
+            }
         }
     }
 
-    /// Leaves the composer. A scene opened from the library returns there;
-    /// a new one returns to the "New Screen Saver" chooser.
+    /// Leaves the composer. A screen saver opened from the library returns
+    /// there; anything else returns to its tab's "New …" chooser.
     private func close() {
-        let cameFromLibrary = !draft.isNew
-        model.studio.draft = nil
-        if cameFromLibrary && prefs.showScreenSaversPage {
-            model.page = .screenSavers
+        switch kind {
+        case .screenSaver:
+            let cameFromLibrary = !draft.isNew
+            model.studio.draft = nil
+            if cameFromLibrary && prefs.showScreenSaversPage {
+                model.page = .screenSavers
+            }
+        case .wallpaper:
+            model.studio.wallpaperDraft = nil
         }
     }
 
@@ -312,5 +405,9 @@ struct SceneComposer: View {
 
     private var savedPresented: Binding<Bool> {
         Binding(get: { savedName != nil }, set: { if !$0 { savedName = nil } })
+    }
+
+    private var savedDesignPresented: Binding<Bool> {
+        Binding(get: { savedDesign != nil }, set: { if !$0 { savedDesign = nil } })
     }
 }

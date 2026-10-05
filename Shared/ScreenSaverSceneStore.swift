@@ -61,14 +61,14 @@ enum ScreenSaverSceneStore {
             .appendingPathComponent("Library/Application Support/PaperWalls/Studio/ScreenSavers", isDirectory: true)
     }
 
-    private static var encoder: JSONEncoder {
+    static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return encoder
     }
 
-    private static var decoder: JSONDecoder {
+    static var decoder: JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
