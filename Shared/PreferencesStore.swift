@@ -102,6 +102,8 @@ final class PreferencesStore: ObservableObject {
     @Published var allowScreenSaverCreation: Bool = true
     @Published var activeScreenSaverSceneID: String?
     @Published var allowedScreenSaverSceneIDs: [String]?
+    /// Admin-set: the saver `paperwallscli manage` keeps selected.
+    @Published var enforcedScreenSaverPath: String = ""
     /// Unlocks the admin tools (Studio › Package, "Copy Scene for MDM").
     @Published var adminModeEnabled: Bool = false
 
@@ -166,6 +168,7 @@ final class PreferencesStore: ObservableObject {
         allowScreenSaverCreation = ManagedPreferences.bool(.allowScreenSaverCreation) ?? true
         activeScreenSaverSceneID = ManagedPreferences.string(.activeScreenSaverSceneID)
         allowedScreenSaverSceneIDs = ManagedPreferences.stringArray(.allowedScreenSaverSceneIDs)
+        enforcedScreenSaverPath = ManagedPreferences.string(.enforcedScreenSaverPath) ?? ""
         adminModeEnabled = ManagedPreferences.bool(.adminModeEnabled) ?? false
     }
 
@@ -211,6 +214,7 @@ final class PreferencesStore: ObservableObject {
         persist($allowScreenSaverCreation, .allowScreenSaverCreation) { $0 }
         persist($activeScreenSaverSceneID, .activeScreenSaverSceneID) { $0 }
         persist($allowedScreenSaverSceneIDs, .allowedScreenSaverSceneIDs) { ($0?.isEmpty ?? true) ? nil : $0 }
+        persist($enforcedScreenSaverPath, .enforcedScreenSaverPath) { $0.isEmpty ? nil : $0 }
         persist($adminModeEnabled, .adminModeEnabled) { $0 }
     }
 

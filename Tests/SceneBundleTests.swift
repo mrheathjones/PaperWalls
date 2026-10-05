@@ -241,3 +241,136 @@ final class SceneDeploymentTests: XCTestCase {
         ])
     }
 }
+
+// MARK: - Screen saver selection (macOS 14+ wallpaper store)
+
+final class ScreenSaverSelectionTests: XCTestCase {
+    private let saver = "/Library/Screen Savers/Acme – Lobby.saver"
+
+    private func bplist(_ object: Any) -> Data {
+        try! PropertyListSerialization.data(fromPropertyList: object, format: .binary, options: 0)
+    }
+
+    private func idle(provider: String, configuration: [String: Any]) -> [String: Any] {
+        ["Content": ["Choices": [["Provider": provider, "Files": [Any](), "Configuration": bplist(configuration)]],
+                     "EncodedOptionValues": bplist(["values": [String: Any]()]),
+                     "Shuffle": "$null"],
+         "LastSet": Date(timeIntervalSince1970: 0),
+         "LastUse": Date(timeIntervalSince1970: 1)]
+    }
+
+    private func aerial() -> [String: Any] {
+        idle(provider: "com.apple.wallpaper.choice.aerials", configuration: ["assetID": "17647EAB"])
+    }
+
+    private func saverIdle(_ path: String) -> [String: Any] {
+        idle(provider: ScreenSaverSelection.screenSaverProvider,
+             configuration: ["module": ["relative": ScreenSaverSelection.moduleURLString(forSaverAt: path)]])
+    }
+
+    /// Shaped like a real store: system default, displays, Spaces with a
+    /// default and per-display entries, and desktop entries alongside.
+    private func store(systemDefault: [String: Any]? = nil) -> [String: Any] {
+        let desktop: [String: Any] = ["Content": ["Choices": [["Provider": "com.apple.wallpaper.choice.image"]]]]
+        return [
+            "AllSpacesAndDisplays": ["Type": "individual"],
+            "SystemDefault": ["Type": "individual", "Desktop": desktop,
+                              "Idle": systemDefault ?? saverIdle("/System/Library/ExtensionKit/Extensions/Computer Name.appex")],
+            "Displays": ["D1": ["Type": "individual", "Desktop": desktop, "Idle": aerial()],
+                         "D2": ["Type": "individual", "Idle": aerial()]],
+            "Spaces": ["S1": ["Default": ["Type": "individual", "Idle": aerial()],
+                              "Displays": ["D1": ["Type": "individual", "Idle": aerial()]]]],
+        ]
+    }
+
+    func testModuleURLMatchesWhatSystemSettingsWrites() {
+        XCTAssertEqual(ScreenSaverSelection.moduleURLString(forSaverAt: "/Library/Screen Savers/PaperWalls.saver"),
+                       "file:///Library/Screen%20Savers/PaperWalls.saver")
+        XCTAssertEqual(ScreenSaverSelection.saverPath(fromModuleURLString: "file:///Library/Screen%20Savers/Acme%20%E2%80%93%20Lobby.saver"),
+                       saver)
+        XCTAssertNil(ScreenSaverSelection.saverPath(fromModuleURLString: "https://example.com/x.saver"))
+    }
+
+    func testReadsEveryIdleEntry() throws {
+        let entries = try ScreenSaverSelection.idleEntries(in: store())
+        XCTAssertEqual(entries.map(\.location),
+                       ["Displays/D1", "Displays/D2", "Spaces/S1/Default", "Spaces/S1/Displays/D1", "SystemDefault"])
+        XCTAssertEqual(entries.last?.saverPath, "/System/Library/ExtensionKit/Extensions/Computer Name.appex")
+        XCTAssertEqual(entries.first?.provider, "com.apple.wallpaper.choice.aerials")
+        XCTAssertNil(entries.first?.saverPath)
+    }
+
+    func testEnforcingRewritesEveryIdleEntryAndNothingElse() throws {
+        let original = store()
+        let now = Date(timeIntervalSince1970: 1_000)
+        let (updated, changed) = try ScreenSaverSelection.enforcing(saver, in: original, now: now)
+        XCTAssertEqual(changed, 5)
+        XCTAssertTrue(try ScreenSaverSelection.isEnforced(saver, in: updated))
+        XCTAssertFalse(try ScreenSaverSelection.isEnforced(saver, in: original))
+
+        let system = try XCTUnwrap(updated["SystemDefault"] as? [String: Any])
+        let idle = try XCTUnwrap(system["Idle"] as? [String: Any])
+        XCTAssertEqual(idle["LastSet"] as? Date, now)
+        XCTAssertEqual(idle["LastUse"] as? Date, Date(timeIntervalSince1970: 1), "LastUse is kept")
+        // Desktop entries and other keys are untouched.
+        XCTAssertEqual(NSDictionary(dictionary: system["Desktop"] as? [String: Any] ?? [:]),
+                       NSDictionary(dictionary: (original["SystemDefault"] as? [String: Any])?["Desktop"] as? [String: Any] ?? [:]))
+        XCTAssertEqual(updated["AllSpacesAndDisplays"] as? [String: String], ["Type": "individual"])
+    }
+
+    func testWrittenContentMatchesSystemSettingsShape() throws {
+        let content = try ScreenSaverSelection.selectionContent(for: saver)
+        let choice = try XCTUnwrap((content["Choices"] as? [[String: Any]])?.first)
+        XCTAssertEqual(choice["Provider"] as? String, "com.apple.wallpaper.choice.screen-saver")
+        XCTAssertEqual((choice["Files"] as? [Any])?.count, 0)
+        let configuration = try PropertyListSerialization.propertyList(
+            from: try XCTUnwrap(choice["Configuration"] as? Data), format: nil) as? [String: Any]
+        XCTAssertEqual((configuration?["module"] as? [String: String])?["relative"],
+                       "file:///Library/Screen%20Savers/Acme%20%E2%80%93%20Lobby.saver")
+        let options = try PropertyListSerialization.propertyList(
+            from: try XCTUnwrap(content["EncodedOptionValues"] as? Data), format: nil) as? [String: Any]
+        XCTAssertEqual((options?["values"] as? [String: Any])?.count, 0)
+        XCTAssertEqual(content["Shuffle"] as? String, "$null")
+    }
+
+    func testAlreadyEnforcedEntriesAreLeftAlone() throws {
+        let (once, _) = try ScreenSaverSelection.enforcing(saver, in: store())
+        let (twice, changed) = try ScreenSaverSelection.enforcing(saver, in: once)
+        XCTAssertEqual(changed, 0)
+        XCTAssertEqual(NSDictionary(dictionary: twice), NSDictionary(dictionary: once))
+
+        let (_, partly) = try ScreenSaverSelection.enforcing(saver, in: store(systemDefault: saverIdle(saver)))
+        XCTAssertEqual(partly, 4)
+    }
+
+    func testUnrecognizedLayoutChangesNothing() {
+        var broken = store()
+        broken["Displays"] = ["D1": ["Idle": ["Content": ["NoChoices": true]]]]
+        XCTAssertThrowsError(try ScreenSaverSelection.enforcing(saver, in: broken)) { error in
+            guard case ScreenSaverSelection.SelectionError.unexpectedFormat = error else {
+                return XCTFail("expected unexpectedFormat, got \(error)")
+            }
+        }
+        var notADictionary = store()
+        notADictionary["SystemDefault"] = ["Idle": "x"]
+        XCTAssertThrowsError(try ScreenSaverSelection.enforcing(saver, in: notADictionary))
+    }
+
+    func testEnforceOnAFileBacksUpWritesAndVerifies() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let url = folder.appendingPathComponent("Index.plist")
+        let backup = folder.appendingPathComponent("backup.plist")
+        try bplist(store()).write(to: url)
+
+        XCTAssertEqual(try ScreenSaverSelection.enforce(saver, storeURL: url, backupURL: backup, restartAgent: false), .enforced(changed: 5))
+        XCTAssertFalse(try ScreenSaverSelection.isEnforced(saver, in: ScreenSaverSelection.readStore(at: backup)),
+                       "the backup holds the store as it was")
+        XCTAssertTrue(try ScreenSaverSelection.isEnforced(saver, in: ScreenSaverSelection.readStore(at: url)))
+        XCTAssertEqual(try ScreenSaverSelection.enforce(saver, storeURL: url, backupURL: backup, restartAgent: false), .alreadyEnforced)
+        var format = PropertyListSerialization.PropertyListFormat.xml
+        _ = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: &format)
+        XCTAssertEqual(format, .binary)
+    }
+}

@@ -49,6 +49,7 @@ enum ManagedPreferenceKey: String, CaseIterable {
     case activeScreenSaverSceneID       // scene the saver runs (UUID or "managed")
     case managedScreenSaverScene        // admin-provisioned scene (JSON string or inline object)
     case allowedScreenSaverSceneIDs     // optional allow-list for the active scene
+    case enforcedScreenSaverPath        // saver to select for every Space/display (manage enforces)
 
     // Admin tools.
     case adminModeEnabled               // unlocks Studio › Package (deployable savers)

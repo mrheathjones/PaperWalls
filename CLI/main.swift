@@ -208,6 +208,51 @@ func describe(_ snapshot: ScreenSaverSnapshot) -> String {
     }
 }
 
+/// Which saver macOS has selected (macOS 14+ wallpaper store), and whether
+/// it matches `enforcedScreenSaverPath`.
+func printScreenSaverSelection() {
+    let enforced = (ManagedPreferences.string(.enforcedScreenSaverPath) ?? "").trimmingCharacters(in: .whitespaces)
+    do {
+        let store = try ScreenSaverSelection.readStore()
+        let entries = try ScreenSaverSelection.idleEntries(in: store)
+        var counts: [String: Int] = [:]
+        for entry in entries {
+            counts[entry.saverPath ?? entry.provider ?? "none", default: 0] += 1
+        }
+        for (selection, count) in counts.sorted(by: { $0.value > $1.value }) {
+            print("selected: \(selection) (\(count) of \(entries.count) Space/display entries)")
+        }
+        if !enforced.isEmpty {
+            let inEffect = try ScreenSaverSelection.isEnforced(enforced, in: store)
+            print("enforced: \(enforced) — \(inEffect ? "in effect" : "not yet; run '\(toolName) manage'")")
+        }
+    } catch {
+        print("selected: unknown (\(error.localizedDescription))")
+        if !enforced.isEmpty {
+            print("enforced: \(enforced)")
+        }
+    }
+}
+
+/// `enforcedScreenSaverPath`: keep that saver selected for every Space and
+/// display (see `ScreenSaverSelection`). Users can pick another saver in
+/// System Settings; the next run (login, hourly) switches it back.
+func enforceScreenSaverSelection() {
+    let path = (ManagedPreferences.string(.enforcedScreenSaverPath) ?? "").trimmingCharacters(in: .whitespaces)
+    guard !path.isEmpty else { return }
+    guard FileManager.default.fileExists(atPath: path) else {
+        stderrPrint("\(toolName): enforcedScreenSaverPath '\(path)' isn't installed; screen saver selection left unchanged")
+        return
+    }
+    do {
+        if case .enforced(let changed) = try ScreenSaverSelection.enforce(path) {
+            print("\(toolName): screen saver selection → \(path) (\(changed) Space/display entr\(changed == 1 ? "y" : "ies") updated)")
+        }
+    } catch {
+        stderrPrint("\(toolName): could not enforce the screen saver selection: \(error.localizedDescription)")
+    }
+}
+
 /// Read-only: what the saver would show for the current preferences, and
 /// whether the published snapshot matches.
 func runScreenSaver() -> Never {
@@ -220,6 +265,7 @@ func runScreenSaver() -> Never {
     } else {
         print("published: not yet — run '\(toolName) manage' or open PaperWalls")
     }
+    printScreenSaverSelection()
     exit(ExitCode.ok)
 }
 
@@ -230,6 +276,9 @@ func runManage() -> Never {
     // The screen saver snapshot is independent of the wallpaper outcome,
     // so publish it before any of the early exits below.
     publishScreenSaverSnapshot(library: loadFullLibrary(), lockMode: lockState.mode)
+    // Independent of the wallpaper too (a deployed saver doesn't read the
+    // lock tier), so it also runs before the early exits.
+    enforceScreenSaverSelection()
     if lockState.mode == .hard {
         fail("the wallpaper is locked (\(lockState.osEnforced ? "enforced by configuration profile" : "hard lock configured")); manage will not modify it",
              code: ExitCode.selectionLocked)
