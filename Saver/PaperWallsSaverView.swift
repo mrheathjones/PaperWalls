@@ -59,6 +59,7 @@ final class PaperWallsSaverView: ScreenSaverView {
 
         willStopObserver = DistributedNotificationCenter.default().addObserver(
             forName: Self.willStopNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.trace("willstop notification")
             self?.tearDownScene()
         }
     }
@@ -80,6 +81,7 @@ final class PaperWallsSaverView: ScreenSaverView {
 
     override func stopAnimation() {
         super.stopAnimation()
+        trace("stopAnimation")
         tearDownScene()
     }
 
@@ -88,6 +90,8 @@ final class PaperWallsSaverView: ScreenSaverView {
     /// it lands in a window and drops it when it leaves.
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        trace("viewDidMoveToWindow window=\(window.map { String(describing: type(of: $0)) } ?? "nil") "
+              + "visible=\(window?.isVisible ?? false) superview=\(superview.map { String(describing: type(of: $0)) } ?? "nil")")
         guard isPreview else { return }
         if window != nil {
             installScene()
@@ -100,13 +104,34 @@ final class PaperWallsSaverView: ScreenSaverView {
     override func resizeSubviews(withOldSize oldSize: NSSize) {
         super.resizeSubviews(withOldSize: oldSize)
         hostingView?.frame = bounds
+        trace("resize \(Int(oldSize.width))x\(Int(oldSize.height)) -> \(Int(bounds.width))x\(Int(bounds.height))")
     }
+
+    #if DEBUG
+    /// Debug builds: log each host call with this instance's tag, so a
+    /// System Settings session shows the exact sequence (draw and
+    /// animateOneFrame only the first few times).
+    private lazy var traceTag = String(UInt(bitPattern: ObjectIdentifier(self).hashValue) & 0xFFFF, radix: 16)
+    private var traceCounts: [String: Int] = [:]
+
+    private func trace(_ message: String, limit: Int? = nil) {
+        let key = String(message.prefix(while: { $0 != " " }))
+        let count = (traceCounts[key] ?? 0) + 1
+        traceCounts[key] = count
+        if let limit, count > limit { return }
+        SaverProbe.event("[\(traceTag) preview=\(isPreview) \(Int(bounds.width))x\(Int(bounds.height)) scene=\(hostingView != nil)] \(message)")
+    }
+    #else
+    @inline(__always) private func trace(_ message: @autoclosure () -> String, limit: Int? = nil) {}
+    #endif
 
     override func animateOneFrame() {
         // Nothing to do — see `configure()`.
+        trace("animateOneFrame", limit: 3)
     }
 
     override func draw(_ rect: NSRect) {
+        trace("draw", limit: 3)
         fallbackColor.setFill()
         rect.fill()
     }
@@ -180,6 +205,7 @@ final class PaperWallsSaverView: ScreenSaverView {
         host.autoresizingMask = [.width, .height]
         addSubview(host)
         hostingView = host
+        trace("installScene \(snapshot?.sceneName ?? "fallback")")
     }
 
     /// Drops the SwiftUI hierarchy, which releases the decoded images.

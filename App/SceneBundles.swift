@@ -189,6 +189,7 @@ final class SceneBundleManager {
     /// the snapshot, the thumbnails, any `media` (copied into Resources),
     /// then signed — ad hoc unless `signingIdentity` names a certificate.
     /// Shared by the per-user tiles and Studio › Package.
+    @discardableResult
     nonisolated static func stage(spec: SceneBundleSpec,
                                   snapshot: ScreenSaverSnapshot,
                                   thumbnails: Thumbnails,
