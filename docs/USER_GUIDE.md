@@ -109,6 +109,17 @@ Minimal Clock, Help Desk Contact — or from a blank one. Then:
   Fullscreen** shows the real thing (press any key to leave).
 - **Save** puts it in your library.
 
+**Let Claude compose one.** If AI generation is turned on in **Settings ›
+AI Generation** with **Compose screen savers with Claude**, a **Compose with
+Claude** card sits above the ready-made designs. Describe the screen saver
+you want — what's on screen, the colors, how it moves — and press
+**Compose**: Claude writes the whole scene, which opens in the composer as
+a new draft for you to adjust and save like any other. Claude doesn't make
+pictures; if a **Local Model** or **External Model** image service is also
+set up, choose it under **Background picture** and the background is
+painted from Claude's description. Your description is sent to Claude only
+when you press Compose, and the card says where each part goes.
+
 **Use one.** On the **ScreenSavers** page, click **Set Active** on the one
 you want. Click a card to preview it; the **…** button offers rename,
 duplicate, edit, and delete.

@@ -567,10 +567,18 @@
     },
     "aiPromptImproverModel": {
       "type": "string",
-      "title": "AI: Claude Model for Improve",
-      "description": "The Claude model ID used by Improve.",
+      "title": "AI: Claude Model",
+      "description": "The Claude model ID used by Improve and by Compose.",
       "options": {
         "infoText": "Key: aiPromptImproverModel (default: claude-opus-5-5)"
+      }
+    },
+    "aiSceneComposerEnabled": {
+      "type": "boolean",
+      "title": "AI: Compose Screen Savers with Claude",
+      "description": "Adds a Compose with Claude card to Studio › ScreenSaver: the user describes a screen saver and Claude writes the whole scene (background, clock, text, icons, motion) as an editable draft. Claude makes no pictures. Needs the user's Anthropic API key in their Keychain.",
+      "options": {
+        "infoText": "Key: aiSceneComposerEnabled (default: false)"
       }
     },
     "showScreenSaversPage": {

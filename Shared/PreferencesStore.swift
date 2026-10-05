@@ -139,6 +139,7 @@ final class PreferencesStore: ObservableObject {
     @Published var aiExternalImageShape: String = ExternalImageShape.matchWallpaper.rawValue
     @Published var aiPromptImproverEnabled: Bool = false
     @Published var aiPromptImproverModel: String = ""
+    @Published var aiSceneComposerEnabled: Bool = false
 
     var externalImageEndpoint: ExternalImageEndpoint {
         ExternalImageEndpoint(provider: ExternalImageProviderKind(rawValue: aiExternalProvider) ?? .google,
@@ -150,6 +151,11 @@ final class PreferencesStore: ObservableObject {
     var promptImprover: PromptImprover {
         let model = aiPromptImproverModel.trimmingCharacters(in: .whitespacesAndNewlines)
         return PromptImprover(model: model.isEmpty ? PromptImprover.defaultModel : model)
+    }
+
+    /// Compose with Claude uses the same model preference as Improve.
+    var sceneGenerator: SceneGenerator {
+        SceneGenerator(model: promptImprover.model)
     }
 
     var localImageEndpoint: LocalImageEndpoint {
@@ -164,7 +170,8 @@ final class PreferencesStore: ObservableObject {
                            appleOnDevice: aiAppleOnDeviceEnabled,
                            localModel: aiLocalModelEnabled,
                            externalModel: aiExternalModelEnabled,
-                           promptImprover: aiPromptImproverEnabled)
+                           promptImprover: aiPromptImproverEnabled,
+                           sceneComposer: aiSceneComposerEnabled)
     }
 
     private var isReloading = false
@@ -250,6 +257,7 @@ final class PreferencesStore: ObservableObject {
         aiExternalImageShape = ManagedPreferences.string(.aiExternalImageShape) ?? ExternalImageShape.matchWallpaper.rawValue
         aiPromptImproverEnabled = ManagedPreferences.bool(.aiPromptImproverEnabled) ?? false
         aiPromptImproverModel = ManagedPreferences.string(.aiPromptImproverModel) ?? ""
+        aiSceneComposerEnabled = ManagedPreferences.bool(.aiSceneComposerEnabled) ?? false
     }
 
     /// Persists each published property back to CFPreferences when it changes
@@ -316,6 +324,7 @@ final class PreferencesStore: ObservableObject {
         persist($aiExternalImageShape, .aiExternalImageShape) { $0 }
         persist($aiPromptImproverEnabled, .aiPromptImproverEnabled) { $0 }
         persist($aiPromptImproverModel, .aiPromptImproverModel) { $0.isEmpty ? nil : $0 }
+        persist($aiSceneComposerEnabled, .aiSceneComposerEnabled) { $0 }
     }
 
     private func persist<Value: Equatable>(_ publisher: Published<Value>.Publisher,

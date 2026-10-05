@@ -336,7 +336,7 @@ struct SettingsContent: View {
             SettingsSection(label: "AI Generation", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Enable AI Generation",
-                                subtitle: "Master switch for generated wallpaper backgrounds in Studio. Off hides every AI control, whatever the options below say",
+                                subtitle: "Master switch for generated backgrounds and Claude-composed screen savers in Studio. Off hides every AI control, whatever the options below say",
                                 managedKey: .aiGenerationEnabled) {
                         SettingsToggle(isOn: $prefs.aiGenerationEnabled,
                                        disabled: prefs.isForced(.aiGenerationEnabled))
@@ -434,7 +434,14 @@ struct SettingsContent: View {
                         SettingsToggle(isOn: $prefs.aiPromptImproverEnabled,
                                        disabled: prefs.isForced(.aiPromptImproverEnabled) || !prefs.aiGenerationEnabled)
                     }
-                    if prefs.aiGenerationEnabled && prefs.aiPromptImproverEnabled {
+                    SettingsDivider()
+                    SettingsRow(title: "Compose screen savers with Claude",
+                                subtitle: "Adds a Compose with Claude card to Studio › ScreenSaver: describe a screen saver and Claude writes the whole scene — background, clock, text, icons, motion — for you to fine-tune. Claude doesn't make pictures; a Local or External Model can paint the background from its description. Your text goes only to \(SceneGenerator.host), and only when you press Compose",
+                                managedKey: .aiSceneComposerEnabled) {
+                        SettingsToggle(isOn: $prefs.aiSceneComposerEnabled,
+                                       disabled: prefs.isForced(.aiSceneComposerEnabled) || !prefs.aiGenerationEnabled)
+                    }
+                    if prefs.aiPolicy.usesClaude {
                         SettingsDivider()
                         SettingsFieldRow(title: "Claude model",
                                          prompt: "Optional; \(PromptImprover.defaultModel) when empty",

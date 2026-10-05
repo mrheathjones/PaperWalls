@@ -177,3 +177,25 @@ says which host receives the prompt.
   only?
 * Should admins be able to supply External Model keys through managed
   preferences for fleet use? Convenient, but it puts a secret in a profile.
+
+## Phase 6 — Compose screen savers with Claude (October 2026)
+
+Extends AI generation from backgrounds to whole scenes. A new
+`aiSceneComposerEnabled` sub-toggle (same master switch, same Claude key
+and `aiPromptImproverModel` model) adds a **Compose with Claude** card to
+Studio › ScreenSaver. `Shared/SceneGenerator.swift` builds the Anthropic
+Messages request with a JSON-outputs schema (`output_config.format`,
+`type: json_schema`) describing a friendlier `SceneComposition` shape —
+background kind + colors/treatment, flat layers with placeholders
+(`{date}`, `{computerName}`, `{companyName}`) — and the system prompt
+explains the relative-coordinate canvas, sizes, motions and legibility
+rules. `SceneComposition.scene(symbolExists:)` applies the format rules
+before anything becomes a `ScreenSaverScene`: values clamped, hex
+normalized or replaced, unknown SF Symbols → `sparkles`, at most 8 layers,
+and only backgrounds Claude can legitimately pick (no library wallpaper
+IDs or asset names). A `generatedImage` background is offered only when a
+Local or External image provider is on, configured and keyed; Claude then
+writes `imagePrompt`, the app generates the picture with that provider
+(`App/AISceneComposer.swift`), imports it into the asset store and sets
+Fit + Blur. If the picture fails, the user can open the scene with Claude's
+stand-in gradient instead. The result is a normal unsaved `SceneDraft`.

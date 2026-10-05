@@ -64,7 +64,7 @@ enum ManagedPreferenceKey: String, CaseIterable {
     case jamfPublishPackages            // installer packages → /api/v1/packages
     case jamfPublishProfiles            // .mobileconfig → macOS configuration profiles
 
-    // AI generation (Studio › Wallpapers). All default OFF; the master
+    // AI generation (Studio › Wallpapers and › ScreenSaver). All default OFF; the master
     // switch hides every AI control regardless of the sub-toggles.
     case aiGenerationEnabled            // master switch
     case aiAppleOnDeviceEnabled         // Image Playground (Apple Intelligence, on-device)
@@ -79,7 +79,8 @@ enum ManagedPreferenceKey: String, CaseIterable {
     case aiExternalModelName            // optional model name (service default when empty)
     case aiExternalImageShape           // square | landscape | portrait
     case aiPromptImproverEnabled        // "Improve prompts with Claude"
-    case aiPromptImproverModel          // optional Claude model ID (claude-opus-5-5 when empty)
+    case aiPromptImproverModel          // optional Claude model ID (claude-opus-5-5 when empty); shared by Compose
+    case aiSceneComposerEnabled         // "Compose screen savers with Claude" (Studio › ScreenSaver)
 
     // Legacy rotation keys — read ONLY by RotationPoolMigration (spec §4).
     case autoRotateSource

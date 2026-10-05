@@ -166,7 +166,7 @@ Screen savers and Studio (same domain, same forcing rules):
 | `jamfPublishEnabled` | bool | `false` | Admin mode only: adds a **Publish to Jamf Pro** step after a Studio › Package build that uploads the result through the Jamf Pro API. Nothing is sent until the admin presses Publish. The server URL and API client are entered in Settings › Admin on the admin's Mac (user layer + Keychain) and are deliberately **not** managed keys — a profile can't point the app at another server (Admin Guide §12) |
 | `jamfPublishPackages` | bool | `true` | With publishing on: allow uploading the built installer package (`/api/v1/packages` + file upload; API role needs Create, Read, and Update Packages; Jamf Pro 11.5+ with a cloud distribution point) |
 | `jamfPublishProfiles` | bool | `true` | With publishing on: allow creating the `Enforce/` and `Configure/` `.mobileconfig` files as unscoped, computer-level macOS configuration profiles (Classic API; API role needs Create, Read, and Update macOS Configuration Profiles) |
-| `aiGenerationEnabled` | bool | `false` | Master switch for AI-generated wallpaper backgrounds in Studio › Wallpapers. `false` hides every AI control regardless of the provider toggles |
+| `aiGenerationEnabled` | bool | `false` | Master switch for AI-generated backgrounds (Studio › Wallpapers and › ScreenSaver) and Claude-composed screen savers. `false` hides every AI control regardless of the provider toggles |
 | `aiAppleOnDeviceEnabled` | bool | `false` | Offers **Apple On-Device** generation (Image Playground via Apple Intelligence; runs entirely on the Mac). Needs Apple silicon with Apple Intelligence on |
 | `aiLocalModelEnabled` | bool | `false` | Offers **Local Model** generation: an image server on the Mac or the network (Draw Things, Automatic1111, Forge, SD.Next, or any OpenAI-compatible endpoint). Prompts go only to `aiLocalModelEndpoint`, and only when the user presses Generate |
 | `aiLocalModelEndpoint` | string | — | Base URL of the local image server, e.g. `http://127.0.0.1:7860`. No scheme means `http://` |
@@ -179,7 +179,8 @@ Screen savers and Studio (same domain, same forcing rules):
 | `aiExternalModelName` | string | — | Optional model name; empty sends the service default (`gemini-2.5-flash-image`, `gpt-image-1`) |
 | `aiExternalImageShape` | string | `matchWallpaper` | `matchWallpaper` (follows the wallpaper's shape), `square`, `landscape`, or `portrait`, mapped to each service's size vocabulary |
 | `aiPromptImproverEnabled` | bool | `false` | Adds an **Improve** button beside the description in Studio: Claude (Anthropic Messages API, `api.anthropic.com`) rewrites the idea into a detailed image prompt. Claude doesn't make images. Needs the user's Anthropic API key in their Keychain |
-| `aiPromptImproverModel` | string | `claude-opus-5-5` | The Claude model used by Improve |
+| `aiPromptImproverModel` | string | `claude-opus-5-5` | The Claude model used by Improve and by Compose |
+| `aiSceneComposerEnabled` | bool | `false` | Adds a **Compose with Claude** card to Studio › ScreenSaver: the user describes a screen saver and Claude (Anthropic Messages API, `api.anthropic.com`) writes the whole scene recipe — background, clock, text, icons, motion — which opens as an editable draft. Claude makes no pictures; with Local or External Model also on, that service can paint the background from Claude's description. Needs the user's Anthropic API key in their Keychain |
 
 There is deliberately no idle-time key: when the screen saver starts is a
 macOS setting. Set it (and select the saver) with a `com.apple.screensaver`

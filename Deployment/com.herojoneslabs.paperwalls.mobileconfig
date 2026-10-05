@@ -128,6 +128,8 @@
 								<false/>
 								<key>aiPromptImproverModel</key>
 								<string>claude-opus-5-5</string>
+								<key>aiSceneComposerEnabled</key>
+								<false/>
 								<key>aiExternalModelEnabled</key>
 								<false/>
 								<key>showScreenSaversPage</key>

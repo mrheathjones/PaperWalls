@@ -1,7 +1,8 @@
 import Foundation
 
-/// The ways a wallpaper background can be generated. Each has its own
-/// sub-toggle under the master `aiGenerationEnabled` switch.
+/// The ways a background image can be generated (Studio › Wallpapers
+/// and › ScreenSaver). Each has its own sub-toggle under the master
+/// `aiGenerationEnabled` switch.
 enum AIProviderKind: String, CaseIterable, Identifiable {
     case appleOnDevice
     case localModel
@@ -37,6 +38,9 @@ struct AIGenerationPolicy: Equatable {
     var externalModel: Bool = false
     /// "Improve prompts with Claude" — not a provider, but gated the same way.
     var promptImprover: Bool = false
+    /// "Compose screen savers with Claude" — Claude writes a whole scene
+    /// recipe; it makes no pictures. Gated the same way.
+    var sceneComposer: Bool = false
 
     static let off = AIGenerationPolicy()
 
@@ -46,7 +50,8 @@ struct AIGenerationPolicy: Equatable {
                            appleOnDevice: ManagedPreferences.bool(.aiAppleOnDeviceEnabled) ?? false,
                            localModel: ManagedPreferences.bool(.aiLocalModelEnabled) ?? false,
                            externalModel: ManagedPreferences.bool(.aiExternalModelEnabled) ?? false,
-                           promptImprover: ManagedPreferences.bool(.aiPromptImproverEnabled) ?? false)
+                           promptImprover: ManagedPreferences.bool(.aiPromptImproverEnabled) ?? false,
+                           sceneComposer: ManagedPreferences.bool(.aiSceneComposerEnabled) ?? false)
     }
 
     func isEnabled(_ kind: AIProviderKind) -> Bool {
@@ -71,5 +76,16 @@ struct AIGenerationPolicy: Equatable {
     /// The Improve button needs the master switch too.
     var offersPromptImprovement: Bool {
         enabled && promptImprover
+    }
+
+    /// The Compose with Claude card needs the master switch too.
+    var offersSceneComposition: Bool {
+        enabled && sceneComposer
+    }
+
+    /// True when either Claude feature is on, so Settings shows the
+    /// Claude model and key rows.
+    var usesClaude: Bool {
+        offersPromptImprovement || offersSceneComposition
     }
 }

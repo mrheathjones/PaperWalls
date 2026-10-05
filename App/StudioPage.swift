@@ -70,10 +70,11 @@ struct StudioPage: View {
 // MARK: - ScreenSaver tab
 
 /// The composing plane for screen savers: the "New Screen Saver" chooser
-/// (blank or a built-in preset) until something is being composed, then
-/// the Scene Composer.
+/// (blank, a built-in preset, or — with AI generation on — a description
+/// for Claude) until something is being composed, then the Scene Composer.
 struct StudioScreenSaverTab: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var prefs: PreferencesStore
 
     @ObservedObject var studio: StudioSession
 
@@ -100,10 +101,17 @@ struct StudioScreenSaverTab: View {
             if studio.draft != nil {
                 SceneComposer(draft: draftBinding)
             } else {
-                SettingsSection(label: "New Screen Saver") {
-                    LazyVGrid(columns: columns, spacing: 20) {
-                        ForEach(templates) { template in
-                            templateCard(template)
+                VStack(alignment: .leading, spacing: 24) {
+                    if prefs.aiPolicy.offersSceneComposition {
+                        AISceneComposer { draft in
+                            studio.draft = draft
+                        }
+                    }
+                    SettingsSection(label: "New Screen Saver") {
+                        LazyVGrid(columns: columns, spacing: 20) {
+                            ForEach(templates) { template in
+                                templateCard(template)
+                            }
                         }
                     }
                 }
