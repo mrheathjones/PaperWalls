@@ -50,6 +50,14 @@ struct WallpaperDetailSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                if prefs.adminModeEnabled {
+                    Button("Package for Deployment…") {
+                        model.openWallpaperPackaging(selecting: wallpaper.id)
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Studio › Package › Wallpapers, with this wallpaper ticked")
+                }
                 HeartButton(isFavorite: model.isFavorite(wallpaper)) {
                     model.toggleFavorite(wallpaper)
                 }

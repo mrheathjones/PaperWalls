@@ -210,6 +210,19 @@ extension AppModel {
         if !studio.packageSelection.contains(id) {
             studio.packageSelection.append(id)
         }
+        studio.packageKind = .screenSavers
+        studioTab = .package
+        page = .studio
+    }
+
+    /// "Package for Deployment…" on a wallpaper: Studio › Package ›
+    /// Wallpapers with the wallpaper ticked.
+    func openWallpaperPackaging(selecting id: String) {
+        guard prefs.adminModeEnabled else { return }
+        if !studio.wallpaperPackageSelection.contains(id) {
+            studio.wallpaperPackageSelection.append(id)
+        }
+        studio.packageKind = .wallpapers
         studioTab = .package
         page = .studio
     }
@@ -344,10 +357,15 @@ final class StudioSession: ObservableObject {
     /// A request held back because the draft has unsaved changes.
     @Published var pendingRequest: StudioRequest?
 
-    /// Studio › Package: ticked scene IDs (in the order ticked) and any
-    /// edited saver names. Kept for the session, like the draft.
+    /// Studio › Package: which flavor is showing, the ticked scene IDs (in
+    /// the order ticked) and any edited saver names, and the same for
+    /// wallpapers (ticked wallpaper IDs, edited file names). Kept for the
+    /// session, like the draft.
+    @Published var packageKind: DeploymentKind = .screenSavers
     @Published var packageSelection: [String] = []
     @Published var packageDisplayNames: [String: String] = [:]
+    @Published var wallpaperPackageSelection: [String] = []
+    @Published var wallpaperPackageNames: [String: String] = [:]
 }
 
 extension StudioRequest {

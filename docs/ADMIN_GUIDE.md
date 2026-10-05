@@ -154,7 +154,7 @@ is also in `Deployment/`.
 | `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
 | `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (a "coming soon" placeholder today) |
 | `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
-| `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers) and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
+| `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers or wallpapers), **Package for Deployment…** on cards, and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
 
 See §12 for how these interact with lock tiers and how the saver is deployed.
 
@@ -170,7 +170,7 @@ The library merges up to six sources, each independently gated:
 | macOS | `showSystemWallpapers` | Apple's built-ins from `/System/Library/Desktop Pictures`. Flat images apply directly; the rest are offered as **on-demand downloads** from Apple's CDN (gated by `allowSystemWallpaperDownloads`). If the Mac's own Apple asset catalog is missing (common on freshly provisioned machines), the app fetches Apple's public catalog copy once |
 | Curated feed | `appCuratedEnabled` | Remote feed published by the PaperWalls project (Ed25519-signed manifest, sha256-verified assets, cached locally) |
 | Org feed | `orgCatalogEnabled` + URL + key | Your organization's own signed remote feed — §6 |
-| Managed folder | `externalWallpaperFolderPath` | A folder you deploy (e.g. `/Library/CompanyWallpapers`), scanned non-recursively for `.jpg .jpeg .png .heic .tiff` |
+| Managed folder | `externalWallpaperFolderPath` | A folder you deploy (e.g. `/Library/CompanyWallpapers`), scanned non-recursively for `.jpg .jpeg .png .heic .tiff`. **Studio › Package › Wallpapers** builds the pkg and the profile for you — §12 |
 | Personal | `personalFolderSource` | The user's own wallpapers |
 
 **Network guarantee:** with both feed gates false, `allowSystemWallpaperDownloads`
@@ -559,6 +559,50 @@ savers you dropped from the package. Remove them with the commands in
 
 Notarize by signing both parts, then running the `notarytool` commands from
 `DEPLOY.txt`. The app doesn't notarize for you.
+
+### Packaging wallpapers for deployment (Admin mode)
+
+The same tab has a **Wallpapers** side: pick wallpapers from any source in
+your library (bundled, macOS, feeds, the managed folder, personal) and ship
+them as the **Managed folder** source (§4) on other Macs. Open **Studio ›
+Package › Wallpapers**, or choose **Package for Deployment…** in a
+wallpaper's detail sheet:
+
+1. Tick the wallpapers. Filter by source or search; edit the file name each
+   one gets on the target Macs (that name is what the app shows).
+2. Set the package name, version, and the **install folder** — the default is
+   `/Library/Application Support/PaperWalls/Wallpapers`. It must be an absolute
+   path outside any user's home folder. The pkg identifier is
+   `com.herojoneslabs.paperwalls.wallpapers.<name>`.
+3. Optionally pick a Developer ID Installer certificate for the pkg. Images
+   aren't code, so nothing else is signed.
+4. Under **Also include**, keep **Configuration profile** on to get the
+   settings that make the folder appear in PaperWalls, and optionally choose a
+   **Default wallpaper** (`selectedWallpaperID`), a **Lock** tier (`lockMode`;
+   soft and hard need a default), and **Only these wallpapers**
+   (`allowedWallpaperIDs`, which hides every other source).
+5. **Build Package…** and choose a folder. You get:
+
+   | Item | What it is |
+   |---|---|
+   | `<Name>-<version>.pkg` | Installs the images to the install folder (root:wheel, world-readable) |
+   | `Wallpapers/` | The same files, for tools that copy files |
+   | `Configure/` | Optional: a `com.herojoneslabs.paperwalls` profile and `managed.json` forcing `externalWallpaperFolderPath` plus whatever you chose in step 4 |
+   | `DEPLOY.txt` | Contents, every wallpaper's content ID, signing state, notarization commands, removal steps |
+
+The pkg only puts files on disk; nothing changes on the desktop until
+PaperWalls is pointed at the folder. Deploy the `Configure/` profile (or copy
+`managed.json` to `/Library/Application Support/PaperWalls/` on Macs without
+MDM), or set `externalWallpaperFolderPath` in the PaperWalls profile you
+already manage — don't force the same key from two profiles. A default
+wallpaper is applied by the `manage` LaunchAgent at login and hourly, or at
+once with `paperwallscli manage`.
+
+Wallpaper IDs are content-derived (§7), and the pkg copies the files byte for
+byte, so the IDs listed in `DEPLOY.txt` are the IDs every target Mac resolves —
+use them in your own profiles too. Installing a newer version doesn't remove
+wallpapers you dropped from the package; remove the folder with the commands
+in `DEPLOY.txt`.
 
 ### Verifying a new macOS version
 

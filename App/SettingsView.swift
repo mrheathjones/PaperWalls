@@ -339,7 +339,7 @@ struct SettingsContent: View {
                 SettingsSection(label: "Admin") {
                 SettingsCard {
                     SettingsRow(title: "Admin mode",
-                                subtitle: "Adds Studio › Package for building deployable screen saver packages, and “Copy Scene for MDM” on screen saver cards",
+                                subtitle: "Adds Studio › Package for building deployable screen saver and wallpaper packages, “Package for Deployment…” on cards, and “Copy Scene for MDM” on screen saver cards",
                                 managedKey: .adminModeEnabled) {
                         SettingsToggle(isOn: $prefs.adminModeEnabled,
                                        disabled: prefs.isForced(.adminModeEnabled))

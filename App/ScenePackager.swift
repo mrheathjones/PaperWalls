@@ -117,40 +117,21 @@ enum ScenePackager {
         }
         try ProcessRunner.run("/usr/bin/xattr", ["-cr", payloadSavers.path])
 
-        // 2. The pkg
+        // 2. The pkg. The saver host keeps loaded code for its whole life,
+        // so an update only takes effect once it restarts (the system
+        // relaunches it).
         progress("Building the installer package…")
-        let root = scratch.appendingPathComponent("root", isDirectory: true)
-        let componentPlist = scratch.appendingPathComponent("components.plist")
-        try ProcessRunner.run("/usr/bin/pkgbuild", ["--analyze", "--root", root.path, componentPlist.path])
-        try pinComponents(at: componentPlist)
-        // The saver host keeps loaded code for its whole life, so an update
-        // only takes effect once it restarts (the system relaunches it).
-        let scripts = scratch.appendingPathComponent("scripts", isDirectory: true)
-        try fileManager.createDirectory(at: scripts, withIntermediateDirectories: true)
-        let postinstall = scripts.appendingPathComponent("postinstall")
-        try Data("""
-            #!/bin/bash
-            /usr/bin/killall legacyScreenSaver legacyScreenSaver-x86_64 2>/dev/null
-            exit 0
+        let builtPkg = try InstallerBuilder.build(
+            root: scratch.appendingPathComponent("root", isDirectory: true),
+            scratch: scratch,
+            package: request.package,
+            postinstall: """
+                #!/bin/bash
+                /usr/bin/killall legacyScreenSaver legacyScreenSaver-x86_64 2>/dev/null
+                exit 0
 
-            """.utf8).write(to: postinstall)
-        try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: postinstall.path)
-        let componentPkg = scratch.appendingPathComponent("component.pkg")
-        try ProcessRunner.run("/usr/bin/pkgbuild", [
-            "--root", root.path,
-            "--component-plist", componentPlist.path,
-            "--scripts", scripts.path,
-            "--identifier", request.package.identifier,
-            "--version", request.package.version,
-            "--install-location", "/",
-            componentPkg.path,
-        ])
-        let builtPkg = scratch.appendingPathComponent(request.package.pkgFilename)
-        var productArguments = ["--package", componentPkg.path]
-        if let identity = request.installerIdentity, !identity.isEmpty {
-            productArguments += ["--sign", identity, "--timestamp"]
-        }
-        try ProcessRunner.run("/usr/bin/productbuild", productArguments + [builtPkg.path])
+                """,
+            installerIdentity: request.installerIdentity)
 
         // 3. The output folder, swapped in whole
         progress("Writing the deployment folder…")
@@ -198,21 +179,6 @@ enum ScenePackager {
         return Result(folder: folder, pkg: folder.appendingPathComponent(builtPkg.lastPathComponent))
     }
 
-    /// Installs exactly where we put them: no relocation to a copy the
-    /// user moved, no skipping because an installed copy looks newer.
-    nonisolated private static func pinComponents(at url: URL) throws {
-        let data = try Data(contentsOf: url)
-        guard var components = try PropertyListSerialization.propertyList(from: data, format: nil) as? [[String: Any]] else {
-            throw CocoaError(.propertyListReadCorrupt)
-        }
-        for index in components.indices {
-            components[index]["BundleIsRelocatable"] = false
-            components[index]["BundleIsVersionChecked"] = false
-            components[index]["BundleOverwriteAction"] = "upgrade"
-        }
-        try PropertyListSerialization.data(fromPropertyList: components, format: .xml, options: 0).write(to: url)
-    }
-
     // MARK: - DEPLOY.txt
 
     nonisolated static func deployNotes(_ request: Request, includesMDM: Bool) -> String {
@@ -245,12 +211,14 @@ enum ScenePackager {
         \(signed)
         \(pkgSigned)
 
+
         """
         if request.appIdentity != nil, request.installerIdentity != nil {
             notes += """
             To notarize (uses the same keychain profile as Deployment/build-pkg.sh):
               xcrun notarytool submit "\(package.pkgFilename)" --keychain-profile "PaperWalls-Notary" --wait
               xcrun stapler staple "\(package.pkgFilename)"
+
 
             """
         }
@@ -264,6 +232,7 @@ enum ScenePackager {
         4. To ship a new version, raise the version number and package again. The pkg
            restarts the screen saver host so the new version loads; reopen System
            Settings to see it.
+
 
         """
         if let saver = request.enforcedSaver {
@@ -287,6 +256,7 @@ enum ScenePackager {
             idle time and password settings in your existing screen saver profile; if it
             already sets moduleName, use that instead of the LOCK profile.
 
+
             """
         }
         if includesMDM {
@@ -296,6 +266,7 @@ enum ScenePackager {
             domain. Use it to provision the scene inside the PaperWalls app itself (its
             "Managed" screen saver), instead of or alongside the packaged savers.
 
+
             """
         }
         notes += """
@@ -304,8 +275,64 @@ enum ScenePackager {
           sudo pkgutil --forget \(package.identifier)
         Installing a new version doesn't remove savers that were dropped from the package.
 
+
         """
         return notes
+    }
+}
+
+/// The pkgbuild → productbuild steps shared by the saver and wallpaper
+/// packagers: a payload root becomes one flat distribution package, signed
+/// when an installer identity is given.
+enum InstallerBuilder {
+    /// Returns the built pkg inside `scratch`, named `package.pkgFilename`.
+    static func build(root: URL, scratch: URL, package: DeploymentPackageSpec,
+                      postinstall: String? = nil, installerIdentity: String?) throws -> URL {
+        let fileManager = FileManager.default
+        let componentPlist = scratch.appendingPathComponent("components.plist")
+        try ProcessRunner.run("/usr/bin/pkgbuild", ["--analyze", "--root", root.path, componentPlist.path])
+        try pinComponents(at: componentPlist)
+        var arguments = [
+            "--root", root.path,
+            "--component-plist", componentPlist.path,
+            "--identifier", package.identifier,
+            "--version", package.version,
+            "--install-location", "/",
+        ]
+        if let postinstall {
+            let scripts = scratch.appendingPathComponent("scripts", isDirectory: true)
+            try fileManager.createDirectory(at: scripts, withIntermediateDirectories: true)
+            let script = scripts.appendingPathComponent("postinstall")
+            try Data(postinstall.utf8).write(to: script)
+            try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+            arguments += ["--scripts", scripts.path]
+        }
+        let componentPkg = scratch.appendingPathComponent("component.pkg")
+        try ProcessRunner.run("/usr/bin/pkgbuild", arguments + [componentPkg.path])
+
+        let builtPkg = scratch.appendingPathComponent(package.pkgFilename)
+        var productArguments = ["--package", componentPkg.path]
+        if let installerIdentity, !installerIdentity.isEmpty {
+            productArguments += ["--sign", installerIdentity, "--timestamp"]
+        }
+        try ProcessRunner.run("/usr/bin/productbuild", productArguments + [builtPkg.path])
+        return builtPkg
+    }
+
+    /// Installs bundles exactly where we put them: no relocation to a copy
+    /// the user moved, no skipping because an installed copy looks newer.
+    /// A payload without bundles (wallpapers) analyzes to an empty list.
+    private static func pinComponents(at url: URL) throws {
+        let data = try Data(contentsOf: url)
+        guard var components = try PropertyListSerialization.propertyList(from: data, format: nil) as? [[String: Any]] else {
+            throw CocoaError(.propertyListReadCorrupt)
+        }
+        for index in components.indices {
+            components[index]["BundleIsRelocatable"] = false
+            components[index]["BundleIsVersionChecked"] = false
+            components[index]["BundleOverwriteAction"] = "upgrade"
+        }
+        try PropertyListSerialization.data(fromPropertyList: components, format: .xml, options: 0).write(to: url)
     }
 }
 

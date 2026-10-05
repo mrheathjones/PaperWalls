@@ -2,20 +2,14 @@ import AppKit
 import SwiftUI
 
 /// Studio › Package (admin mode): pick library screen savers and build one
-/// installer package that puts each on other Macs as its own saver. The
-/// Wallpapers side is a placeholder until Studio can make wallpapers.
+/// installer package that puts each on other Macs as its own saver, or
+/// pick wallpapers and build a folder of them (`StudioWallpaperPackageView`).
 struct StudioPackageTab: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var prefs: PreferencesStore
 
     @ObservedObject var studio: StudioSession
 
-    enum Kind: Hashable {
-        case screenSavers
-        case wallpapers
-    }
-
-    @State private var kind: Kind = .screenSavers
     @State private var packageName = ""
     @State private var version = "1.0"
     @State private var appIdentity = ""         // "" = ad hoc
@@ -35,13 +29,13 @@ struct StudioPackageTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            SegmentedPills(options: [("Screen Savers", Kind.screenSavers), ("Wallpapers", Kind.wallpapers)],
-                           selection: $kind)
-            switch kind {
+            SegmentedPills(options: [("Screen Savers", DeploymentKind.screenSavers), ("Wallpapers", DeploymentKind.wallpapers)],
+                           selection: $studio.packageKind)
+            switch studio.packageKind {
             case .screenSavers:
                 screenSaverPackaging
             case .wallpapers:
-                comingSoon
+                StudioWallpaperPackageView(studio: studio)
             }
         }
         .task {
@@ -193,28 +187,6 @@ struct StudioPackageTab: View {
         .frame(width: 80, height: 50)
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .allowsHitTesting(false)
-    }
-
-    private var comingSoon: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "shippingbox")
-                .font(.system(size: 44))
-                .foregroundStyle(Theme.accent)
-            Text("Coming Soon")
-                .font(.system(size: 22, weight: .bold))
-            Text("Package wallpapers made in Studio for deployment, the same way as screen savers.")
-                .font(Theme.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 90)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.panelRadius, style: .continuous)
-                .strokeBorder(Theme.hairline)
-        }
     }
 
     // MARK: - Build

@@ -75,16 +75,33 @@ enum SceneDeployment {
     }
 }
 
-/// One installer package holding one or more deployed scene bundles.
+/// What a Studio › Package run ships: each kind installs somewhere else
+/// and gets its own pkg identifier prefix, so a saver package and a
+/// wallpaper package with the same name never share a receipt.
+enum DeploymentKind: String, CaseIterable {
+    case screenSavers
+    case wallpapers
+
+    var identifierPrefix: String {
+        switch self {
+        case .screenSavers: return DeploymentPackageSpec.identifierPrefix
+        case .wallpapers: return WallpaperDeployment.identifierPrefix
+        }
+    }
+}
+
+/// One installer package holding one or more deployed scene bundles, or a
+/// folder of wallpapers (`kind`).
 struct DeploymentPackageSpec: Equatable {
     static let identifierPrefix = "com.herojoneslabs.paperwalls.savers."
 
     var name: String
     var version: String
+    var kind: DeploymentKind = .screenSavers
 
     /// "com.herojoneslabs.paperwalls.savers.acme-lobby-savers"
     var identifier: String {
-        Self.identifierPrefix + Self.slug(name)
+        kind.identifierPrefix + Self.slug(name)
     }
 
     /// "Acme Lobby Savers-1.2.pkg"

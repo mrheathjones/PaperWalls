@@ -158,7 +158,7 @@ Screen savers and Studio (same domain, same forcing rules):
 | `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
 | `showStudioWallpapersTab` | bool | `true` | Shows/hides Studio's Wallpapers tab (a "coming soon" placeholder today) |
 | `showStudioScreenSaverTab` | bool | `true` | Shows/hides Studio's ScreenSaver tab (the Scene Composer). With both tabs hidden, Studio is hidden |
-| `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers) and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
+| `adminModeEnabled` | bool | `false` | Admin tools: Studio's **Package** tab (build a deployable pkg of screen savers or wallpapers), **Package for Deployment…** on cards, and the **Copy Scene for MDM** card action. Force `false` to keep them off a fleet; the Package tab ignores `showStudio` so an admin's own Mac keeps it |
 
 There is deliberately no idle-time key: when the screen saver starts is a
 macOS setting. Set it (and select the saver) with a `com.apple.screensaver`
