@@ -570,10 +570,13 @@ wallpaper's detail sheet:
 
 1. Tick the wallpapers. Filter by source or search; edit the file name each
    one gets on the target Macs (that name is what the app shows).
-2. Set the package name, version, and the **install folder** — the default is
-   `/Library/Application Support/PaperWalls/Wallpapers`. It must be an absolute
-   path outside any user's home folder. The pkg identifier is
-   `com.herojoneslabs.paperwalls.wallpapers.<name>`.
+2. Set the package name, version, and the **install folder**. If your
+   organization already deploys a wallpaper folder (this Mac's
+   `externalWallpaperFolderPath`, e.g. `/Library/CompanyWallpapers`), the field
+   starts out pointing there and the pkg adds the images to it; otherwise the
+   default is `/Library/Application Support/PaperWalls/Wallpapers`. Type any
+   absolute path outside a user's home folder, or **Choose…** one. The pkg
+   identifier is `com.herojoneslabs.paperwalls.wallpapers.<name>`.
 3. Optionally pick a Developer ID Installer certificate for the pkg. Images
    aren't code, so nothing else is signed.
 4. Under **Also include**, keep **Configuration profile** on to get the

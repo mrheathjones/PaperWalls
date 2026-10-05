@@ -49,6 +49,7 @@ struct StudioWallpaperPackageView: View {
     @State private var packageName = ""
     @State private var version = "1.0"
     @State private var installDirectory = WallpaperDeployment.defaultInstallDirectory
+    @State private var installDirectoryWasEdited = false
     @State private var installerIdentity = ""   // "" = unsigned
     @State private var installerIdentities: [String] = []
     @State private var includeProfile = true
@@ -72,6 +73,14 @@ struct StudioWallpaperPackageView: View {
             .task {
                 if packageName.isEmpty {
                     packageName = "\(prefs.companyDisplayName) Wallpapers"
+                }
+                // An org that already deploys a wallpaper folder (this Mac's
+                // managed-folder setting) most likely wants to ship into it.
+                if !installDirectoryWasEdited {
+                    let existing = prefs.externalWallpaperFolderPath
+                    if WallpaperDeployment.isValidInstallDirectory(existing) {
+                        installDirectory = WallpaperDeployment.normalizedInstallDirectory(existing)
+                    }
                 }
                 installerIdentities = await Task.detached { SigningIdentities.installer() }.value
             }
@@ -251,15 +260,45 @@ struct StudioWallpaperPackageView: View {
                 }
                 SettingsDivider()
                 SettingsRow(title: "Install folder",
-                            subtitle: installDirectoryIsValid
-                                ? "Where the images land on each Mac; the profile points PaperWalls here"
-                                : "Use an absolute path outside any user's home folder, like \(WallpaperDeployment.defaultInstallDirectory)") {
-                    TextField("Folder", text: $installDirectory)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 360)
+                            subtitle: installFolderSubtitle) {
+                    HStack(spacing: 8) {
+                        TextField("Folder", text: $installDirectory)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 360)
+                            .onChange(of: installDirectory) { _ in installDirectoryWasEdited = true }
+                        Button("Choose…") { chooseInstallFolder() }
+                            .help("Pick a folder on this Mac that stands for the same path on the target Macs")
+                    }
                 }
             }
         }
+    }
+
+    private var installFolderSubtitle: String {
+        guard installDirectoryIsValid else {
+            return "Use an absolute path outside any user's home folder, like \(WallpaperDeployment.defaultInstallDirectory)"
+        }
+        let normalized = WallpaperDeployment.normalizedInstallDirectory(installDirectory)
+        if normalized == WallpaperDeployment.normalizedInstallDirectory(prefs.externalWallpaperFolderPath) {
+            return "Your organization's existing wallpaper folder (externalWallpaperFolderPath). Files are added to it; the profile isn't needed on Macs already pointed here"
+        }
+        return "Where the images land on each Mac; the profile points PaperWalls here. Use your org's existing wallpaper folder if it has one"
+    }
+
+    /// A folder on this Mac that stands for the same path on the target
+    /// Macs — the picker is just a way to avoid typing it.
+    private func chooseInstallFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Use Folder"
+        panel.message = "Choose the folder the wallpapers install to on the target Macs"
+        panel.directoryURL = URL(fileURLWithPath: installDirectoryIsValid
+                                 ? WallpaperDeployment.normalizedInstallDirectory(installDirectory)
+                                 : "/Library", isDirectory: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        installDirectory = url.standardizedFileURL.path
     }
 
     private var signingSection: some View {
