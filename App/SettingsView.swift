@@ -43,6 +43,10 @@ struct SettingsContent: View {
         VStack(alignment: .leading, spacing: 24) {
             PageHeader(title: "Settings", subtitle: "Personalize how PaperWalls looks and behaves")
 
+            // Everyday settings first; what admins reach for (policy, admin
+            // tools, support) last. Page-visibility toggles sit with the
+            // feature they show or hide.
+
             SettingsSection(label: "Appearance", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Theme",
@@ -58,6 +62,43 @@ struct SettingsContent: View {
                                 managedKey: .showFeaturedWallpaper) {
                         SettingsToggle(isOn: $prefs.showFeaturedWallpaper,
                                        disabled: prefs.isForced(.showFeaturedWallpaper))
+                    }
+                }
+            }
+
+            SettingsSection(label: "Wallpaper", collapsible: true) {
+                SettingsCard {
+                    SettingsChipsRow(title: "Display",
+                                     managedKey: .scale,
+                                     options: WallpaperScale.allCases.map { ($0.displayName, $0) },
+                                     selection: $prefs.scale)
+                    SettingsDivider()
+                    SettingsRow(title: "Fill color",
+                                subtitle: "Letterbox color for Fit and Center",
+                                managedKey: .fillColor) {
+                        HStack(spacing: 8) {
+                            if let color = NSColor(hexString: prefs.fillColorHex) {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color(nsColor: color))
+                                    .frame(width: 28, height: 16)
+                                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.hairline))
+                            }
+                            TextField("", text: $prefs.fillColorHex, prompt: Text("Hex, e.g. 1D2E3F"))
+                                .textFieldStyle(.plain)
+                                .font(Theme.pathMono)
+                                .frame(width: 130)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 8))
+                                .disabled(prefs.isForced(.fillColor))
+                        }
+                    }
+                    SettingsDivider()
+                    SettingsRow(title: "Apply to all displays",
+                                subtitle: "Turn off to set only the primary display",
+                                managedKey: .applyToAllScreens) {
+                        SettingsToggle(isOn: $prefs.applyToAllScreens,
+                                       disabled: prefs.isForced(.applyToAllScreens))
                     }
                 }
             }
@@ -110,43 +151,6 @@ struct SettingsContent: View {
                                     .help(wallpaper.displayName)
                             }
                         }
-                    }
-                }
-            }
-
-            SettingsSection(label: "Wallpaper", collapsible: true) {
-                SettingsCard {
-                    SettingsChipsRow(title: "Display",
-                                     managedKey: .scale,
-                                     options: WallpaperScale.allCases.map { ($0.displayName, $0) },
-                                     selection: $prefs.scale)
-                    SettingsDivider()
-                    SettingsRow(title: "Fill color",
-                                subtitle: "Letterbox color for Fit and Center",
-                                managedKey: .fillColor) {
-                        HStack(spacing: 8) {
-                            if let color = NSColor(hexString: prefs.fillColorHex) {
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color(nsColor: color))
-                                    .frame(width: 28, height: 16)
-                                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.hairline))
-                            }
-                            TextField("", text: $prefs.fillColorHex, prompt: Text("Hex, e.g. 1D2E3F"))
-                                .textFieldStyle(.plain)
-                                .font(Theme.pathMono)
-                                .frame(width: 130)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 8))
-                                .disabled(prefs.isForced(.fillColor))
-                        }
-                    }
-                    SettingsDivider()
-                    SettingsRow(title: "Apply to all displays",
-                                subtitle: "Turn off to set only the primary display",
-                                managedKey: .applyToAllScreens) {
-                        SettingsToggle(isOn: $prefs.applyToAllScreens,
-                                       disabled: prefs.isForced(.applyToAllScreens))
                     }
                 }
             }
@@ -208,19 +212,6 @@ struct SettingsContent: View {
                                        disabled: prefs.isForced(.appCuratedEnabled))
                     }
                     SettingsDivider()
-                    SettingsRow(title: "Company name",
-                                subtitle: "Shown instead of \u{201C}Company\u{201D} on the Managed source (usually set by your organization)",
-                                managedKey: .companyName) {
-                        TextField("", text: $prefs.companyName, prompt: Text("e.g. Acme Corp"))
-                            .textFieldStyle(.plain)
-                            .font(Theme.body)
-                            .frame(width: 180)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 8))
-                            .disabled(prefs.isForced(.companyName))
-                    }
-                    SettingsDivider()
                     SettingsRow(title: "Rescan folders",
                                 subtitle: "\(model.library.personal.count) personal · \(model.library.managed.count) managed found") {
                         Button("Rescan", action: model.rescan)
@@ -228,7 +219,7 @@ struct SettingsContent: View {
                 }
             }
 
-            SettingsSection(label: "Screen Savers & Studio", collapsible: true) {
+            SettingsSection(label: "Screen Saver", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Screen savers",
                                 subtitle: "Turn off to have the PaperWalls screen saver show a plain color",
@@ -255,26 +246,10 @@ struct SettingsContent: View {
                             }
                         }
                     }
-                    if !prefs.enforcedScreenSaverPath.isEmpty {
-                        SettingsDivider()
-                        SettingsRow(title: "Enforced screen saver",
-                                    subtitle: "\((prefs.enforcedScreenSaverPath as NSString).lastPathComponent) stays selected for every Space and display",
-                                    managedKey: .enforcedScreenSaverPath) {
-                            EmptyView()
-                        }
-                    }
                     SettingsDivider()
                     SettingsRow(title: "Tiles in System Settings",
                                 subtitle: sceneBundleSubtitle) {
                         EmptyView()
-                    }
-                    if model.managedScreenSaver != nil {
-                        SettingsDivider()
-                        SettingsRow(title: "Managed screen saver",
-                                    subtitle: "“\(model.managedScreenSaver?.name ?? "")” is provided by your organization",
-                                    managedKey: .managedScreenSaverScene) {
-                            EmptyView()
-                        }
                     }
                     SettingsDivider()
                     SettingsRow(title: "Show ScreenSavers page",
@@ -283,7 +258,11 @@ struct SettingsContent: View {
                         SettingsToggle(isOn: $prefs.showScreenSaversPage,
                                        disabled: prefs.isForced(.showScreenSaversPage))
                     }
-                    SettingsDivider()
+                }
+            }
+
+            SettingsSection(label: "Studio", collapsible: true) {
+                SettingsCard {
                     SettingsRow(title: "Show Studio",
                                 subtitle: "The composing tools, in the sidebar's Tools section",
                                 managedKey: .showStudio) {
@@ -291,14 +270,14 @@ struct SettingsContent: View {
                                        disabled: prefs.isForced(.showStudio))
                     }
                     SettingsDivider()
-                    SettingsRow(title: "Studio: Wallpapers tab",
+                    SettingsRow(title: "Wallpapers tab",
                                 subtitle: "The composer for building wallpapers from colors, gradients, images, text, and icons",
                                 managedKey: .showStudioWallpapersTab) {
                         SettingsToggle(isOn: $prefs.showStudioWallpapersTab,
                                        disabled: prefs.isForced(.showStudioWallpapersTab) || !prefs.showStudio)
                     }
                     SettingsDivider()
-                    SettingsRow(title: "Studio: ScreenSaver tab",
+                    SettingsRow(title: "ScreenSaver tab",
                                 subtitle: "The Scene Composer for building screen savers",
                                 managedKey: .showStudioScreenSaverTab) {
                         SettingsToggle(isOn: $prefs.showStudioScreenSaverTab,
@@ -311,33 +290,32 @@ struct SettingsContent: View {
                         SettingsToggle(isOn: $prefs.allowScreenSaverCreation,
                                        disabled: prefs.isForced(.allowScreenSaverCreation))
                     }
-                    SettingsDivider()
-                    SettingsFieldRow(title: "Allowed screen saver IDs",
-                                     prompt: "Comma-separated; empty allows all",
-                                     text: allowedSceneIDsBinding,
-                                     managedKey: .allowedScreenSaverSceneIDs)
                 }
             }
 
-            SettingsSection(label: "Restrictions", collapsible: true) {
+            SettingsSection(label: "Branding", collapsible: true) {
                 SettingsCard {
-                    SettingsChipsRow(title: "Lock mode",
-                                     managedKey: .lockMode,
-                                     options: LockMode.allCases.map { ($0.displayName, $0) },
-                                     selection: $prefs.lockMode)
-                    if model.lockState.mode != .off {
-                        SettingsDivider()
-                        SettingsRow(title: "Enforcement",
-                                    subtitle: model.lockState.enforcementDescription) {
-                            EmptyView()
-                        }
+                    SettingsRow(title: "Company name",
+                                subtitle: "Names the Managed source and fills the Company name token in Studio scenes (usually set by your organization)",
+                                managedKey: .companyName) {
+                        TextField("", text: $prefs.companyName, prompt: Text("e.g. Acme Corp"))
+                            .textFieldStyle(.plain)
+                            .font(Theme.body)
+                            .frame(width: 180)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 8))
+                            .disabled(prefs.isForced(.companyName))
                     }
                     SettingsDivider()
-                    SettingsFieldRow(title: "Allowed wallpaper IDs",
-                                     prompt: "Comma-separated; empty allows all",
-                                     text: allowedIDsBinding,
-                                     managedKey: .allowedWallpaperIDs)
+                    SettingsFieldRow(title: "Brand assets folder",
+                                     prompt: "/Library/CompanyBrand",
+                                     text: $prefs.brandAssetsFolderPath,
+                                     managedKey: .brandAssetsFolderPath,
+                                     onBrowse: { browseForFolder { prefs.brandAssetsFolderPath = $0 } })
                 }
+            }
+
             SettingsSection(label: "AI Generation", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Enable AI Generation",
@@ -452,7 +430,49 @@ struct SettingsContent: View {
                 }
             }
 
-                SettingsSection(label: "Admin", collapsible: true) {
+            SettingsSection(label: "Restrictions", collapsible: true) {
+                SettingsCard {
+                    SettingsChipsRow(title: "Lock mode",
+                                     managedKey: .lockMode,
+                                     options: LockMode.allCases.map { ($0.displayName, $0) },
+                                     selection: $prefs.lockMode)
+                    if model.lockState.mode != .off {
+                        SettingsDivider()
+                        SettingsRow(title: "Enforcement",
+                                    subtitle: model.lockState.enforcementDescription) {
+                            EmptyView()
+                        }
+                    }
+                    SettingsDivider()
+                    SettingsFieldRow(title: "Allowed wallpaper IDs",
+                                     prompt: "Comma-separated; empty allows all",
+                                     text: allowedIDsBinding,
+                                     managedKey: .allowedWallpaperIDs)
+                    SettingsDivider()
+                    SettingsFieldRow(title: "Allowed screen saver IDs",
+                                     prompt: "Comma-separated; empty allows all",
+                                     text: allowedSceneIDsBinding,
+                                     managedKey: .allowedScreenSaverSceneIDs)
+                    if !prefs.enforcedScreenSaverPath.isEmpty {
+                        SettingsDivider()
+                        SettingsRow(title: "Enforced screen saver",
+                                    subtitle: "\((prefs.enforcedScreenSaverPath as NSString).lastPathComponent) stays selected for every Space and display",
+                                    managedKey: .enforcedScreenSaverPath) {
+                            EmptyView()
+                        }
+                    }
+                    if model.managedScreenSaver != nil {
+                        SettingsDivider()
+                        SettingsRow(title: "Managed screen saver",
+                                    subtitle: "“\(model.managedScreenSaver?.name ?? "")” is provided by your organization",
+                                    managedKey: .managedScreenSaverScene) {
+                            EmptyView()
+                        }
+                    }
+                }
+            }
+
+            SettingsSection(label: "Admin", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Admin mode",
                                 subtitle: "Adds Studio › Assets (your organization's logos and icons for the composer), Studio › Package for building deployable screen saver and wallpaper packages, “Package for Deployment…” on cards, and “Copy Scene for MDM” on screen saver cards",
@@ -460,15 +480,10 @@ struct SettingsContent: View {
                         SettingsToggle(isOn: $prefs.adminModeEnabled,
                                        disabled: prefs.isForced(.adminModeEnabled))
                     }
-                    SettingsDivider()
-                    SettingsFieldRow(title: "Brand assets folder",
-                                     prompt: "/Library/CompanyBrand",
-                                     text: $prefs.brandAssetsFolderPath,
-                                     managedKey: .brandAssetsFolderPath,
-                                     onBrowse: { browseForFolder { prefs.brandAssetsFolderPath = $0 } })
                 }
             }
-                SettingsSection(label: "Support", collapsible: true) {
+
+            SettingsSection(label: "Support", collapsible: true) {
                 SettingsCard {
                     SettingsRow(title: "Collect logs",
                                 subtitle: "Bundle the app's logs, settings, and status into a zip for troubleshooting — nothing is sent anywhere") {
@@ -491,10 +506,9 @@ struct SettingsContent: View {
             }
 
             Text("Preference domain: \(ManagedPreferences.domain). Keys forced by an MDM configuration profile appear disabled with a badge.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 6)
-            }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
         }
         .frame(maxWidth: 860, alignment: .leading)
     }

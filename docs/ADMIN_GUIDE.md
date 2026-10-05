@@ -487,7 +487,7 @@ allow-list that excludes it). Points to know:
 
 Installing the pkg puts the saver in `/Library/Screen Savers`; it then appears
 under **System Settings › Screen Saver › Other** as "PaperWalls". On a Mac
-without the pkg, Settings › Screen Savers & Studio offers **Install for Me**,
+without the pkg, Settings › Screen Saver offers **Install for Me**,
 which copies the app's embedded saver to `~/Library/Screen Savers`.
 
 **Selecting a saver for users: `enforcedScreenSaverPath`.** Set it to a
