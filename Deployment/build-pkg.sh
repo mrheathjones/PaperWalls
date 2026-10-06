@@ -421,6 +421,13 @@ then
     /usr/bin/killall legacyScreenSaver 2>/dev/null || true
 fi
 
+# The lock screen half of hideSystemSaverClock is a system-level setting
+# that needs root — which we are. A quiet no-op without the policy.
+if [[ -x "/usr/local/bin/${CLI_PRODUCT_NAME}" ]]
+then
+    "/usr/local/bin/${CLI_PRODUCT_NAME}" screensaver enforce >/dev/null 2>&1 || true
+fi
+
 exit 0
 POSTINSTALL_EOF
     chmod 755 "$SCRIPTS_DIR/postinstall"

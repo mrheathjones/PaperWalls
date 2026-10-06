@@ -149,7 +149,8 @@ is also in `Deployment/`.
 | `managedScreenSaverScene` | string (JSON) | — | An organization-provided scene, shown as a read-only **Managed** entry (ID `managed`). Build it in Studio and use the card's **Copy Scene for MDM** action (shown in Admin mode). In `managed.json` it may be an inline object instead of a string |
 | `allowedScreenSaverSceneIDs` | array of strings | — | Optional allow-list of scene IDs that may be active; other scenes stay visible but can't be set active |
 | `enforcedScreenSaverPath` | string | — | Full path of a saver to keep selected for every Space and display, e.g. `/Library/Screen Savers/PaperWalls.saver`. Applied by `paperwallscli manage` (login + hourly) or `paperwallscli screensaver enforce`; users' own picks are switched back. On macOS 14+ Apple's `moduleName` only *locks* the choice, it doesn't select a third-party saver: pair the two for a selected, locked saver (Admin Guide §12) |
-| `hideSystemSaverClock` | string | `never` | What to do about the large clock macOS draws over every screen saver (System Settings › Wallpaper › Clock Appearance › **Show large clock**, the “On Screen Saver” half) — two clocks, when the scene has one. `never` leaves it to macOS; `whenSceneHasClock` turns it off while the selected saver is a PaperWalls saver whose scene draws a clock, and puts the user's value back otherwise; `always` keeps it off. Applied by the app, `paperwallscli manage`, and `paperwallscli screensaver enforce` (the user's own `com.apple.screensaver` `showClock`, per host). A profile that forces `showClock` wins; the lock-screen clock is never touched (Admin Guide §12) |
+| `hideSystemSaverClock` | string | `never` | What to do about the large clock macOS draws over every screen saver and on the lock screen (System Settings › Wallpaper › Clock Appearance › **Show large clock**) — two clocks, when the scene has one. `never` leaves it to macOS; `whenSceneHasClock` turns it off while the selected saver is a PaperWalls saver whose scene draws a clock, and puts the user's value back otherwise; `always` keeps it off. The screen saver half (the user's `com.apple.screensaver` `showClock`, per host) is applied by the app, `paperwallscli manage`, and `paperwallscli screensaver enforce`. The lock screen half (`/Library/Preferences/com.apple.loginwindow` `UsesLargeDateTime`) is system-level and needs root: the pkg postinstall, `paperwallscli screensaver enforce` run as root, or Settings › **Apply as Admin…**. A profile that forces either key wins (Admin Guide §12) |
+| `hideSystemSaverClockOnLockScreen` | bool | `true` | With `hideSystemSaverClock`: also cover the lock screen half. `false` leaves the lock screen clock alone (and restores it if PaperWalls had hidden it) |
 | `allowScreenSaverCreation` | bool | `true` | `false` = users can't create, edit, rename, or delete scenes (Studio's ScreenSaver tab is unavailable); they can still browse, preview, and Set Active |
 | `showScreenSaversPage` | bool | `true` | Shows/hides the ScreenSavers page in the sidebar's Library section |
 | `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |
@@ -264,6 +265,7 @@ paperwallscli manage                    apply the managed/user preferences (Laun
 paperwallscli watch [--interval s]      Tier-3 enforcement watcher (min 5s, default 15s)
 paperwallscli screensaver               print what the screen saver will show + macOS's clock state (read-only)
 paperwallscli screensaver enforce       select enforcedScreenSaverPath for every Space/display + apply hideSystemSaverClock now
+                                        (as the user; as root — sudo, a Jamf policy — only the lock screen half of the clock policy)
 paperwallscli version | help
 ```
 
@@ -551,29 +553,36 @@ settings:
 | On Screen Saver | `showClock` (bool) | `com.apple.screensaver`, per user and per host (`~/Library/Preferences/ByHost/com.apple.screensaver.<hardware-UUID>.plist`) | the saver host and loginwindow |
 | On Lock Screen | `UsesLargeDateTime` (bool) | `/Library/Preferences/com.apple.loginwindow.plist`, system level, admin-authenticated | loginwindow's lock UI |
 
-Only the first one matters for the double clock, and it's a user-level key.
-PaperWalls never touches the lock-screen half: the saver's clock isn't on
-screen there. Two ways to turn the screen saver half off; pick the one that
-fits how you manage the fleet:
+Both halves matter: the saver keeps playing behind the lock screen (a mouse
+shake or key press brings the lock screen up over the running saver), so a
+clock scene shows two clocks there too. The screen saver half is a user-level
+key; the lock screen half is system-level and needs root — System Settings
+asks for an administrator to change it, and so does PaperWalls. Two ways to
+turn them off; pick the one that fits how you manage the fleet:
 
 | Delivery | Setting | Does | Needs PaperWalls on the Mac |
 |---|---|---|---|
-| Profile | `com.apple.screensaver` `showClock` = `false` | Always off, locked; users can't turn it back on | No |
-| PaperWalls | `hideSystemSaverClock` = `whenSceneHasClock` (or `always`) | The app and the manage agent turn the clock off while the selected saver is a PaperWalls saver whose scene draws a clock, and put the user's value back when it isn't; `always` keeps it off. Users can change it until the next run (login, hourly) | Yes (0.8+) |
+| Profile | `com.apple.screensaver` `showClock` = `false` and `com.apple.loginwindow` `UsesLargeDateTime` = `false` (two payloads in one profile) | Always off, locked; users can't turn either back on | No |
+| PaperWalls | `hideSystemSaverClock` = `whenSceneHasClock` (or `always`); `hideSystemSaverClockOnLockScreen` = `false` to leave the lock screen alone | The app and the manage agent turn the screen saver clock off while the selected saver is a PaperWalls saver whose scene draws a clock, and put the user's value back when it isn't; `always` keeps it off. The lock screen half is applied whenever the CLI runs as root: the PaperWalls pkg postinstall, `paperwallscli screensaver enforce` from a Jamf policy, or the **Apply as Admin…** button in Settings › Screen Saver. Users can change the saver half until the next run (login, hourly) | Yes (0.8+) |
 
-PaperWalls remembers the value it replaced (per host, in its own domain) and
-restores it when the policy stops applying — it never touches a value the
-user had already turned off, and never one a profile forces (the profile
-wins; `paperwallscli screensaver` says so). The "selected saver" is
-`enforcedScreenSaverPath` when set, else what macOS has selected. Deployed
-scene bundles carry their scene; for `PaperWalls.saver` itself the published
-snapshot is used (the built-in Minimal Clock counts as a clock). Users see
-the same choice in Settings › Screen Saver › **macOS clock over the saver**;
-forcing the key manages it. The change takes effect the next time the saver
-starts. Studio › Package's **macOS clock over the saver** option generates
-either delivery (see Packaging below); on the reference
-`com.herojoneslabs.paperwalls.screensaver.mobileconfig` the key is shown
-commented out.
+PaperWalls remembers the values it replaced (the saver half per host in the
+user's layer, the lock screen half in `/Library/Preferences`) and restores
+them when the policy stops applying — it never touches a value the user had
+already turned off, never one a profile forces (the profile wins;
+`paperwallscli screensaver` says so), and never pretends to write what it
+can't: when the lock screen half is owed and nothing with root has run yet,
+the CLI and Settings say so. The "selected saver" is `enforcedScreenSaverPath`
+when set, else what macOS has selected (as root, judged for the console
+user). Deployed scene bundles carry their scene; for `PaperWalls.saver`
+itself the published snapshot is used (the built-in Minimal Clock counts as a
+clock). Users see the same choice in Settings › Screen Saver › **macOS clock
+over the saver**, with **Also on the lock screen** and a **Lock screen clock**
+status row; forcing the keys manages them. The screen saver half takes effect
+the next time the saver starts (verified on macOS 27); the lock screen half
+and the profile delivery are unverified as of 0.8. Studio › Package's **macOS
+clock over the saver** option generates either delivery (see Packaging
+below); on the reference `com.herojoneslabs.paperwalls.screensaver.mobileconfig`
+the keys are shown commented out.
 
 The saver's tile in System Settings is a fixed image shipped inside the
 bundle (a clock on a coral gradient), not a live view of the active scene.
@@ -659,7 +668,7 @@ a card):
    | `<Name>-<version>.pkg` | Installs every saver to `/Library/Screen Savers` (not relocatable) |
    | `Savers/` | The same bundles, for tools that copy files |
    | `MDM/` | Optional `managedScreenSaverScene` JSON per scene |
-   | `Enforce/` | Optional: a PaperWalls profile and `managed.json` setting `enforcedScreenSaverPath` (selects the saver; needs PaperWalls 0.3.3+ with the manage agent) and a `com.apple.screensaver` profile forcing `moduleName` (locks it). Deploy both. Also optional, from **macOS clock over the saver**: either a `com.apple.screensaver` profile forcing `showClock = false` (*Profile: always off*), or `hideSystemSaverClock = whenSceneHasClock` added to the PaperWalls profile and `managed.json` — or in their own pair when no saver is enforced (*PaperWalls: off when the scene has a clock*; needs PaperWalls 0.8+) |
+   | `Enforce/` | Optional: a PaperWalls profile and `managed.json` setting `enforcedScreenSaverPath` (selects the saver; needs PaperWalls 0.3.3+ with the manage agent) and a `com.apple.screensaver` profile forcing `moduleName` (locks it). Deploy both. Also optional, from **macOS clock over the saver**: either a profile forcing `com.apple.screensaver` `showClock = false` and, with **Also on the lock screen**, `com.apple.loginwindow` `UsesLargeDateTime = false` (*Profile: always off*), or `hideSystemSaverClock = whenSceneHasClock` (plus `hideSystemSaverClockOnLockScreen = false` when the lock screen is left alone) added to the PaperWalls profile and `managed.json` — or in their own pair when no saver is enforced (*PaperWalls: off when the scene has a clock*; needs PaperWalls 0.8+) |
    | `DEPLOY.txt` | Contents, signing state, notarization commands, removal steps |
 
 Each saver carries its own copy of the images its scene uses (a chosen

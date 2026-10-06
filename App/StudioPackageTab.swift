@@ -19,6 +19,7 @@ struct StudioPackageTab: View {
     @State private var includeMDMJSON = true
     @State private var includeProfile = false
     @State private var systemClock: DeploymentEnforcement.ClockDelivery = .leave
+    @State private var clockLockScreen = true
     @State private var profileSceneID = ""
     @State private var isBuilding = false
     @State private var progressMessage = ""
@@ -149,6 +150,13 @@ struct StudioPackageTab: View {
                     }
                     .labelsHidden()
                     .frame(maxWidth: 300)
+                }
+                if systemClock != .leave {
+                    SettingsDivider()
+                    SettingsRow(title: "Also on the lock screen",
+                                subtitle: "The saver keeps playing behind the lock screen, where macOS draws its clock again. The profile adds a com.apple.loginwindow payload; the PaperWalls policy needs root for this half (pkg postinstall, a Jamf policy, or the Apply as Admin prompt)") {
+                        SettingsToggle(isOn: $clockLockScreen)
+                    }
                 }
             }
         }
@@ -288,6 +296,7 @@ struct StudioPackageTab: View {
                                             installerIdentity: installerIdentity.isEmpty ? nil : installerIdentity,
                                             enforcedSaver: enforcedSaver,
                                             systemClock: systemClock,
+                                            includeLockScreen: clockLockScreen,
                                             organization: prefs.companyName.trimmingCharacters(in: .whitespaces))
         isBuilding = true
         errorMessage = nil

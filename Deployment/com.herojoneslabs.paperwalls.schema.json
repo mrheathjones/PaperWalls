@@ -385,7 +385,7 @@
     "hideSystemSaverClock": {
       "type": "string",
       "title": "macOS Clock Over the Screen Saver",
-      "description": "macOS draws its own large clock over every screen saver (System Settings › Wallpaper › Clock Appearance › Show large clock), so a scene with a clock layer shows two. never: leave it to macOS. whenSceneHasClock: turn the clock off while the selected saver is a PaperWalls saver whose scene draws a clock, and put the user's setting back otherwise. always: keep it off. Applied by the app and the manage agent to the user's com.apple.screensaver showClock (per host); a profile that forces showClock wins. The lock-screen clock is never changed.",
+      "description": "macOS draws its own large clock over every screen saver and on the lock screen (System Settings › Wallpaper › Clock Appearance › Show large clock), so a scene with a clock layer shows two. never: leave it to macOS. whenSceneHasClock: turn the clock off while the selected saver is a PaperWalls saver whose scene draws a clock, and put the user's setting back otherwise. always: keep it off. The screen saver half (the user's com.apple.screensaver showClock, per host) is applied by the app and the manage agent; the lock screen half (/Library/Preferences/com.apple.loginwindow UsesLargeDateTime) needs root — the pkg postinstall, paperwallscli screensaver enforce run as root, or Settings › Apply as Admin. A profile that forces either key wins.",
       "enum": [
         "never",
         "whenSceneHasClock",
@@ -398,6 +398,14 @@
           "Always hide"
         ],
         "infoText": "Key: hideSystemSaverClock (default: never)"
+      }
+    },
+    "hideSystemSaverClockOnLockScreen": {
+      "type": "boolean",
+      "title": "Hide the Lock Screen Clock Too",
+      "description": "With the clock policy: also turn off macOS's large clock on the lock screen, where the screen saver keeps playing behind it. Disable to leave the lock screen clock alone (PaperWalls restores it if it had hidden it).",
+      "options": {
+        "infoText": "Key: hideSystemSaverClockOnLockScreen (default: true)"
       }
     },
     "allowScreenSaverCreation": {

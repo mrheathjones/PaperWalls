@@ -161,16 +161,17 @@ enum DeploymentEnforcement {
     /// With `hideSystemClock` it also carries the PaperWalls clock policy
     /// (`ClockDelivery.paperWalls`).
     static func profile(bundle: SceneBundleSpec, packageIdentifier: String, organization: String,
-                        hideSystemClock: Bool = false, uuid: () -> UUID = UUID.init) -> [String: Any] {
+                        hideSystemClock: Bool = false, includeLockScreen: Bool = true,
+                        uuid: () -> UUID = UUID.init) -> [String: Any] {
         var settings: [String: Any] = [
             ManagedPreferenceKey.enforcedScreenSaverPath.rawValue: saverPath(for: bundle),
         ]
         if hideSystemClock {
-            settings[ManagedPreferenceKey.hideSystemSaverClock.rawValue] = clockPolicyValue.rawValue
+            settings.merge(clockPolicySettings(includeLockScreen: includeLockScreen)) { _, new in new }
         }
         var description = "Keeps “\(bundle.displayName)” selected as the screen saver."
         if hideSystemClock {
-            description += " Hides macOS's own clock over it while the saver's scene draws a clock."
+            description += " Hides macOS's own clock over it\(includeLockScreen ? " and on the lock screen" : "") while the saver's scene draws a clock."
         }
         description += " Requires PaperWalls with its manage LaunchAgent on the Mac."
         return preferencesProfile(settings: settings,
@@ -242,10 +243,10 @@ enum DeploymentEnforcement {
     }
 
     /// The same setting(s) for /Library/Application Support/PaperWalls/managed.json.
-    static func managedJSON(bundle: SceneBundleSpec, hideSystemClock: Bool = false) -> String {
+    static func managedJSON(bundle: SceneBundleSpec, hideSystemClock: Bool = false, includeLockScreen: Bool = true) -> String {
         var forced: [String: Any] = [ManagedPreferenceKey.enforcedScreenSaverPath.rawValue: saverPath(for: bundle)]
         if hideSystemClock {
-            forced[ManagedPreferenceKey.hideSystemSaverClock.rawValue] = clockPolicyValue.rawValue
+            forced.merge(clockPolicySettings(includeLockScreen: includeLockScreen)) { _, new in new }
         }
         return managedJSON(forced: forced)
     }
@@ -284,38 +285,60 @@ enum DeploymentEnforcement {
     /// What the PaperWalls delivery sets.
     static let clockPolicyValue = SystemSaverClockPolicy.whenSceneHasClock
 
+    /// The PaperWalls keys: the policy, plus the lock screen opt-out when
+    /// the package leaves the lock screen alone (the key defaults to true).
+    static func clockPolicySettings(includeLockScreen: Bool) -> [String: Any] {
+        var settings: [String: Any] = [ManagedPreferenceKey.hideSystemSaverClock.rawValue: clockPolicyValue.rawValue]
+        if !includeLockScreen {
+            settings[ManagedPreferenceKey.hideSystemSaverClockOnLockScreen.rawValue] = false
+        }
+        return settings
+    }
+
     /// The PaperWalls delivery on its own, for a package that doesn't
     /// enforce a saver.
-    static func clockPolicyProfile(packageIdentifier: String, organization: String,
+    static func clockPolicyProfile(packageIdentifier: String, organization: String, includeLockScreen: Bool = true,
                                    uuid: () -> UUID = UUID.init) -> [String: Any] {
-        preferencesProfile(settings: [ManagedPreferenceKey.hideSystemSaverClock.rawValue: clockPolicyValue.rawValue],
+        preferencesProfile(settings: clockPolicySettings(includeLockScreen: includeLockScreen),
                            identifier: "\(packageIdentifier).clock",
                            payloadDisplayName: "Screen Saver Clock Policy",
                            displayName: "PaperWalls Screen Saver Clock",
-                           description: "Hides macOS's own clock over the screen saver while a PaperWalls saver whose scene draws a clock is selected. Requires PaperWalls with its manage LaunchAgent on the Mac.",
+                           description: "Hides macOS's own clock over the screen saver\(includeLockScreen ? " and on the lock screen" : "") while a PaperWalls saver whose scene draws a clock is selected. Requires PaperWalls with its manage LaunchAgent on the Mac.",
                            organization: organization, uuid: uuid)
     }
 
-    static func clockPolicyManagedJSON() -> String {
-        managedJSON(forced: [ManagedPreferenceKey.hideSystemSaverClock.rawValue: clockPolicyValue.rawValue])
+    static func clockPolicyManagedJSON(includeLockScreen: Bool = true) -> String {
+        managedJSON(forced: clockPolicySettings(includeLockScreen: includeLockScreen))
     }
 
-    /// The profile delivery: a computer-level `com.apple.screensaver`
-    /// profile forcing `showClock = false` — the "On Screen Saver" half of
-    /// "Show large clock". Only that key, like the lock profile.
-    static func hideClockProfile(packageIdentifier: String, organization: String,
+    /// The profile delivery: a computer-level profile forcing
+    /// `com.apple.screensaver` `showClock = false` — the "On Screen Saver"
+    /// half of "Show large clock" — and, with `includeLockScreen`, a second
+    /// payload forcing `com.apple.loginwindow` `UsesLargeDateTime = false`,
+    /// the "On Lock Screen" half. Only those keys, like the lock profile.
+    static func hideClockProfile(packageIdentifier: String, organization: String, includeLockScreen: Bool = true,
                                  uuid: () -> UUID = UUID.init) -> [String: Any] {
-        let payload: [String: Any] = [
+        var payloads: [[String: Any]] = [[
             "PayloadType": SystemSaverClock.domain,
             "PayloadVersion": 1,
             "PayloadIdentifier": "\(packageIdentifier).hideclock.screensaver",
             "PayloadUUID": uuid().uuidString,
             "PayloadDisplayName": "Screen Saver Clock",
             SystemSaverClock.key: false,
-        ]
+        ]]
+        if includeLockScreen {
+            payloads.append([
+                "PayloadType": SystemSaverClock.lockScreenDomain,
+                "PayloadVersion": 1,
+                "PayloadIdentifier": "\(packageIdentifier).hideclock.loginwindow",
+                "PayloadUUID": uuid().uuidString,
+                "PayloadDisplayName": "Lock Screen Clock",
+                SystemSaverClock.lockScreenKey: false,
+            ])
+        }
         return [
-            "PayloadContent": [payload],
-            "PayloadDescription": "Turns off the large clock macOS shows over screen savers (Show large clock › On Screen Saver), so a saver with its own clock doesn't show two. Users can't turn it back on while the profile is installed.",
+            "PayloadContent": payloads,
+            "PayloadDescription": "Turns off the large clock macOS shows over screen savers (Show large clock › On Screen Saver)\(includeLockScreen ? " and on the lock screen" : ""), so a saver with its own clock doesn't show two. Users can't turn it back on while the profile is installed.",
             "PayloadDisplayName": "Hide Screen Saver Clock",
             "PayloadIdentifier": "\(packageIdentifier).hideclock",
             "PayloadOrganization": organization.isEmpty ? "YourOrg" : organization,

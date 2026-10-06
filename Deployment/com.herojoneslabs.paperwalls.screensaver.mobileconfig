@@ -41,7 +41,9 @@
 			     screen saver ("Show large clock" › On Screen Saver), so a
 			     scene with its own clock layer doesn't show two. Forced
 			     here it's locked; the PaperWalls alternative is the
-			     hideSystemSaverClock key (Admin Guide §12).
+			     hideSystemSaverClock key (Admin Guide §12). The lock screen
+			     half is a com.apple.loginwindow payload with
+			     UsesLargeDateTime = false (Studio › Package generates both).
 			<key>showClock</key>
 			<false/>
 			-->

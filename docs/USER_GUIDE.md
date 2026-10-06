@@ -144,7 +144,9 @@ case. That's your organization's configuration, not a malfunction.
 - Two clocks? macOS draws its own large clock over every screen saver. In
   Settings › Screen Saver, set **macOS clock over the saver** to *Hide when
   the scene has a clock* — PaperWalls turns the macOS clock off while a scene
-  with a clock is selected and puts your setting back otherwise. (Or change
+  with a clock is selected and puts your setting back otherwise. The lock
+  screen has its own copy of that clock; hiding it needs an administrator, so
+  the **Lock screen clock** row offers **Apply as Admin…**. (Or change
   **Show large clock** under System Settings › Wallpaper › Clock Appearance.)
 - Screen saver shows a simple clock instead of yours? Make sure one is marked
   **ACTIVE** on the ScreenSavers page. Shows a plain color? Screen savers

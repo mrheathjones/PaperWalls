@@ -26,9 +26,10 @@ enum ScreenSaverSelection {
 
     static let screenSaverProvider = "com.apple.wallpaper.choice.screen-saver"
 
-    static var storeURL: URL {
-        ScreenSaverSnapshot.realHomeDirectory
-            .appendingPathComponent("Library/Application Support/com.apple.wallpaper/Store/Index.plist")
+    static var storeURL: URL { storeURL(inHome: ScreenSaverSnapshot.realHomeDirectory) }
+
+    static func storeURL(inHome home: URL) -> URL {
+        home.appendingPathComponent("Library/Application Support/com.apple.wallpaper/Store/Index.plist")
     }
 
     enum SelectionError: LocalizedError, Equatable {
@@ -287,17 +288,24 @@ extension ScreenSaverScene {
     }
 }
 
-/// macOS's "Show large clock › On Screen Saver" setting: `showClock` in
-/// `com.apple.screensaver`, per user and per host (what ScreenSaverDefaults
-/// and loginwindow read). The "On Lock Screen" half of the same popup is
-/// `UsesLargeDateTime` in /Library/Preferences/com.apple.loginwindow —
-/// system-level, admin-authenticated — and PaperWalls leaves it alone: the
-/// saver's own clock isn't on screen there.
+/// macOS's "Show large clock" setting is two keys, and PaperWalls can turn
+/// off both halves:
 ///
-/// Everything that decides is pure; the preference layer is a `Store` so
-/// tests never touch real settings. PaperWalls remembers the value it
-/// replaced (per host, in its own domain) so a policy that stops applying
-/// restores the user's choice, and never touches a value a profile forces.
+///   * **On Screen Saver** — `showClock` in `com.apple.screensaver`, per user
+///     and per host (what ScreenSaverDefaults and loginwindow read). User-level.
+///   * **On Lock Screen** — `UsesLargeDateTime` in
+///     /Library/Preferences/com.apple.loginwindow.plist, system-level: System
+///     Settings asks for an administrator to change it, and so does
+///     PaperWalls (the CLI run as root — a Jamf policy, the pkg postinstall,
+///     or Settings' "Apply as Admin" prompt). On macOS 14+ the saver keeps
+///     playing behind the lock screen, so a clock scene shows two clocks
+///     there too.
+///
+/// Everything that decides is pure; each half's preference layer is a
+/// `Store` so tests never touch real settings. PaperWalls remembers the
+/// value it replaced so a policy that stops applying restores the user's
+/// choice, never touches a value a profile forces, and never pretends to
+/// write what it can't.
 enum SystemSaverClock {
     static let log = Logger(subsystem: ManagedPreferences.domain, category: "saverclock")
     static let domain = "com.apple.screensaver"
@@ -305,16 +313,24 @@ enum SystemSaverClock {
     /// The value PaperWalls replaced ("true", "false", or "unset").
     static let restoreKey = "systemSaverClockRestore"
 
+    static let lockScreenDomain = "com.apple.loginwindow"
+    static let lockScreenKey = "UsesLargeDateTime"
+    static let lockScreenRestoreKey = "lockScreenClockRestore"
+
     struct Store {
-        /// The user's own value (nil = unset; macOS then shows the clock).
+        /// The stored value (nil = unset; macOS then shows the clock).
         var showClock: () -> Bool?
         /// A profile forces the key, so it isn't PaperWalls' to change.
         var isForced: () -> Bool
         var setShowClock: (Bool?) -> Void
         var restoreValue: () -> String?
         var setRestoreValue: (String?) -> Void
+        /// False when this process can't write the layer (the system-level
+        /// lock screen key needs root).
+        var canWrite: () -> Bool = { true }
     }
 
+    /// The screen saver half: the current user's own per-host value.
     static let live = Store(
         showClock: {
             (CFPreferencesCopyValue(key as CFString, domain as CFString,
@@ -337,6 +353,33 @@ enum SystemSaverClock {
                                   kCFPreferencesCurrentUser, kCFPreferencesCurrentHost)
             CFPreferencesSynchronize(ManagedPreferences.domain as CFString, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost)
         })
+
+    /// The lock screen half: /Library/Preferences/com.apple.loginwindow.plist
+    /// (any user, any host). Writable only as root; PaperWalls' note of the
+    /// replaced value sits beside it in its own system-level domain.
+    static let liveLockScreen = Store(
+        showClock: {
+            (CFPreferencesCopyValue(lockScreenKey as CFString, lockScreenDomain as CFString,
+                                    kCFPreferencesAnyUser, kCFPreferencesAnyHost) as? NSNumber)?.boolValue
+        },
+        isForced: {
+            CFPreferencesAppValueIsForced(lockScreenKey as CFString, lockScreenDomain as CFString)
+        },
+        setShowClock: { value in
+            CFPreferencesSetValue(lockScreenKey as CFString, value.map { NSNumber(value: $0) }, lockScreenDomain as CFString,
+                                  kCFPreferencesAnyUser, kCFPreferencesAnyHost)
+            CFPreferencesSynchronize(lockScreenDomain as CFString, kCFPreferencesAnyUser, kCFPreferencesAnyHost)
+        },
+        restoreValue: {
+            CFPreferencesCopyValue(lockScreenRestoreKey as CFString, ManagedPreferences.domain as CFString,
+                                   kCFPreferencesAnyUser, kCFPreferencesAnyHost) as? String
+        },
+        setRestoreValue: { value in
+            CFPreferencesSetValue(lockScreenRestoreKey as CFString, value as CFString?, ManagedPreferences.domain as CFString,
+                                  kCFPreferencesAnyUser, kCFPreferencesAnyHost)
+            CFPreferencesSynchronize(ManagedPreferences.domain as CFString, kCFPreferencesAnyUser, kCFPreferencesAnyHost)
+        },
+        canWrite: { getuid() == 0 })
 
     static func restoreToken(for value: Bool?) -> String {
         value.map { $0 ? "true" : "false" } ?? "unset"
@@ -371,30 +414,37 @@ enum SystemSaverClock {
         case restored(Bool?)
         /// Nothing to change.
         case leftAlone
+        /// A change is due but this process can't write the layer (root needed).
+        case needsAdmin
+
+        /// Something is still owed.
+        var isPending: Bool { self == .needsAdmin }
     }
 
-    /// Applies `policy` for the current user and host.
+    /// Applies `policy` to one half.
     @discardableResult
     static func apply(policy: SystemSaverClockPolicy, sceneHasClock: Bool, store: Store = live) -> Outcome {
         guard !store.isForced() else { return .managedByProfile }
         let current = store.showClock()
         if shouldHide(policy: policy, sceneHasClock: sceneHasClock) {
             if current == false { return .alreadyHidden }
+            guard store.canWrite() else { return .needsAdmin }
             if store.restoreValue() == nil {
                 store.setRestoreValue(restoreToken(for: current))
             }
             store.setShowClock(false)
-            log.info("Hid the macOS screen saver clock (policy \(policy.rawValue, privacy: .public))")
+            log.info("Hid the macOS clock (policy \(policy.rawValue, privacy: .public))")
             return .hidden
         }
         guard let token = store.restoreValue() else { return .leftAlone }
+        guard store.canWrite() else { return current == false ? .needsAdmin : .leftAlone }
         store.setRestoreValue(nil)
         // Only undo PaperWalls' own change; a user who turned the clock back
         // on in the meantime keeps it.
         guard current == false else { return .leftAlone }
         let previous = restoredValue(from: token)
         store.setShowClock(previous)
-        log.info("Restored the macOS screen saver clock to \(restoreToken(for: previous), privacy: .public)")
+        log.info("Restored the macOS clock to \(restoreToken(for: previous), privacy: .public)")
         return .restored(previous)
     }
 
@@ -427,15 +477,29 @@ enum SystemSaverClock {
         /// True for any PaperWalls saver bundle (main, per-scene tile, deployed).
         var isPaperWallsSaver: (String) -> Bool
 
-        static let live = SceneSource(
-            bundledSnapshot: { path in
-                ScreenSaverSnapshot.read(from: URL(fileURLWithPath: path)
-                    .appendingPathComponent("Contents/Resources/\(ScreenSaverSnapshot.bundledFilename)"))
-            },
-            publishedSnapshot: { ScreenSaverSnapshot.read() },
-            isPaperWallsSaver: { path in
-                Bundle(path: path)?.bundleIdentifier?.hasPrefix("\(ManagedPreferences.domain).saver") == true
-            })
+        static let live = SceneSource(home: ScreenSaverSnapshot.realHomeDirectory)
+
+        /// Reads the published snapshot from `home` — the console user's
+        /// when the CLI runs as root.
+        init(home: URL) {
+            self.init(
+                bundledSnapshot: { path in
+                    ScreenSaverSnapshot.read(from: URL(fileURLWithPath: path)
+                        .appendingPathComponent("Contents/Resources/\(ScreenSaverSnapshot.bundledFilename)"))
+                },
+                publishedSnapshot: { ScreenSaverSnapshot.read(from: ScreenSaverSnapshot.url(inHome: home)) },
+                isPaperWallsSaver: { path in
+                    Bundle(path: path)?.bundleIdentifier?.hasPrefix("\(ManagedPreferences.domain).saver") == true
+                })
+        }
+
+        init(bundledSnapshot: @escaping (String) -> ScreenSaverSnapshot?,
+             publishedSnapshot: @escaping () -> ScreenSaverSnapshot?,
+             isPaperWallsSaver: @escaping (String) -> Bool) {
+            self.bundledSnapshot = bundledSnapshot
+            self.publishedSnapshot = publishedSnapshot
+            self.isPaperWallsSaver = isPaperWallsSaver
+        }
     }
 
     /// Whether the saver at `path` draws its own clock. Mirrors what
@@ -465,31 +529,70 @@ enum SystemSaverClock {
         ManagedPreferences.string(.hideSystemSaverClock).flatMap(SystemSaverClockPolicy.init(rawValue:)) ?? .never
     }
 
-    /// Resolves the policy and the on-screen scene from preferences and
-    /// applies it. Cheap when the policy is `never`.
-    @discardableResult
-    static func applyFromPreferences(store: Store = live, source: SceneSource = .live)
-        -> (policy: SystemSaverClockPolicy, outcome: Outcome) {
-        let policy = currentPolicy
-        var sceneHasClock = false
-        if policy == .whenSceneHasClock {
-            let enforced = ManagedPreferences.string(.enforcedScreenSaverPath)
-            let wallpaperStore = (enforced ?? "").trimmingCharacters(in: .whitespaces).isEmpty
-                ? try? ScreenSaverSelection.readStore()
-                : nil
-            sceneHasClock = saverHasClock(at: effectiveSaverPath(enforced: enforced, store: wallpaperStore), source: source)
-        }
-        return (policy, apply(policy: policy, sceneHasClock: sceneHasClock, store: store))
+    /// Whether the policy also covers the lock screen (default yes).
+    static var coversLockScreen: Bool {
+        ManagedPreferences.bool(.hideSystemSaverClockOnLockScreen) ?? true
     }
 
-    /// One line for `paperwallscli screensaver`.
-    static func statusDescription(store: Store = live) -> String {
+    /// The policy for the lock screen half: the same one, or `never` when
+    /// the lock screen is excluded (which also restores it).
+    static func lockScreenPolicy(_ policy: SystemSaverClockPolicy, coversLockScreen: Bool) -> SystemSaverClockPolicy {
+        coversLockScreen ? policy : .never
+    }
+
+    struct Applied: Equatable {
+        var policy: SystemSaverClockPolicy
+        var sceneHasClock: Bool
+        /// Nil when the saver half was skipped (running as root: it's per user).
+        var saver: Outcome?
+        var lockScreen: Outcome
+    }
+
+    /// Whether the on-screen scene draws a clock, for the user whose home
+    /// is `home` (the console user's when running as root).
+    static func sceneHasClock(forPolicy policy: SystemSaverClockPolicy, home: URL) -> Bool {
+        guard policy == .whenSceneHasClock else { return false }
+        let enforced = ManagedPreferences.string(.enforcedScreenSaverPath)
+        let wallpaperStore = (enforced ?? "").trimmingCharacters(in: .whitespaces).isEmpty
+            ? try? ScreenSaverSelection.readStore(at: ScreenSaverSelection.storeURL(inHome: home))
+            : nil
+        return saverHasClock(at: effectiveSaverPath(enforced: enforced, store: wallpaperStore),
+                             source: SceneSource(home: home))
+    }
+
+    /// Resolves the policy and the on-screen scene from preferences and
+    /// applies both halves. Pass `saverStore: nil` when running as root
+    /// (the saver half is the user's own layer) and `home` = the console
+    /// user's home so the scene is theirs. Cheap when the policy is `never`.
+    @discardableResult
+    static func applyFromPreferences(saverStore: Store? = live, lockScreenStore: Store = liveLockScreen,
+                                     home: URL = ScreenSaverSnapshot.realHomeDirectory) -> Applied {
         let policy = currentPolicy
+        let hasClock = sceneHasClock(forPolicy: policy, home: home)
+        return Applied(
+            policy: policy,
+            sceneHasClock: hasClock,
+            saver: saverStore.map { apply(policy: policy, sceneHasClock: hasClock, store: $0) },
+            lockScreen: apply(policy: lockScreenPolicy(policy, coversLockScreen: coversLockScreen),
+                              sceneHasClock: hasClock, store: lockScreenStore))
+    }
+
+    /// One line per half for `paperwallscli screensaver` and Settings.
+    static func statusDescription(store: Store = live) -> String {
+        describe(half: "macOS clock over the screen saver", store: store, policy: currentPolicy)
+    }
+
+    static func lockScreenStatusDescription(store: Store = liveLockScreen) -> String {
+        describe(half: "macOS clock on the lock screen", store: store,
+                 policy: lockScreenPolicy(currentPolicy, coversLockScreen: coversLockScreen))
+    }
+
+    private static func describe(half: String, store: Store, policy: SystemSaverClockPolicy) -> String {
         if store.isForced() {
-            return "macOS clock: forced by a configuration profile (policy \(policy.rawValue) not applied)"
+            return "\(half): forced by a configuration profile (policy \(policy.rawValue) not applied)"
         }
         let shown = store.showClock() ?? true
-        var line = "macOS clock: \(shown ? "shown" : "hidden") over the screen saver (policy \(policy.rawValue)"
+        var line = "\(half): \(shown ? "shown" : "hidden") (policy \(policy.rawValue)"
         if !shown, store.restoreValue() != nil {
             line += "; hidden by PaperWalls"
         }

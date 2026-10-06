@@ -285,16 +285,34 @@ final class SceneDeploymentTests: XCTestCase {
 
         let parsed = try XCTUnwrap(LocalManagedConfig.parse(data: Data(DeploymentEnforcement.clockPolicyManagedJSON().utf8)))
         XCTAssertEqual(parsed.forced as? [String: String], ["hideSystemSaverClock": "whenSceneHasClock"])
+
+        // Leaving the lock screen alone is an explicit opt-out (the key defaults to true).
+        let saverOnly = try XCTUnwrap(LocalManagedConfig.parse(
+            data: Data(DeploymentEnforcement.clockPolicyManagedJSON(includeLockScreen: false).utf8)))
+        XCTAssertEqual(saverOnly.forced["hideSystemSaverClock"] as? String, "whenSceneHasClock")
+        XCTAssertEqual(saverOnly.forced["hideSystemSaverClockOnLockScreen"] as? Bool, false)
+        XCTAssertEqual(DeploymentEnforcement.clockPolicySettings(includeLockScreen: true).count, 1)
     }
 
-    func testHideClockProfileForcesOnlyShowClock() throws {
+    func testHideClockProfileForcesOnlyTheClockKeys() throws {
         let profile = DeploymentEnforcement.hideClockProfile(packageIdentifier: "com.example.savers", organization: "")
-        let payload = try XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
+        let payloads = try XCTUnwrap(profile["PayloadContent"] as? [[String: Any]])
+        XCTAssertEqual(payloads.count, 2, "screen saver half + lock screen half")
+        let payload = payloads[0]
         XCTAssertEqual(payload["PayloadType"] as? String, "com.apple.screensaver")
         XCTAssertEqual(payload["showClock"] as? Bool, false)
         XCTAssertNil(payload["moduleName"], "selection and locking stay in their own profiles")
         XCTAssertNil(payload["idleTime"])
         XCTAssertEqual(payload["PayloadIdentifier"] as? String, "com.example.savers.hideclock.screensaver")
+        let lockScreen = payloads[1]
+        XCTAssertEqual(lockScreen["PayloadType"] as? String, "com.apple.loginwindow")
+        XCTAssertEqual(lockScreen["UsesLargeDateTime"] as? Bool, false)
+        XCTAssertEqual(lockScreen["PayloadIdentifier"] as? String, "com.example.savers.hideclock.loginwindow")
+        XCTAssertNil(lockScreen["LoginwindowText"])
+
+        let saverOnly = DeploymentEnforcement.hideClockProfile(packageIdentifier: "com.example.savers", organization: "",
+                                                               includeLockScreen: false)
+        XCTAssertEqual((saverOnly["PayloadContent"] as? [[String: Any]])?.count, 1)
         XCTAssertEqual(profile["PayloadScope"] as? String, "System")
         XCTAssertEqual(profile["PayloadOrganization"] as? String, "YourOrg")
         XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
@@ -535,6 +553,33 @@ final class SystemSaverClockTests: XCTestCase {
         prefs.forced = true
         XCTAssertEqual(SystemSaverClock.apply(policy: .always, sceneHasClock: true, store: prefs.store), .managedByProfile)
         XCTAssertTrue(prefs.writes.isEmpty)
+    }
+
+    func testNeedsAdminWhenItCannotWriteTheLayer() {
+        let prefs = FakePrefs()
+        var store = prefs.store
+        store.canWrite = { false }
+        XCTAssertEqual(SystemSaverClock.apply(policy: .always, sceneHasClock: false, store: store), .needsAdmin)
+        XCTAssertTrue(prefs.writes.isEmpty, "decides only; never pretends to write")
+        XCTAssertTrue(SystemSaverClock.Outcome.needsAdmin.isPending)
+
+        // Hidden by PaperWalls (as root, earlier); now the policy is off but
+        // this process can't restore it either.
+        prefs.showClock = false
+        prefs.restore = "true"
+        XCTAssertEqual(SystemSaverClock.apply(policy: .never, sceneHasClock: false, store: store), .needsAdmin)
+        XCTAssertEqual(prefs.restore, "true", "the note survives until someone who can write runs")
+        // …unless the user already turned it back on: nothing owed.
+        prefs.showClock = true
+        XCTAssertEqual(SystemSaverClock.apply(policy: .never, sceneHasClock: false, store: store), .leftAlone)
+        XCTAssertTrue(prefs.writes.isEmpty)
+    }
+
+    func testLockScreenHalfFollowsTheOptOut() {
+        XCTAssertEqual(SystemSaverClock.lockScreenPolicy(.always, coversLockScreen: true), .always)
+        XCTAssertEqual(SystemSaverClock.lockScreenPolicy(.always, coversLockScreen: false), .never,
+                       "opting the lock screen out also restores it")
+        XCTAssertEqual(SystemSaverClock.lockScreenPolicy(.never, coversLockScreen: true), .never)
     }
 
     func testRestoreTokens() {

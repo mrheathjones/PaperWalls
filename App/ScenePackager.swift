@@ -38,6 +38,8 @@ enum ScenePackager {
         var enforcedSaver: SceneBundleSpec?
         /// What to do about macOS's large clock over the saver.
         var systemClock: DeploymentEnforcement.ClockDelivery = .leave
+        /// With a clock delivery: also the lock screen half.
+        var includeLockScreen = true
         var organization: String
     }
 
@@ -170,23 +172,27 @@ enum ScenePackager {
         if let saver = request.enforcedSaver {
             let profile = DeploymentEnforcement.profile(bundle: saver, packageIdentifier: request.package.identifier,
                                                         organization: request.organization,
-                                                        hideSystemClock: hideClockViaPaperWalls)
+                                                        hideSystemClock: hideClockViaPaperWalls,
+                                                        includeLockScreen: request.includeLockScreen)
             try writeProfile(profile, named: "\(saver.title) – Enforce Screen Saver.mobileconfig")
-            try Data(DeploymentEnforcement.managedJSON(bundle: saver, hideSystemClock: hideClockViaPaperWalls).utf8)
+            try Data(DeploymentEnforcement.managedJSON(bundle: saver, hideSystemClock: hideClockViaPaperWalls,
+                                                       includeLockScreen: request.includeLockScreen).utf8)
                 .write(to: enforce.appendingPathComponent("managed.json"))
             let lock = DeploymentEnforcement.lockProfile(bundle: saver, packageIdentifier: request.package.identifier,
                                                          organization: request.organization)
             try writeProfile(lock, named: "\(saver.title) – Lock Screen Saver.mobileconfig")
         } else if hideClockViaPaperWalls {
             let profile = DeploymentEnforcement.clockPolicyProfile(packageIdentifier: request.package.identifier,
-                                                                   organization: request.organization)
+                                                                   organization: request.organization,
+                                                                   includeLockScreen: request.includeLockScreen)
             try writeProfile(profile, named: "\(packageTitle) – PaperWalls Clock Policy.mobileconfig")
-            try Data(DeploymentEnforcement.clockPolicyManagedJSON().utf8)
+            try Data(DeploymentEnforcement.clockPolicyManagedJSON(includeLockScreen: request.includeLockScreen).utf8)
                 .write(to: enforce.appendingPathComponent("managed.json"))
         }
         if request.systemClock == .profile {
             let profile = DeploymentEnforcement.hideClockProfile(packageIdentifier: request.package.identifier,
-                                                                 organization: request.organization)
+                                                                 organization: request.organization,
+                                                                 includeLockScreen: request.includeLockScreen)
             try writeProfile(profile, named: "\(packageTitle) – Hide System Clock.mobileconfig")
         }
         try Data(deployNotes(request, includesMDM: !mdmItems.isEmpty).utf8)
@@ -289,19 +295,32 @@ enum ScenePackager {
             break
         case .profile:
             let name = SceneBundleSpec.sanitizedTitle(request.package.name)
+            let lockHalf = request.includeLockScreen
+                ? " and com.apple.loginwindow UsesLargeDateTime = false (the \"On Lock Screen\" half)"
+                : "; the lock screen half (com.apple.loginwindow UsesLargeDateTime) is left alone"
             notes += """
             SYSTEM CLOCK (Enforce/)
             macOS draws its own large clock over every screen saver when System Settings ›
             Wallpaper › Clock Appearance › "Show large clock" includes the screen saver — two
-            clocks, for a scene that draws one. "\(name) – Hide System Clock.mobileconfig"
-            forces com.apple.screensaver showClock = false (the "On Screen Saver" half of that
-            setting; the lock screen clock is untouched). Users can't turn it back on while
-            the profile is installed. Nothing from PaperWalls is needed on the Mac. If your
-            own screen saver profile already sets showClock, use that instead.
+            clocks, for a scene that draws one — and again on the lock screen, where the saver
+            keeps playing behind it. "\(name) – Hide System Clock.mobileconfig" forces
+            com.apple.screensaver showClock = false (the "On Screen Saver" half)\(lockHalf). Users
+            can't turn it back on while the profile is installed. Nothing from PaperWalls is
+            needed on the Mac. If your own screen saver or login window profile already sets
+            these keys, use that instead.
 
 
             """
         case .paperWalls:
+            let extraKey = request.includeLockScreen ? "" : " and hideSystemSaverClockOnLockScreen = false"
+            let lockNote = request.includeLockScreen
+                ? """
+                The lock screen half (com.apple.loginwindow UsesLargeDateTime) is system-level and
+                            needs root: the PaperWalls pkg postinstall applies it, and so does
+                            'paperwallscli screensaver enforce' run as root (a Jamf policy) or Settings ›
+                            Screen Saver › Apply as Admin.
+                """
+                : "The lock screen clock is left alone."
             let carrier = request.enforcedSaver != nil
                 ? "the SELECT profile and managed.json above also set"
                 : "\"\(SceneBundleSpec.sanitizedTitle(request.package.name)) – PaperWalls Clock Policy.mobileconfig\" (or managed.json in /Library/Application Support/PaperWalls/ on Macs without MDM) sets"
@@ -309,12 +328,14 @@ enum ScenePackager {
             SYSTEM CLOCK (Enforce/)
             macOS draws its own large clock over every screen saver when System Settings ›
             Wallpaper › Clock Appearance › "Show large clock" includes the screen saver — two
-            clocks, for a scene that draws one. Here \(carrier)
-            hideSystemSaverClock = whenSceneHasClock. The PaperWalls manage LaunchAgent (and
-            the app) then turns macOS's clock off while a PaperWalls saver whose scene draws a
-            clock is the selected one, and puts the user's setting back when it isn't. The
-            key is honored by PaperWalls 0.8 or later; a configuration profile that forces
-            showClock wins over it. To apply at once, run as the user:
+            clocks, for a scene that draws one — and again on the lock screen, where the saver
+            keeps playing behind it. Here \(carrier)
+            hideSystemSaverClock = whenSceneHasClock\(extraKey). The PaperWalls manage LaunchAgent (and
+            the app) then turns macOS's screen saver clock off while a PaperWalls saver whose
+            scene draws a clock is the selected one, and puts the user's setting back when it
+            isn't. \(lockNote) The keys are honored by PaperWalls 0.8 or
+            later; a configuration profile that forces showClock or UsesLargeDateTime wins over
+            them. To apply the user half at once, run as the user:
               paperwallscli screensaver enforce
 
 

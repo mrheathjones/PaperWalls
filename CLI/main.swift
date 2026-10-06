@@ -67,7 +67,9 @@ func printUsage(toStandardError: Bool) {
       \(toolName) screensaver enforce
           Select the saver in enforcedScreenSaverPath for every Space and
           display now, and apply hideSystemSaverClock (manage also does
-          both). Run as the logged-in user.
+          both). Run as the logged-in user. Run as root (sudo, a Jamf
+          policy, the pkg postinstall) it applies only the lock screen half
+          of the clock policy, which is system-level, for the console user.
 
       \(toolName) version
       \(toolName) help
@@ -218,9 +220,14 @@ func describe(_ snapshot: ScreenSaverSnapshot) -> String {
 /// `screensaver enforce`: apply enforcedScreenSaverPath now, with an exit
 /// code a Jamf policy can act on.
 func runScreenSaverEnforce() -> Never {
-    // The store is per user; as root this would edit root's.
-    guard getuid() != 0 else {
-        fail("screensaver enforce must run as the logged-in user, not root", code: ExitCode.refusedRoot)
+    // The store and the saver clock are per user; as root this would edit
+    // root's. Root is what the lock screen half needs, though — so as root
+    // do only that, judging the scene by the console user's.
+    if getuid() == 0 {
+        let applied = SystemSaverClock.applyFromPreferences(saverStore: nil, home: consoleUserHome())
+        print("running as root: the screen saver selection and the saver clock are per user — run as the user for those")
+        reportLockScreenClock(applied)
+        exit(ExitCode.ok)
     }
     let path = (ManagedPreferences.string(.enforcedScreenSaverPath) ?? "").trimmingCharacters(in: .whitespaces)
     guard !path.isEmpty else {
@@ -244,19 +251,44 @@ func runScreenSaverEnforce() -> Never {
 }
 
 /// `hideSystemSaverClock`: hide (or restore) macOS's large clock over the
-/// saver — see `SystemSaverClock`. Quiet unless something changed.
+/// saver and on the lock screen — see `SystemSaverClock`. Quiet unless
+/// something changed or is owed.
 func applySystemSaverClockPolicy() {
-    let (policy, outcome) = SystemSaverClock.applyFromPreferences()
+    let applied = SystemSaverClock.applyFromPreferences()
+    if let saver = applied.saver {
+        reportClock(saver, half: "over the screen saver", policy: applied.policy)
+    }
+    reportLockScreenClock(applied)
+}
+
+func reportLockScreenClock(_ applied: SystemSaverClock.Applied) {
+    reportClock(applied.lockScreen, half: "on the lock screen",
+                policy: SystemSaverClock.lockScreenPolicy(applied.policy, coversLockScreen: SystemSaverClock.coversLockScreen))
+}
+
+func reportClock(_ outcome: SystemSaverClock.Outcome, half: String, policy: SystemSaverClockPolicy) {
     switch outcome {
     case .hidden:
-        print("\(toolName): macOS clock over the screen saver → hidden (hideSystemSaverClock = \(policy.rawValue))")
+        print("\(toolName): macOS clock \(half) → hidden (hideSystemSaverClock = \(policy.rawValue))")
     case .restored(let previous):
-        print("\(toolName): macOS clock over the screen saver → restored to \(SystemSaverClock.restoreToken(for: previous))")
+        print("\(toolName): macOS clock \(half) → restored to \(SystemSaverClock.restoreToken(for: previous))")
     case .managedByProfile where policy != .never:
-        print("\(toolName): macOS clock is forced by a configuration profile; hideSystemSaverClock not applied")
+        print("\(toolName): macOS clock \(half) is forced by a configuration profile; hideSystemSaverClock not applied")
+    case .needsAdmin:
+        print("\(toolName): macOS clock \(half) needs an administrator: run 'sudo \(toolName) screensaver enforce'")
     case .managedByProfile, .alreadyHidden, .leftAlone:
         break
     }
+}
+
+/// The console user's home, for root runs (their wallpaper store and
+/// published snapshot say which scene is on screen).
+func consoleUserHome() -> URL {
+    if let name = (try? FileManager.default.attributesOfItem(atPath: "/dev/console"))?[.ownerAccountName] as? String,
+       let entry = getpwnam(name), let directory = entry.pointee.pw_dir {
+        return URL(fileURLWithPath: String(cString: directory), isDirectory: true)
+    }
+    return ScreenSaverSnapshot.realHomeDirectory
 }
 
 /// Which saver macOS has selected (macOS 14+ wallpaper store), and whether
@@ -318,6 +350,7 @@ func runScreenSaver() -> Never {
     }
     printScreenSaverSelection()
     print(SystemSaverClock.statusDescription())
+    print(SystemSaverClock.lockScreenStatusDescription())
     exit(ExitCode.ok)
 }
 

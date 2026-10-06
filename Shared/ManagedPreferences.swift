@@ -51,6 +51,7 @@ enum ManagedPreferenceKey: String, CaseIterable {
     case allowedScreenSaverSceneIDs     // optional allow-list for the active scene
     case enforcedScreenSaverPath        // saver to select for every Space/display (manage enforces)
     case hideSystemSaverClock           // never | whenSceneHasClock | always: macOS's large clock over the saver
+    case hideSystemSaverClockOnLockScreen  // bool, default true: the policy also covers the lock screen (needs root)
     case brandAssetsFolderPath          // org logos/icons folder, shown as managed Brand Assets in Studio
 
     // Admin tools.

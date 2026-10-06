@@ -257,6 +257,17 @@ struct SettingsContent: View {
                                      managedKey: .hideSystemSaverClock,
                                      options: SystemSaverClockPolicy.allCases.map { ($0.displayName, $0) },
                                      selection: $prefs.hideSystemSaverClock)
+                    if prefs.hideSystemSaverClock != .never {
+                        SettingsDivider()
+                        SettingsRow(title: "Also on the lock screen",
+                                    subtitle: "The saver keeps playing behind the lock screen, where macOS draws its clock again. This half is a system setting, so changing it needs an administrator",
+                                    managedKey: .hideSystemSaverClockOnLockScreen) {
+                            SettingsToggle(isOn: $prefs.hideSystemSaverClockOnLockScreen,
+                                           disabled: prefs.isForced(.hideSystemSaverClockOnLockScreen))
+                        }
+                        SettingsDivider()
+                        LockScreenClockRow()
+                    }
                     SettingsDivider()
                     SettingsRow(title: "Show ScreenSavers page",
                                 subtitle: "Your screen saver library, in the sidebar's Library section",
@@ -809,6 +820,78 @@ struct SettingsChipsRow<Value: Hashable>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
+    }
+}
+
+/// Settings › Screen Saver: where the lock screen half of the clock policy
+/// stands. It's a system-level setting the app can't write, so when a
+/// change is owed the row offers an administrator prompt that runs the
+/// installed CLI as root (the same thing a Jamf policy or the pkg
+/// postinstall does).
+struct LockScreenClockRow: View {
+    @EnvironmentObject private var prefs: PreferencesStore
+    @State private var outcome: SystemSaverClock.Outcome = .leftAlone
+    @State private var shown = true
+    @State private var hiddenByPaperWalls = false
+    @State private var forced = false
+    @State private var failure: String?
+
+    static let cliPath = "/usr/local/bin/paperwallscli"
+
+    private var cliInstalled: Bool { FileManager.default.isExecutableFile(atPath: Self.cliPath) }
+
+    var body: some View {
+        SettingsRow(title: "Lock screen clock", subtitle: subtitle) {
+            if outcome == .needsAdmin, cliInstalled {
+                Button("Apply as Admin…", action: applyAsAdmin)
+            }
+        }
+        .onAppear(perform: refresh)
+        .onChange(of: prefs.hideSystemSaverClock) { _ in refresh() }
+        .onChange(of: prefs.hideSystemSaverClockOnLockScreen) { _ in refresh() }
+    }
+
+    private var subtitle: String {
+        var text: String
+        if forced {
+            text = "Controlled by a configuration profile"
+        } else if hiddenByPaperWalls {
+            text = "Hidden by PaperWalls"
+        } else if !shown {
+            text = "Hidden (set in System Settings)"
+        } else {
+            text = "Shown"
+        }
+        if outcome == .needsAdmin {
+            let verb = shown ? "Hiding" : "Restoring"
+            text += cliInstalled
+                ? ". \(verb) it needs an administrator"
+                : ". \(verb) it needs an administrator: run “sudo paperwallscli screensaver enforce” (the CLI ships in the PaperWalls pkg)"
+        }
+        if let failure {
+            text += ". \(failure)"
+        }
+        return text
+    }
+
+    private func refresh() {
+        let store = SystemSaverClock.liveLockScreen
+        forced = store.isForced()
+        shown = store.showClock() ?? true
+        hiddenByPaperWalls = !shown && store.restoreValue() != nil
+        // Decides only: this process can't write the layer.
+        outcome = SystemSaverClock.applyFromPreferences(saverStore: nil).lockScreen
+    }
+
+    private func applyAsAdmin() {
+        failure = nil
+        let source = "do shell script \"\(Self.cliPath) screensaver enforce\" with administrator privileges"
+        var error: NSDictionary?
+        _ = NSAppleScript(source: source)?.executeAndReturnError(&error)
+        if let error, (error[NSAppleScript.errorNumber] as? Int) != -128 {   // -128: the user cancelled
+            failure = error[NSAppleScript.errorMessage] as? String ?? "The administrator prompt failed"
+        }
+        refresh()
     }
 }
 
