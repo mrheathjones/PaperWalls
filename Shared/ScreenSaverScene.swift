@@ -298,22 +298,33 @@ struct SceneFont: Codable, Equatable {
         }
     }
 
+    /// Thin to heavy, in slider order. The Studio weight slider steps
+    /// through these; scenes saved before the outer weights existed use
+    /// the middle five.
     enum Weight: String, Codable, CaseIterable, Identifiable {
+        case ultraLight
+        case thin
         case light
         case regular
         case medium
         case semibold
         case bold
+        case heavy
+        case black
 
         var id: String { rawValue }
 
         var displayName: String {
             switch self {
+            case .ultraLight: return "Ultralight"
+            case .thin: return "Thin"
             case .light: return "Light"
             case .regular: return "Regular"
             case .medium: return "Medium"
             case .semibold: return "Semibold"
             case .bold: return "Bold"
+            case .heavy: return "Heavy"
+            case .black: return "Black"
             }
         }
     }

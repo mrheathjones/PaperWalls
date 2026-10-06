@@ -26,25 +26,31 @@ struct SceneComposer: View {
     @State private var savedDesign: StoredWallpaperDesign?
     @State private var isSaving = false
 
+    /// The Name field and the Layers list below it share this width.
+    private static let sidebarWidth: CGFloat = 300
+
     var body: some View {
-        // The preview stays put; only the edit form below it scrolls, so
-        // every change is visible as it's made.
+        // Layers sit under the Name field; the preview stays put beside
+        // them and only the edit form below it scrolls, so every change
+        // is visible as it's made.
         GeometryReader { proxy in
             VStack(alignment: .leading, spacing: 16) {
                 toolbar
-                preview
-                    .frame(height: min(400, max(180, proxy.size.height * 0.42)))
-                    .frame(maxWidth: .infinity)
                 HStack(alignment: .top, spacing: 20) {
                     ScrollView {
                         layersPanel
                             .padding(.bottom, 20)
                     }
-                    .frame(width: 300)
-                    ScrollView {
-                        controlsPanel
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                            .padding(.bottom, 20)
+                    .frame(width: Self.sidebarWidth)
+                    VStack(spacing: 16) {
+                        preview
+                            .frame(height: min(400, max(180, proxy.size.height * 0.42)))
+                            .frame(maxWidth: .infinity)
+                        ScrollView {
+                            controlsPanel
+                                .frame(maxWidth: .infinity, alignment: .topLeading)
+                                .padding(.bottom, 20)
+                        }
                     }
                 }
             }
@@ -104,7 +110,7 @@ struct SceneComposer: View {
                 .font(.system(size: 16, weight: .semibold))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .frame(width: 280)
+                .frame(width: Self.sidebarWidth)
                 .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)

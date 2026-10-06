@@ -69,7 +69,7 @@ struct SceneGenerator: Equatable {
     laptopcomputer, building.2, person.crop.circle, checkmark.circle, exclamationmark.triangle.
     Text and icon colors are colorHex (light colors on dark backgrounds); shadow adds a soft drop \
     shadow for legibility. fontDesign is system, rounded, serif or monospaced; fontWeight is \
-    light, regular, medium, semibold or bold.
+    ultraLight, thin, light, regular, medium, semibold, bold, heavy or black.
 
     Motion per layer: "still", "bounce" (DVD-logo style, changesColorOnBounce steps through \
     colors on each edge hit), "drift" (slow wander), "float" (gentle up-and-down), "pulse" \

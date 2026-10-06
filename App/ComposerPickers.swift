@@ -8,9 +8,13 @@ import os
 // MARK: - Font picker
 
 /// Shows the current font and opens a searchable list of the system font
-/// styles plus every installed family (what Font Book lists).
+/// styles plus every installed family (what Font Book lists). With a
+/// `sample` ("12" for a clock), each row also shows that text set in the
+/// font at the current weight, so the list previews what the layer will
+/// look like; without one, the font's name is set in the font itself.
 struct FontFamilyPicker: View {
     @Binding var font: SceneFont
+    var sample: String?
 
     @State private var isPresented = false
     @State private var query = ""
@@ -59,7 +63,7 @@ struct FontFamilyPicker: View {
                         sectionLabel("System")
                         ForEach(systemDesigns) { design in
                             row(title: "System \(design.displayName)",
-                                font: .system(size: 15, design: design.fontDesign),
+                                font: SceneFont(design: design, weight: font.weight, family: nil),
                                 isSelected: font.family == nil && font.design == design) {
                                 font.family = nil
                                 font.design = design
@@ -70,7 +74,7 @@ struct FontFamilyPicker: View {
                         sectionLabel("Installed Fonts")
                         ForEach(families, id: \.self) { family in
                             row(title: family,
-                                font: .custom(family, fixedSize: 15),
+                                font: SceneFont(design: font.design, weight: font.weight, family: family),
                                 isSelected: font.family == family) {
                                 font.family = family
                             }
@@ -114,7 +118,7 @@ struct FontFamilyPicker: View {
             .padding(.bottom, 4)
     }
 
-    private func row(title: String, font rowFont: Font, isSelected: Bool,
+    private func row(title: String, font rowFont: SceneFont, isSelected: Bool,
                      action: @escaping () -> Void) -> some View {
         Button {
             action()
@@ -122,9 +126,16 @@ struct FontFamilyPicker: View {
         } label: {
             HStack {
                 Text(title)
-                    .font(rowFont)
+                    .font(sample == nil ? rowFont.font(size: 15) : Theme.body)
                     .lineLimit(1)
                 Spacer(minLength: 8)
+                if let sample {
+                    Text(sample)
+                        .font(rowFont.font(size: 22))
+                        .lineLimit(1)
+                        .fixedSize()
+                        .accessibilityHidden(true)
+                }
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 12, weight: .bold))

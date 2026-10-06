@@ -188,8 +188,11 @@ struct SceneLayerControls: View {
     @State private var showsAdvanced = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        // The sections sit side by side so the whole form is visible
+        // without scrolling past the preview.
+        HStack(alignment: .top, spacing: 18) {
             contentSection
+                .frame(maxWidth: .infinity, alignment: .topLeading)
 
             ComposerSection(title: "Size & Position") {
                 ComposerSlider(title: "Size", value: $layer.size, range: 0.02...0.4,
@@ -203,7 +206,10 @@ struct SceneLayerControls: View {
                 SettingsDivider()
                 ComposerSlider(title: "Opacity", value: $layer.opacity,
                                lowLabel: "Faint", highLabel: "Solid")
+                SettingsDivider()
+                advanced
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
 
             if kind == .screenSaver {
                 ComposerSection(title: "Motion") {
@@ -233,29 +239,45 @@ struct SceneLayerControls: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-
-            DisclosureGroup("Advanced", isExpanded: $showsAdvanced) {
-                SettingsCard {
-                    ComposerPercentField(title: "Size (of screen height)", value: $layer.size,
-                                         range: SceneLayer.sizeRange)
-                    SettingsDivider()
-                    ComposerPercentField(title: "Across", value: $layer.position.x)
-                    SettingsDivider()
-                    ComposerPercentField(title: "Down", value: $layer.position.y)
-                    SettingsDivider()
-                    ComposerPercentField(title: "Opacity", value: $layer.opacity)
-                    if kind == .screenSaver {
-                        SettingsDivider()
-                        ComposerPercentField(title: "Speed", value: $layer.motion.speed)
-                        SettingsDivider()
-                        ComposerPercentField(title: "Motion strength", value: $layer.motion.intensity)
-                    }
-                }
-                .padding(.top, 8)
-            }
-            .font(.system(size: 14, weight: .medium))
         }
+    }
+
+    /// Exact numbers for the sliders above, tucked at the bottom of the
+    /// Size & Position card.
+    private var advanced: some View {
+        DisclosureGroup(isExpanded: $showsAdvanced) {
+            VStack(spacing: 0) {
+                ComposerPercentField(title: "Size (of screen height)", value: $layer.size,
+                                     range: SceneLayer.sizeRange)
+                SettingsDivider()
+                ComposerPercentField(title: "Across", value: $layer.position.x)
+                SettingsDivider()
+                ComposerPercentField(title: "Down", value: $layer.position.y)
+                SettingsDivider()
+                ComposerPercentField(title: "Opacity", value: $layer.opacity)
+                if kind == .screenSaver {
+                    SettingsDivider()
+                    ComposerPercentField(title: "Speed", value: $layer.motion.speed)
+                    SettingsDivider()
+                    ComposerPercentField(title: "Motion strength", value: $layer.motion.intensity)
+                }
+            }
+            .padding(.horizontal, -16)
+            .padding(.top, 4)
+        } label: {
+            // The whole title toggles it, not just the chevron.
+            Button("Advanced") {
+                showsAdvanced.toggle()
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .font(.system(size: 14, weight: .medium))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     /// Bounce covers the whole screen and Still doesn't move — neither
@@ -301,21 +323,45 @@ struct SceneLayerControls: View {
 
 struct SceneFontRows: View {
     @Binding var font: SceneFont
+    /// Text the font list previews each font with ("12" for a clock).
+    var sample: String?
 
     var body: some View {
         ComposerRow(title: "Font") {
-            FontFamilyPicker(font: $font)
+            FontFamilyPicker(font: $font, sample: sample)
         }
         SettingsDivider()
+        // Thin → heavy, one notch per weight, like the lock-screen clock's
+        // weight slider. The Font chip above is set in the chosen weight,
+        // so the slider's effect shows as it's dragged.
         ComposerRow(title: "Weight") {
-            Picker("Weight", selection: $font.weight) {
-                ForEach(SceneFont.Weight.allCases) { weight in
-                    Text(weight.displayName).tag(weight)
-                }
+            HStack(spacing: 8) {
+                Text("Thin")
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
+                Slider(value: weightIndex, in: 0...Double(SceneFont.Weight.allCases.count - 1), step: 1)
+                    .frame(minWidth: 140, maxWidth: 240)
+                    .tint(Theme.accent)
+                    .help(font.weight.displayName)
+                    .accessibilityLabel("Weight")
+                    .accessibilityValue(font.weight.displayName)
+                Text("Heavy")
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
             }
-            .labelsHidden()
-            .fixedSize()
         }
+    }
+
+    private var weightIndex: Binding<Double> {
+        let weights = SceneFont.Weight.allCases
+        return Binding(
+            get: { Double(weights.firstIndex(of: font.weight) ?? 0) },
+            set: { value in
+                let index = min(max(Int(value.rounded()), 0), weights.count - 1)
+                if weights[index] != font.weight {
+                    font.weight = weights[index]
+                }
+            })
     }
 }
 
@@ -336,7 +382,7 @@ struct ClockLayerControls: View {
                 SettingsToggle(isOn: $clock.showsDate)
             }
             SettingsDivider()
-            SceneFontRows(font: $clock.font)
+            SceneFontRows(font: $clock.font, sample: "12")
             SettingsDivider()
             ComposerColorRow(title: "Color", hex: $clock.colorHex)
             SettingsDivider()
@@ -357,7 +403,10 @@ struct TextLayerControls: View {
                     segmentRow(index: index, segment: segment)
                 }
                 // Live values are inserted with buttons — never typed.
-                HStack(spacing: 6) {
+                // They wrap, since the Text card shares the row with
+                // Size & Position and Motion.
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 124), spacing: 6, alignment: .leading)],
+                          alignment: .leading, spacing: 6) {
                     Button("+ Text") {
                         text.segments.append(.text(""))
                     }
@@ -582,7 +631,7 @@ struct SceneBackgroundControls: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        HStack(alignment: .top, spacing: 18) {
             if prefs.aiPolicy.offersGeneration {
                 ComposerSection(title: "AI Prompt") {
                     Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at \(kind == .wallpaper ? "this wallpaper's" : "your display's") shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
@@ -597,6 +646,7 @@ struct SceneBackgroundControls: View {
                         background.treatment.scaleMode = .fitBlur
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
 
             ComposerSection(title: "Background") {
@@ -623,6 +673,7 @@ struct SceneBackgroundControls: View {
                         Text(importError ?? "")
                     }
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
 
             if usesImage {
                 ComposerSection(title: "Treatment") {
@@ -660,6 +711,7 @@ struct SceneBackgroundControls: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
     }

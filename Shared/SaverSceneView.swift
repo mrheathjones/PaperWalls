@@ -447,32 +447,44 @@ extension SceneFont.Design {
 extension SceneFont.Weight {
     var fontWeight: Font.Weight {
         switch self {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
         case .light: return .light
         case .regular: return .regular
         case .medium: return .medium
         case .semibold: return .semibold
         case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
         }
     }
 
     /// NSFontManager's 0–15 scale (5 is regular, 9 is bold).
     var fontManagerWeight: Int {
         switch self {
+        case .ultraLight: return 1
+        case .thin: return 2
         case .light: return 3
         case .regular: return 5
         case .medium: return 6
         case .semibold: return 8
         case .bold: return 9
+        case .heavy: return 11
+        case .black: return 12
         }
     }
 
     var nsFontWeight: NSFont.Weight {
         switch self {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
         case .light: return .light
         case .regular: return .regular
         case .medium: return .medium
         case .semibold: return .semibold
         case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
         }
     }
 }
