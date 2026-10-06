@@ -29,6 +29,8 @@ Package payload:
 | `/usr/local/bin/paperwallscli` | CLI (same rules and preferences as the app) |
 | `/Library/LaunchAgents/com.herojoneslabs.paperwalls.manage.plist` | Optional: runs `paperwallscli manage` at login + hourly so managed selections converge without the app running |
 | `/Library/LaunchAgents/com.herojoneslabs.paperwalls.watch.plist` | Optional (off by default): the Tier-3 enforcement watcher — see §5 |
+| `/Library/LaunchAgents/com.herojoneslabs.paperwalls.saverclock.plist` | Optional (on by default): the clock watcher for the screen saver half of `hideSystemSaverClock` — see §12 |
+| `/Library/LaunchDaemons/com.herojoneslabs.paperwalls.lockscreenclock.plist` | Optional (on by default): the root clock watcher for the lock screen half — see §12 |
 | `/Library/Screen Savers/PaperWalls.saver` | Optional (on by default): the screen saver — see §12 |
 
 A postinstall script bootstraps the included LaunchAgent(s) into the console
@@ -266,6 +268,8 @@ paperwallscli watch [--interval s]      Tier-3 enforcement watcher (min 5s, defa
 paperwallscli screensaver               print what the screen saver will show + macOS's clock state (read-only)
 paperwallscli screensaver enforce       select enforcedScreenSaverPath for every Space/display + apply hideSystemSaverClock now
                                         (as the user; as root — sudo, a Jamf policy — only the lock screen half of the clock policy)
+paperwallscli screensaver clock [--watch]  apply hideSystemSaverClock now (user: saver half; root: lock screen half);
+                                        --watch stays resident and re-applies on every System Settings change
 paperwallscli version | help
 ```
 
@@ -584,6 +588,16 @@ and the profile delivery are unverified as of 0.8. Studio › Package's **macOS
 clock over the saver** option generates either delivery (see Packaging
 below); on the reference `com.herojoneslabs.paperwalls.screensaver.mobileconfig`
 the keys are shown commented out.
+
+**Keeping it off.** With the PaperWalls delivery, a user can turn a clock
+back on in System Settings › Wallpaper (or Lock Screen) › Clock Appearance.
+Three ways to stop that, usable together:
+
+| Option | How | Notes |
+|---|---|---|
+| Lock the keys | Deploy the *Profile: always off* delivery (forced `showClock` / `UsesLargeDateTime`) | The real lock: System Settings snaps back. Needs no PaperWalls on the Mac |
+| Clock watchers | The PaperWalls pkg installs `com.herojoneslabs.paperwalls.saverclock` (LaunchAgent, user) and `com.herojoneslabs.paperwalls.lockscreenclock` (LaunchDaemon, root), both running `paperwallscli screensaver clock --watch` | Reversion, not prevention: cfprefsd replaces the plist files atomically, so a directory watch on `~/Library/Preferences/ByHost`, the wallpaper store and `/Library/Preferences` re-applies the policy within about a second of a change (plus a 5-minute safety sweep). Both idle when the policy is `never`. Set `INSTALL_CLOCK_WATCHERS=false` in `build-pkg.sh` to leave them out |
+| Hide the panes | A System Settings restrictions payload (`com.apple.systempreferences` `DisabledPreferencePanes`) listing `com.apple.Wallpaper-Settings.extension` and `com.apple.Lock-Screen-Settings.extension` | Removes the Clock Appearance popover from both panes, and the rest of those panes with it — fine when PaperWalls is the only sanctioned way to pick wallpapers and savers |
 
 The saver's tile in System Settings is a fixed image shipped inside the
 bundle (a clock on a coral gradient), not a live view of the active scene.

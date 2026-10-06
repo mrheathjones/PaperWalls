@@ -81,6 +81,7 @@ paperwallscli set x.jpg --all-screens
 paperwallscli manage                 # apply MDM/user preferences
 paperwallscli screensaver            # print what the screen saver will show + macOS's clock state (read-only)
 paperwallscli screensaver enforce    # select enforcedScreenSaverPath everywhere + apply hideSystemSaverClock now (as the user; as root: the lock screen half only)
+paperwallscli screensaver clock --watch  # stay resident and re-apply hideSystemSaverClock whenever System Settings changes it (the pkg's clock watchers)
 paperwallscli version
 paperwallscli help
 ```

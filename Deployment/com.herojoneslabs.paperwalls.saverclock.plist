@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Clock watcher (Admin Guide §12). Per-user LaunchAgent — install to /Library/LaunchAgents/. Runs as the logged-in user and re-applies the screen saver half of hideSystemSaverClock (com.apple.screensaver showClock) the moment System Settings turns the clock back on. Idles when the policy is never.
+	     Reversion, not prevention: a forced profile is the lock. -->
+	<key>Label</key>
+	<string>com.herojoneslabs.paperwalls.saverclock</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/paperwallscli</string>
+		<string>screensaver</string>
+		<string>clock</string>
+		<string>--watch</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string></dict>
+</plist>

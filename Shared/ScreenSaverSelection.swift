@@ -601,6 +601,24 @@ enum SystemSaverClock {
                               sceneHasClock: hasClock, store: lockScreenStore))
     }
 
+    /// What `paperwallscli screensaver clock --watch` keeps an eye on. The
+    /// keys live in plist files cfprefsd replaces atomically, so a directory
+    /// watch catches every System Settings change without polling. As the
+    /// user: the ByHost prefs (showClock), the wallpaper store (which saver
+    /// is selected) and the user's prefs folder (the policy itself). As
+    /// root: /Library/Preferences (UsesLargeDateTime) and the managed.json
+    /// folder.
+    static func watchedDirectories(asRoot: Bool, home: URL) -> [String] {
+        if asRoot {
+            return ["/Library/Preferences", ManagedPreferences.localConfigDirectory]
+        }
+        return [
+            home.appendingPathComponent("Library/Preferences/ByHost").path,
+            ScreenSaverSelection.storeURL(inHome: home).deletingLastPathComponent().path,
+            home.appendingPathComponent("Library/Preferences").path,
+        ]
+    }
+
     /// One line per half for `paperwallscli screensaver` and Settings.
     static func statusDescription(store: Store = live) -> String {
         describe(half: "macOS clock over the screen saver", store: store, policy: currentPolicy)

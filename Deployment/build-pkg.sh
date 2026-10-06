@@ -12,6 +12,8 @@
 #   /usr/local/bin/paperwallscli
 #   /Library/LaunchAgents/com.herojoneslabs.paperwalls.manage.plist   (optional)
 #   /Library/LaunchAgents/com.herojoneslabs.paperwalls.watch.plist    (optional, Tier-3 fleets)
+#   /Library/LaunchAgents/com.herojoneslabs.paperwalls.saverclock.plist      (optional: clock watchers,
+#   /Library/LaunchDaemons/com.herojoneslabs.paperwalls.lockscreenclock.plist  Admin Guide §12)
 #   /Library/Screen Savers/PaperWalls.saver                           (optional, spec §10)
 # A postinstall script bootstraps the LaunchAgent(s) into the console user's
 # gui domain so they start converging without a logout/login, and restarts the
@@ -56,6 +58,14 @@ INSTALL_LAUNCHAGENT=true
 # every other mode, but there's no reason to run it elsewhere). Never
 # combine with the Tier-2 desktop-override profile.
 INSTALL_WATCH_AGENT=false
+
+# Include the clock watchers (Admin Guide §12): a per-user LaunchAgent and a
+# root LaunchDaemon running `paperwallscli screensaver clock --watch`, which
+# re-apply hideSystemSaverClock (screen saver half / lock screen half) the
+# moment System Settings turns a clock back on. Both idle when the policy is
+# `never`, so leaving them resident fleet-wide is cheap. Set false if the
+# clock is locked by profile instead.
+INSTALL_CLOCK_WATCHERS=true
 
 # Include the screen saver (spec §10): PaperWalls.saver → /Library/Screen Savers.
 # It shows the scene chosen on the app's ScreenSavers page (or forced by
@@ -174,6 +184,12 @@ if [[ "$INSTALL_WATCH_AGENT" == "true" && ! -f "$WATCH_PLIST_SRC" ]]
 then
     die "watch LaunchAgent plist not found: $WATCH_PLIST_SRC (set INSTALL_WATCH_AGENT=false to skip)"
 fi
+SAVERCLOCK_PLIST_SRC="$PROJECT_ROOT/Deployment/com.herojoneslabs.paperwalls.saverclock.plist"
+LOCKSCREENCLOCK_PLIST_SRC="$PROJECT_ROOT/Deployment/com.herojoneslabs.paperwalls.lockscreenclock.plist"
+if [[ "$INSTALL_CLOCK_WATCHERS" == "true" && ( ! -f "$SAVERCLOCK_PLIST_SRC" || ! -f "$LOCKSCREENCLOCK_PLIST_SRC" ) ]]
+then
+    die "clock watcher plists not found next to $WATCH_PLIST_SRC (set INSTALL_CLOCK_WATCHERS=false to skip)"
+fi
 
 # ---------------------------------------------------------------------------
 # Validate signing/notarization config early
@@ -256,6 +272,7 @@ cat <<EOF
   CLI     : $CLI_PRODUCT_NAME → /usr/local/bin
   Agent   : $([[ "$INSTALL_LAUNCHAGENT" == "true" ]] && echo "yes → /Library/LaunchAgents" || echo "no")
   Watcher : $([[ "$INSTALL_WATCH_AGENT" == "true" ]] && echo "yes → /Library/LaunchAgents (Tier 3)" || echo "no")
+  Clock   : $([[ "$INSTALL_CLOCK_WATCHERS" == "true" ]] && echo "yes → LaunchAgent + LaunchDaemon (clock watchers)" || echo "no")
   Saver   : $([[ "$INSTALL_SAVER" == "true" ]] && echo "$SAVER_PRODUCT_NAME → /Library/Screen Savers" || echo "no")
   Channel : $CHANNEL  →  version $FULL_VERSION  (build $BASE_BUILD)
   Output  : $PKG_PATH
@@ -359,6 +376,18 @@ then
         || die "LaunchAgent plist failed plutil -lint"
 fi
 
+if [[ "$INSTALL_CLOCK_WATCHERS" == "true" ]]
+then
+    mkdir -p "$STAGING/Library/LaunchAgents" "$STAGING/Library/LaunchDaemons"
+    cp "$SAVERCLOCK_PLIST_SRC" "$STAGING/Library/LaunchAgents/"
+    cp "$LOCKSCREENCLOCK_PLIST_SRC" "$STAGING/Library/LaunchDaemons/"
+    chmod 644 "$STAGING/Library/LaunchAgents/$(basename "$SAVERCLOCK_PLIST_SRC")" \
+              "$STAGING/Library/LaunchDaemons/$(basename "$LOCKSCREENCLOCK_PLIST_SRC")"
+    plutil -lint "$STAGING/Library/LaunchAgents/$(basename "$SAVERCLOCK_PLIST_SRC")" >/dev/null \
+        || die "clock LaunchAgent plist failed plutil -lint"
+    plutil -lint "$STAGING/Library/LaunchDaemons/$(basename "$LOCKSCREENCLOCK_PLIST_SRC")" >/dev/null \
+        || die "clock LaunchDaemon plist failed plutil -lint"
+fi
 if [[ "$INSTALL_WATCH_AGENT" == "true" ]]
 then
     mkdir -p "$STAGING/Library/LaunchAgents"
@@ -386,13 +415,16 @@ fi
 SCRIPTS_DIR="$WORK/scripts"
 mkdir -p "$SCRIPTS_DIR"
 HAS_POSTINSTALL=false
-if [[ "$INSTALL_LAUNCHAGENT" == "true" || "$INSTALL_WATCH_AGENT" == "true" || "$INSTALL_SAVER" == "true" ]]
+if [[ "$INSTALL_LAUNCHAGENT" == "true" || "$INSTALL_WATCH_AGENT" == "true" || "$INSTALL_SAVER" == "true" || "$INSTALL_CLOCK_WATCHERS" == "true" ]]
 then
     HAS_POSTINSTALL=true
     AGENT_NAMES=()
     [[ "$INSTALL_LAUNCHAGENT" == "true" ]] && AGENT_NAMES+=("$(basename "$AGENT_PLIST_SRC")")
     [[ "$INSTALL_WATCH_AGENT" == "true" ]] && AGENT_NAMES+=("$(basename "$WATCH_PLIST_SRC")")
+    [[ "$INSTALL_CLOCK_WATCHERS" == "true" ]] && AGENT_NAMES+=("$(basename "$SAVERCLOCK_PLIST_SRC")")
     AGENT_NAME_LIST="${AGENT_NAMES[*]:-}"
+    DAEMON_NAME_LIST=""
+    [[ "$INSTALL_CLOCK_WATCHERS" == "true" ]] && DAEMON_NAME_LIST="$(basename "$LOCKSCREENCLOCK_PLIST_SRC")"
     cat > "$SCRIPTS_DIR/postinstall" <<POSTINSTALL_EOF
 #!/bin/bash
 # postinstall — load the PaperWalls LaunchAgent(s) for the console user and
@@ -427,6 +459,15 @@ if [[ -x "/usr/local/bin/${CLI_PRODUCT_NAME}" ]]
 then
     "/usr/local/bin/${CLI_PRODUCT_NAME}" screensaver enforce >/dev/null 2>&1 || true
 fi
+
+# The clock watcher LaunchDaemon (system domain; the agent above went into
+# the console user's gui domain).
+for daemon_plist_name in ${DAEMON_NAME_LIST}
+do
+    daemon_plist="/Library/LaunchDaemons/\${daemon_plist_name}"
+    /bin/launchctl bootout system "\${daemon_plist}" 2>/dev/null || true
+    /bin/launchctl bootstrap system "\${daemon_plist}" 2>/dev/null || true
+done
 
 exit 0
 POSTINSTALL_EOF

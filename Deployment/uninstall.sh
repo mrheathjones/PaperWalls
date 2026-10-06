@@ -88,8 +88,12 @@ readonly SAVER_PATH="/Library/Screen Savers/PaperWalls.saver"
 readonly SAVER_HOST_PROCESS="legacyScreenSaver"
 readonly MANAGE_LABEL="com.herojoneslabs.paperwalls.manage"
 readonly WATCH_LABEL="com.herojoneslabs.paperwalls.watch"
+readonly SAVERCLOCK_LABEL="com.herojoneslabs.paperwalls.saverclock"
+readonly LOCKSCREENCLOCK_LABEL="com.herojoneslabs.paperwalls.lockscreenclock"
 readonly MANAGE_PLIST="/Library/LaunchAgents/${MANAGE_LABEL}.plist"
 readonly WATCH_PLIST="/Library/LaunchAgents/${WATCH_LABEL}.plist"
+readonly SAVERCLOCK_PLIST="/Library/LaunchAgents/${SAVERCLOCK_LABEL}.plist"
+readonly LOCKSCREENCLOCK_PLIST="/Library/LaunchDaemons/${LOCKSCREENCLOCK_LABEL}.plist"
 readonly MANAGE_TMP_LOG="/tmp/com.herojoneslabs.paperwalls.manage.log"
 
 # --- Per-user runtime data (created by the app, NOT by the pkg) -----
@@ -232,7 +236,7 @@ stop_and_unload_agents() {
     while read -r uid home
     do
         [[ -n "${uid}" ]] || continue
-        for label in "${MANAGE_LABEL}" "${WATCH_LABEL}"
+        for label in "${MANAGE_LABEL}" "${WATCH_LABEL}" "${SAVERCLOCK_LABEL}"
         do
             if "${LAUNCHCTL}" print "gui/${uid}/${label}" >/dev/null 2>&1
             then
@@ -241,6 +245,13 @@ stop_and_unload_agents() {
             fi
         done
     done < <(list_user_records)
+
+    # The clock LaunchDaemon lives in the system domain.
+    if "${LAUNCHCTL}" print "system/${LOCKSCREENCLOCK_LABEL}" >/dev/null 2>&1
+    then
+        log_info "Booting out ${LOCKSCREENCLOCK_LABEL} from the system domain"
+        "${LAUNCHCTL}" bootout "system/${LOCKSCREENCLOCK_LABEL}" 2>/dev/null || true
+    fi
 }
 
 # Stop any still-running processes (the app, and a detached watcher).
@@ -256,17 +267,23 @@ kill_running_processes() {
         log_info "Stopping running paperwallscli watch"
         "${PKILL}" -f "paperwallscli watch" 2>/dev/null || true
     fi
+
+    if "${PGREP}" -f "paperwallscli screensaver clock" >/dev/null 2>&1
+    then
+        log_info "Stopping running clock watchers"
+        "${PKILL}" -f "paperwallscli screensaver clock" 2>/dev/null || true
+    fi
 }
 
 # Remove the files the install .pkg placed on disk.
 remove_payload() {
     local target
 
-    for target in "${MANAGE_PLIST}" "${WATCH_PLIST}"
+    for target in "${MANAGE_PLIST}" "${WATCH_PLIST}" "${SAVERCLOCK_PLIST}" "${LOCKSCREENCLOCK_PLIST}"
     do
         if [[ -f "${target}" ]]
         then
-            log_info "Removing LaunchAgent: ${target}"
+            log_info "Removing launchd job: ${target}"
             "${RM}" -f "${target}"
         fi
     done

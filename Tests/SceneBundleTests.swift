@@ -582,6 +582,16 @@ final class SystemSaverClockTests: XCTestCase {
         XCTAssertNil(SystemSaverClock.resolve(key: "k", forcedValue: nil, userValue: nil, localDefaults: [:]))
     }
 
+    func testWatchedDirectoriesCoverTheKeysEachSideCanWrite() {
+        let home = URL(fileURLWithPath: "/Users/t", isDirectory: true)
+        let user = SystemSaverClock.watchedDirectories(asRoot: false, home: home)
+        XCTAssertEqual(user, ["/Users/t/Library/Preferences/ByHost",
+                              "/Users/t/Library/Application Support/com.apple.wallpaper/Store",
+                              "/Users/t/Library/Preferences"])
+        let root = SystemSaverClock.watchedDirectories(asRoot: true, home: home)
+        XCTAssertEqual(root, ["/Library/Preferences", "/Library/Application Support/PaperWalls"])
+    }
+
     func testLockScreenHalfFollowsTheOptOut() {
         XCTAssertEqual(SystemSaverClock.lockScreenPolicy(.always, coversLockScreen: true), .always)
         XCTAssertEqual(SystemSaverClock.lockScreenPolicy(.always, coversLockScreen: false), .never,

@@ -71,6 +71,13 @@ func printUsage(toStandardError: Bool) {
           policy, the pkg postinstall) it applies only the lock screen half
           of the clock policy, which is system-level, for the console user.
 
+      \(toolName) screensaver clock [--watch]
+          Apply hideSystemSaverClock now: as the user the screen saver half,
+          as root the lock screen half (for the console user). With --watch
+          stay resident and re-apply whenever System Settings changes the
+          keys — the clock LaunchAgent (user) and LaunchDaemon (root) in the
+          pkg run this.
+
       \(toolName) version
       \(toolName) help
 
@@ -298,6 +305,98 @@ func consoleUser() -> (name: String?, home: URL) {
         return (name, URL(fileURLWithPath: String(cString: directory), isDirectory: true))
     }
     return (nil, ScreenSaverSnapshot.realHomeDirectory)
+}
+
+/// `screensaver clock [--watch]`: the clock policy on its own. Runs as the
+/// user (screen saver half, plus a note when the lock screen half is owed)
+/// or as root (lock screen half, for the console user). `--watch` keeps the
+/// process resident: the settings are plist files cfprefsd replaces
+/// atomically, so a directory watch re-applies the policy the moment
+/// System Settings turns a clock back on. Reversion, not prevention — a
+/// forced profile is the lock; this is the next best thing.
+func runScreenSaverClock(_ arguments: [String]) -> Never {
+    let watch = arguments == ["--watch"]
+    guard arguments.isEmpty || watch else {
+        fail("usage: screensaver clock [--watch]", code: ExitCode.usage)
+    }
+    let asRoot = getuid() == 0
+    func applyOnce() {
+        ManagedPreferences.invalidateLocalConfigCache()
+        if asRoot {
+            let console = consoleUser()
+            let applied = SystemSaverClock.applyFromPreferences(saverStore: nil, home: console.home, user: console.name)
+            reportClock(applied.lockScreen, half: "on the lock screen",
+                        policy: SystemSaverClock.lockScreenPolicy(applied.policy,
+                                                                  coversLockScreen: SystemSaverClock.coversLockScreen(forUser: console.name)))
+        } else {
+            applySystemSaverClockPolicy()
+        }
+    }
+    applyOnce()
+    guard watch else { exit(ExitCode.ok) }
+
+    let directories = SystemSaverClock.watchedDirectories(asRoot: asRoot, home: ScreenSaverSnapshot.realHomeDirectory)
+    let watcher = SettingsFileWatcher(directories: directories, debounce: 1) { applyOnce() }
+    watcher.start()
+    // Safety net for anything the directory watch misses (a new console
+    // user, a managed.json dropped in later).
+    Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { _ in applyOnce() }
+    print("\(toolName): watching \(directories.joined(separator: ", ")) as \(asRoot ? "root" : "the user")")
+    RunLoop.main.run()
+    exit(ExitCode.ok)
+}
+
+/// Re-runs `onChange` (debounced) when anything in `directories` is
+/// written, renamed or removed. A directory that vanishes is re-opened.
+final class SettingsFileWatcher {
+    private let directories: [String]
+    private let debounce: TimeInterval
+    private let onChange: () -> Void
+    private let queue = DispatchQueue(label: "\(ManagedPreferences.domain).clockwatch")
+    private var sources: [String: DispatchSourceFileSystemObject] = [:]
+    private var pending: DispatchWorkItem?
+
+    init(directories: [String], debounce: TimeInterval, onChange: @escaping () -> Void) {
+        self.directories = directories
+        self.debounce = debounce
+        self.onChange = onChange
+    }
+
+    func start() {
+        queue.async { self.directories.forEach(self.open) }
+    }
+
+    /// On `queue`.
+    private func open(_ directory: String) {
+        sources[directory]?.cancel()
+        sources[directory] = nil
+        let descriptor = Darwin.open(directory, O_EVTONLY)
+        guard descriptor >= 0 else {
+            // Not there (yet): try again later.
+            queue.asyncAfter(deadline: .now() + 60) { self.open(directory) }
+            return
+        }
+        let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: descriptor,
+                                                               eventMask: [.write, .delete, .rename, .attrib],
+                                                               queue: queue)
+        source.setEventHandler { [weak self] in
+            guard let self else { return }
+            if source.data.contains(.delete) || source.data.contains(.rename) {
+                self.queue.asyncAfter(deadline: .now() + 2) { self.open(directory) }
+            }
+            self.scheduleChange()
+        }
+        source.setCancelHandler { close(descriptor) }
+        source.resume()
+        sources[directory] = source
+    }
+
+    private func scheduleChange() {
+        pending?.cancel()
+        let item = DispatchWorkItem { [weak self] in self?.onChange() }
+        pending = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + debounce, execute: item)
+    }
 }
 
 /// Which saver macOS has selected (macOS 14+ wallpaper store), and whether
@@ -565,8 +664,11 @@ case "screensaver":
     if argumentList.count == 2, argumentList[1] == "enforce" {
         runScreenSaverEnforce()
     }
+    if argumentList.count >= 2, argumentList[1] == "clock" {
+        runScreenSaverClock(Array(argumentList.dropFirst(2)))
+    }
     guard argumentList.count == 1 else {
-        fail("usage: screensaver [enforce]", code: ExitCode.usage)
+        fail("usage: screensaver [enforce | clock [--watch]]", code: ExitCode.usage)
     }
     runScreenSaver()
 case "version", "--version", "-v":
