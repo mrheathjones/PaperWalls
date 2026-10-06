@@ -572,8 +572,9 @@ already turned off, never one a profile forces (the profile wins;
 `paperwallscli screensaver` says so), and never pretends to write what it
 can't: when the lock screen half is owed and nothing with root has run yet,
 the CLI and Settings say so. The "selected saver" is `enforcedScreenSaverPath`
-when set, else what macOS has selected (as root, judged for the console
-user). Deployed scene bundles carry their scene; for `PaperWalls.saver`
+when set, else what macOS has selected. Run as root, the CLI reads the
+policy and the scene for the console user (their own Settings choice counts,
+under any forced MDM or `managed.json` value), not for root. Deployed scene bundles carry their scene; for `PaperWalls.saver`
 itself the published snapshot is used (the built-in Minimal Clock counts as a
 clock). Users see the same choice in Settings › Screen Saver › **macOS clock
 over the saver**, with **Also on the lock screen** and a **Lock screen clock**

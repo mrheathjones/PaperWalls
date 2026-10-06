@@ -224,9 +224,17 @@ func runScreenSaverEnforce() -> Never {
     // root's. Root is what the lock screen half needs, though — so as root
     // do only that, judging the scene by the console user's.
     if getuid() == 0 {
-        let applied = SystemSaverClock.applyFromPreferences(saverStore: nil, home: consoleUserHome())
+        let console = consoleUser()
+        let applied = SystemSaverClock.applyFromPreferences(saverStore: nil, home: console.home, user: console.name)
         print("running as root: the screen saver selection and the saver clock are per user — run as the user for those")
-        reportLockScreenClock(applied)
+        if let name = console.name {
+            print("lock screen clock policy read for console user \(name): \(applied.policy.rawValue)")
+        } else {
+            print("no console user found; only MDM / managed.json policy applies")
+        }
+        reportClock(applied.lockScreen, half: "on the lock screen",
+                    policy: SystemSaverClock.lockScreenPolicy(applied.policy,
+                                                              coversLockScreen: SystemSaverClock.coversLockScreen(forUser: console.name)))
         exit(ExitCode.ok)
     }
     let path = (ManagedPreferences.string(.enforcedScreenSaverPath) ?? "").trimmingCharacters(in: .whitespaces)
@@ -281,14 +289,15 @@ func reportClock(_ outcome: SystemSaverClock.Outcome, half: String, policy: Syst
     }
 }
 
-/// The console user's home, for root runs (their wallpaper store and
-/// published snapshot say which scene is on screen).
-func consoleUserHome() -> URL {
+/// The console user, for root runs: their preferences hold the policy and
+/// their wallpaper store and published snapshot say which scene is on screen.
+func consoleUser() -> (name: String?, home: URL) {
     if let name = (try? FileManager.default.attributesOfItem(atPath: "/dev/console"))?[.ownerAccountName] as? String,
+       !["root", "loginwindow", "_mbsetupuser"].contains(name),
        let entry = getpwnam(name), let directory = entry.pointee.pw_dir {
-        return URL(fileURLWithPath: String(cString: directory), isDirectory: true)
+        return (name, URL(fileURLWithPath: String(cString: directory), isDirectory: true))
     }
-    return ScreenSaverSnapshot.realHomeDirectory
+    return (nil, ScreenSaverSnapshot.realHomeDirectory)
 }
 
 /// Which saver macOS has selected (macOS 14+ wallpaper store), and whether

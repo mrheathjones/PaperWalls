@@ -575,6 +575,13 @@ final class SystemSaverClockTests: XCTestCase {
         XCTAssertTrue(prefs.writes.isEmpty)
     }
 
+    func testRootResolvesTheConsoleUsersValueUnderTheForcedLayers() {
+        XCTAssertEqual(SystemSaverClock.resolve(key: "k", forcedValue: "always", userValue: "never", localDefaults: ["k": "x"]) as? String, "always")
+        XCTAssertEqual(SystemSaverClock.resolve(key: "k", forcedValue: nil, userValue: "never", localDefaults: ["k": "x"]) as? String, "never")
+        XCTAssertEqual(SystemSaverClock.resolve(key: "k", forcedValue: nil, userValue: nil, localDefaults: ["k": "x"]) as? String, "x")
+        XCTAssertNil(SystemSaverClock.resolve(key: "k", forcedValue: nil, userValue: nil, localDefaults: [:]))
+    }
+
     func testLockScreenHalfFollowsTheOptOut() {
         XCTAssertEqual(SystemSaverClock.lockScreenPolicy(.always, coversLockScreen: true), .always)
         XCTAssertEqual(SystemSaverClock.lockScreenPolicy(.always, coversLockScreen: false), .never,

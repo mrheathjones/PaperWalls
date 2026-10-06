@@ -525,13 +525,36 @@ enum SystemSaverClock {
 
     // MARK: From preferences
 
-    static var currentPolicy: SystemSaverClockPolicy {
-        ManagedPreferences.string(.hideSystemSaverClock).flatMap(SystemSaverClockPolicy.init(rawValue:)) ?? .never
-    }
+    static var currentPolicy: SystemSaverClockPolicy { policy(forUser: nil) }
 
     /// Whether the policy also covers the lock screen (default yes).
-    static var coversLockScreen: Bool {
-        ManagedPreferences.bool(.hideSystemSaverClockOnLockScreen) ?? true
+    static var coversLockScreen: Bool { coversLockScreen(forUser: nil) }
+
+    static func policy(forUser user: String?) -> SystemSaverClockPolicy {
+        (preferenceValue(.hideSystemSaverClock, forUser: user) as? String)
+            .flatMap(SystemSaverClockPolicy.init(rawValue:)) ?? .never
+    }
+
+    static func coversLockScreen(forUser user: String?) -> Bool {
+        (preferenceValue(.hideSystemSaverClockOnLockScreen, forUser: user) as? NSNumber)?.boolValue ?? true
+    }
+
+    /// A preference as the console user sees it, for root runs. The forced
+    /// layers (MDM, managed.json) are machine-wide; the user layer read is
+    /// theirs, not root's — CFPreferences lets root name the user. With no
+    /// user it's the ordinary layered lookup.
+    static func preferenceValue(_ key: ManagedPreferenceKey, forUser user: String?) -> Any? {
+        guard let user, !user.isEmpty else { return ManagedPreferences.value(key) }
+        return resolve(key: key.rawValue,
+                       forcedValue: ManagedPreferences.isForced(key) ? ManagedPreferences.value(key) : nil,
+                       userValue: CFPreferencesCopyValue(key.rawValue as CFString, ManagedPreferences.domain as CFString,
+                                                         user as CFString, kCFPreferencesAnyHost),
+                       localDefaults: ManagedPreferences.localConfig.defaults)
+    }
+
+    /// Same precedence as `PreferenceResolver`: forced > user > local default.
+    static func resolve(key: String, forcedValue: Any?, userValue: Any?, localDefaults: [String: Any]) -> Any? {
+        forcedValue ?? userValue ?? localDefaults[key]
     }
 
     /// The policy for the lock screen half: the same one, or `never` when
@@ -550,9 +573,9 @@ enum SystemSaverClock {
 
     /// Whether the on-screen scene draws a clock, for the user whose home
     /// is `home` (the console user's when running as root).
-    static func sceneHasClock(forPolicy policy: SystemSaverClockPolicy, home: URL) -> Bool {
+    static func sceneHasClock(forPolicy policy: SystemSaverClockPolicy, home: URL, user: String? = nil) -> Bool {
         guard policy == .whenSceneHasClock else { return false }
-        let enforced = ManagedPreferences.string(.enforcedScreenSaverPath)
+        let enforced = preferenceValue(.enforcedScreenSaverPath, forUser: user) as? String
         let wallpaperStore = (enforced ?? "").trimmingCharacters(in: .whitespaces).isEmpty
             ? try? ScreenSaverSelection.readStore(at: ScreenSaverSelection.storeURL(inHome: home))
             : nil
@@ -561,19 +584,20 @@ enum SystemSaverClock {
     }
 
     /// Resolves the policy and the on-screen scene from preferences and
-    /// applies both halves. Pass `saverStore: nil` when running as root
-    /// (the saver half is the user's own layer) and `home` = the console
-    /// user's home so the scene is theirs. Cheap when the policy is `never`.
+    /// applies both halves. When running as root pass `saverStore: nil`
+    /// (the saver half is the user's own layer) and the console user's
+    /// `user` + `home`, so the policy and scene are theirs, not root's.
+    /// Cheap when the policy is `never`.
     @discardableResult
     static func applyFromPreferences(saverStore: Store? = live, lockScreenStore: Store = liveLockScreen,
-                                     home: URL = ScreenSaverSnapshot.realHomeDirectory) -> Applied {
-        let policy = currentPolicy
-        let hasClock = sceneHasClock(forPolicy: policy, home: home)
+                                     home: URL = ScreenSaverSnapshot.realHomeDirectory, user: String? = nil) -> Applied {
+        let policy = policy(forUser: user)
+        let hasClock = sceneHasClock(forPolicy: policy, home: home, user: user)
         return Applied(
             policy: policy,
             sceneHasClock: hasClock,
             saver: saverStore.map { apply(policy: policy, sceneHasClock: hasClock, store: $0) },
-            lockScreen: apply(policy: lockScreenPolicy(policy, coversLockScreen: coversLockScreen),
+            lockScreen: apply(policy: lockScreenPolicy(policy, coversLockScreen: coversLockScreen(forUser: user)),
                               sceneHasClock: hasClock, store: lockScreenStore))
     }
 
