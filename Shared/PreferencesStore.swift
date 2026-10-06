@@ -104,6 +104,8 @@ final class PreferencesStore: ObservableObject {
     @Published var allowedScreenSaverSceneIDs: [String]?
     /// Admin-set: the saver `paperwallscli manage` keeps selected.
     @Published var enforcedScreenSaverPath: String = ""
+    /// What to do about macOS's own large clock over the saver.
+    @Published var hideSystemSaverClock: SystemSaverClockPolicy = .never
     /// Unlocks the admin tools (Studio › Package, "Copy Scene for MDM").
     @Published var adminModeEnabled: Bool = false
     @Published var brandAssetsFolderPath: String = ""
@@ -226,6 +228,7 @@ final class PreferencesStore: ObservableObject {
         activeScreenSaverSceneID = ManagedPreferences.string(.activeScreenSaverSceneID)
         allowedScreenSaverSceneIDs = ManagedPreferences.stringArray(.allowedScreenSaverSceneIDs)
         enforcedScreenSaverPath = ManagedPreferences.string(.enforcedScreenSaverPath) ?? ""
+        hideSystemSaverClock = SystemSaverClock.currentPolicy
         adminModeEnabled = ManagedPreferences.bool(.adminModeEnabled) ?? false
         brandAssetsFolderPath = ManagedPreferences.string(.brandAssetsFolderPath) ?? ""
         jamfPublishEnabled = ManagedPreferences.bool(.jamfPublishEnabled) ?? false
@@ -290,6 +293,7 @@ final class PreferencesStore: ObservableObject {
         persist($activeScreenSaverSceneID, .activeScreenSaverSceneID) { $0 }
         persist($allowedScreenSaverSceneIDs, .allowedScreenSaverSceneIDs) { ($0?.isEmpty ?? true) ? nil : $0 }
         persist($enforcedScreenSaverPath, .enforcedScreenSaverPath) { $0.isEmpty ? nil : $0 }
+        persist($hideSystemSaverClock, .hideSystemSaverClock) { $0 == .never ? nil : $0.rawValue }
         persist($adminModeEnabled, .adminModeEnabled) { $0 }
         persist($brandAssetsFolderPath, .brandAssetsFolderPath) { $0.isEmpty ? nil : $0 }
         persist($jamfPublishEnabled, .jamfPublishEnabled) { $0 }

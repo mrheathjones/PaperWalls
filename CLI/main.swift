@@ -60,12 +60,14 @@ func printUsage(toStandardError: Bool) {
           run by the watch LaunchAgent; default interval 15s.
 
       \(toolName) screensaver
-          Print what the PaperWalls screen saver is set to show, and which
-          saver macOS has selected (read-only).
+          Print what the PaperWalls screen saver is set to show, which
+          saver macOS has selected, and whether macOS's own clock is shown
+          over it (read-only).
 
       \(toolName) screensaver enforce
           Select the saver in enforcedScreenSaverPath for every Space and
-          display now (manage also does this). Run as the logged-in user.
+          display now, and apply hideSystemSaverClock (manage also does
+          both). Run as the logged-in user.
 
       \(toolName) version
       \(toolName) help
@@ -234,9 +236,26 @@ func runScreenSaverEnforce() -> Never {
         case .enforced(let changed):
             print("selected \(path) (\(changed) Space/display entr\(changed == 1 ? "y" : "ies") updated)")
         }
-        exit(ExitCode.ok)
     } catch {
         fail("could not enforce the screen saver selection: \(error.localizedDescription)", code: ExitCode.applyFailed)
+    }
+    applySystemSaverClockPolicy()
+    exit(ExitCode.ok)
+}
+
+/// `hideSystemSaverClock`: hide (or restore) macOS's large clock over the
+/// saver — see `SystemSaverClock`. Quiet unless something changed.
+func applySystemSaverClockPolicy() {
+    let (policy, outcome) = SystemSaverClock.applyFromPreferences()
+    switch outcome {
+    case .hidden:
+        print("\(toolName): macOS clock over the screen saver → hidden (hideSystemSaverClock = \(policy.rawValue))")
+    case .restored(let previous):
+        print("\(toolName): macOS clock over the screen saver → restored to \(SystemSaverClock.restoreToken(for: previous))")
+    case .managedByProfile where policy != .never:
+        print("\(toolName): macOS clock is forced by a configuration profile; hideSystemSaverClock not applied")
+    case .managedByProfile, .alreadyHidden, .leftAlone:
+        break
     }
 }
 
@@ -298,6 +317,7 @@ func runScreenSaver() -> Never {
         print("published: not yet — run '\(toolName) manage' or open PaperWalls")
     }
     printScreenSaverSelection()
+    print(SystemSaverClock.statusDescription())
     exit(ExitCode.ok)
 }
 
@@ -311,6 +331,7 @@ func runManage() -> Never {
     // Independent of the wallpaper too (a deployed saver doesn't read the
     // lock tier), so it also runs before the early exits.
     enforceScreenSaverSelection()
+    applySystemSaverClockPolicy()
     if lockState.mode == .hard {
         fail("the wallpaper is locked (\(lockState.osEnforced ? "enforced by configuration profile" : "hard lock configured")); manage will not modify it",
              code: ExitCode.selectionLocked)

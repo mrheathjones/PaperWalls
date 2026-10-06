@@ -249,6 +249,57 @@ final class SceneDeploymentTests: XCTestCase {
         XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
     }
 
+    func testEnforcementProfileCanCarryTheClockPolicy() throws {
+        let bundle = SceneBundleSpec(deployedSceneID: id, displayName: "Acme – Lobby")
+        let plain = DeploymentEnforcement.profile(bundle: bundle, packageIdentifier: "com.example.savers", organization: "")
+        let withClock = DeploymentEnforcement.profile(bundle: bundle, packageIdentifier: "com.example.savers",
+                                                      organization: "", hideSystemClock: true)
+        func settings(_ profile: [String: Any]) throws -> [String: Any] {
+            let payload = try XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
+            let domain = try XCTUnwrap((payload["PayloadContent"] as? [String: Any])?["com.herojoneslabs.paperwalls"] as? [String: Any])
+            return try XCTUnwrap(((domain["Forced"] as? [[String: Any]])?.first)?["mcx_preference_settings"] as? [String: Any])
+        }
+        XCTAssertNil(try settings(plain)["hideSystemSaverClock"])
+        XCTAssertEqual(try settings(withClock)["hideSystemSaverClock"] as? String, "whenSceneHasClock")
+        XCTAssertEqual(try settings(withClock)["enforcedScreenSaverPath"] as? String, "/Library/Screen Savers/Acme – Lobby.saver")
+
+        let json = DeploymentEnforcement.managedJSON(bundle: bundle, hideSystemClock: true)
+        let parsed = try XCTUnwrap(LocalManagedConfig.parse(data: Data(json.utf8)))
+        XCTAssertEqual(parsed.forced["hideSystemSaverClock"] as? String, "whenSceneHasClock")
+        XCTAssertEqual(parsed.forced["enforcedScreenSaverPath"] as? String, "/Library/Screen Savers/Acme – Lobby.saver")
+        XCTAssertNil(LocalManagedConfig.parse(data: Data(DeploymentEnforcement.managedJSON(bundle: bundle).utf8))?
+            .forced["hideSystemSaverClock"])
+    }
+
+    func testStandaloneClockPolicyProfileAndJSON() throws {
+        let profile = DeploymentEnforcement.clockPolicyProfile(packageIdentifier: "com.example.savers", organization: "Acme")
+        let payload = try XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
+        XCTAssertEqual(payload["PayloadType"] as? String, "com.apple.ManagedClient.preferences")
+        XCTAssertEqual(payload["PayloadIdentifier"] as? String, "com.example.savers.clock.mcx")
+        let domain = try XCTUnwrap((payload["PayloadContent"] as? [String: Any])?["com.herojoneslabs.paperwalls"] as? [String: Any])
+        let settings = try XCTUnwrap(((domain["Forced"] as? [[String: Any]])?.first)?["mcx_preference_settings"] as? [String: Any])
+        XCTAssertEqual(settings as? [String: String], ["hideSystemSaverClock": "whenSceneHasClock"])
+        XCTAssertEqual(profile["PayloadIdentifier"] as? String, "com.example.savers.clock")
+        XCTAssertEqual(profile["PayloadScope"] as? String, "System")
+        XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
+
+        let parsed = try XCTUnwrap(LocalManagedConfig.parse(data: Data(DeploymentEnforcement.clockPolicyManagedJSON().utf8)))
+        XCTAssertEqual(parsed.forced as? [String: String], ["hideSystemSaverClock": "whenSceneHasClock"])
+    }
+
+    func testHideClockProfileForcesOnlyShowClock() throws {
+        let profile = DeploymentEnforcement.hideClockProfile(packageIdentifier: "com.example.savers", organization: "")
+        let payload = try XCTUnwrap((profile["PayloadContent"] as? [[String: Any]])?.first)
+        XCTAssertEqual(payload["PayloadType"] as? String, "com.apple.screensaver")
+        XCTAssertEqual(payload["showClock"] as? Bool, false)
+        XCTAssertNil(payload["moduleName"], "selection and locking stay in their own profiles")
+        XCTAssertNil(payload["idleTime"])
+        XCTAssertEqual(payload["PayloadIdentifier"] as? String, "com.example.savers.hideclock.screensaver")
+        XCTAssertEqual(profile["PayloadScope"] as? String, "System")
+        XCTAssertEqual(profile["PayloadOrganization"] as? String, "YourOrg")
+        XCTAssertNoThrow(try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0))
+    }
+
     func testIdentityListParsing() {
         let output = """
           1) 0123456789ABCDEF0123456789ABCDEF01234567 "Developer ID Application: Example Org (ABCDE12345)"
@@ -393,5 +444,153 @@ final class ScreenSaverSelectionTests: XCTestCase {
         var format = PropertyListSerialization.PropertyListFormat.xml
         _ = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: &format)
         XCTAssertEqual(format, .binary)
+    }
+}
+
+final class SystemSaverClockTests: XCTestCase {
+    /// An in-memory preference layer: macOS's showClock + PaperWalls' note.
+    private final class FakePrefs {
+        var showClock: Bool?
+        var forced = false
+        var restore: String?
+        var writes: [String] = []
+
+        var store: SystemSaverClock.Store {
+            SystemSaverClock.Store(
+                showClock: { self.showClock },
+                isForced: { self.forced },
+                setShowClock: { self.showClock = $0; self.writes.append("showClock=\(SystemSaverClock.restoreToken(for: $0))") },
+                restoreValue: { self.restore },
+                setRestoreValue: { self.restore = $0; self.writes.append("restore=\($0 ?? "nil")") })
+        }
+    }
+
+    private func scene(withClock: Bool) -> ScreenSaverScene {
+        ScreenSaverScene(layers: withClock ? [SceneLayer.icon(), SceneLayer.clock()] : [SceneLayer.icon()])
+    }
+
+    private func snapshot(_ state: ScreenSaverSnapshot.State, scene: ScreenSaverScene? = nil) -> ScreenSaverSnapshot {
+        ScreenSaverSnapshot(state: state, sceneID: nil, sceneName: nil, scene: scene)
+    }
+
+    func testSceneKnowsWhetherItDrawsAClock() {
+        XCTAssertTrue(scene(withClock: true).hasClock)
+        XCTAssertFalse(scene(withClock: false).hasClock)
+        XCTAssertFalse(ScreenSaverScene().hasClock)
+    }
+
+    func testDecision() {
+        XCTAssertFalse(SystemSaverClock.shouldHide(policy: .never, sceneHasClock: true))
+        XCTAssertTrue(SystemSaverClock.shouldHide(policy: .whenSceneHasClock, sceneHasClock: true))
+        XCTAssertFalse(SystemSaverClock.shouldHide(policy: .whenSceneHasClock, sceneHasClock: false))
+        XCTAssertTrue(SystemSaverClock.shouldHide(policy: .always, sceneHasClock: false))
+    }
+
+    func testHidesThenRestoresWhatItReplaced() {
+        let prefs = FakePrefs()   // unset: macOS shows the clock
+        XCTAssertEqual(SystemSaverClock.apply(policy: .whenSceneHasClock, sceneHasClock: true, store: prefs.store), .hidden)
+        XCTAssertEqual(prefs.showClock, false)
+        XCTAssertEqual(prefs.restore, "unset")
+        XCTAssertEqual(SystemSaverClock.apply(policy: .whenSceneHasClock, sceneHasClock: true, store: prefs.store), .alreadyHidden)
+        XCTAssertEqual(prefs.writes.count, 2, "a second run writes nothing")
+
+        // The clock scene goes away: back to unset, note cleared.
+        XCTAssertEqual(SystemSaverClock.apply(policy: .whenSceneHasClock, sceneHasClock: false, store: prefs.store), .restored(nil))
+        XCTAssertNil(prefs.showClock)
+        XCTAssertNil(prefs.restore)
+        XCTAssertEqual(SystemSaverClock.apply(policy: .whenSceneHasClock, sceneHasClock: false, store: prefs.store), .leftAlone)
+    }
+
+    func testRestoresAnExplicitTrue() {
+        let prefs = FakePrefs()
+        prefs.showClock = true
+        XCTAssertEqual(SystemSaverClock.apply(policy: .always, sceneHasClock: false, store: prefs.store), .hidden)
+        XCTAssertEqual(prefs.restore, "true")
+        XCTAssertEqual(SystemSaverClock.apply(policy: .never, sceneHasClock: false, store: prefs.store), .restored(true))
+        XCTAssertEqual(prefs.showClock, true)
+        XCTAssertNil(prefs.restore)
+    }
+
+    func testNeverTouchesAValueTheUserTurnedOffThemselves() {
+        let prefs = FakePrefs()
+        prefs.showClock = false
+        XCTAssertEqual(SystemSaverClock.apply(policy: .whenSceneHasClock, sceneHasClock: true, store: prefs.store), .alreadyHidden)
+        XCTAssertNil(prefs.restore, "nothing was replaced, so nothing to restore")
+        XCTAssertEqual(SystemSaverClock.apply(policy: .whenSceneHasClock, sceneHasClock: false, store: prefs.store), .leftAlone)
+        XCTAssertEqual(prefs.showClock, false)
+        XCTAssertTrue(prefs.writes.isEmpty)
+    }
+
+    func testKeepsTheUsersChoiceIfTheyTurnedItBackOn() {
+        let prefs = FakePrefs()
+        XCTAssertEqual(SystemSaverClock.apply(policy: .always, sceneHasClock: false, store: prefs.store), .hidden)
+        prefs.showClock = true   // the user re-enabled it in System Settings
+        XCTAssertEqual(SystemSaverClock.apply(policy: .never, sceneHasClock: false, store: prefs.store), .leftAlone)
+        XCTAssertEqual(prefs.showClock, true)
+        XCTAssertNil(prefs.restore, "the note is cleared either way")
+    }
+
+    func testAProfileOwnsAForcedKey() {
+        let prefs = FakePrefs()
+        prefs.forced = true
+        XCTAssertEqual(SystemSaverClock.apply(policy: .always, sceneHasClock: true, store: prefs.store), .managedByProfile)
+        XCTAssertTrue(prefs.writes.isEmpty)
+    }
+
+    func testRestoreTokens() {
+        for value in [true, false, nil] as [Bool?] {
+            XCTAssertEqual(SystemSaverClock.restoredValue(from: SystemSaverClock.restoreToken(for: value)), value)
+        }
+        XCTAssertNil(SystemSaverClock.restoredValue(from: "garbage"))
+    }
+
+    func testSnapshotMirrorsWhatTheSaverShows() {
+        XCTAssertTrue(SystemSaverClock.snapshotHasClock(snapshot(.active, scene: scene(withClock: true))))
+        XCTAssertFalse(SystemSaverClock.snapshotHasClock(snapshot(.active, scene: scene(withClock: false))))
+        XCTAssertTrue(SystemSaverClock.snapshotHasClock(snapshot(.active)), "no scene → the saver's Minimal Clock fallback")
+        XCTAssertTrue(SystemSaverClock.snapshotHasClock(snapshot(.noneSelected)), "built-in Minimal Clock")
+        XCTAssertFalse(SystemSaverClock.snapshotHasClock(snapshot(.disabled)))
+        XCTAssertFalse(SystemSaverClock.snapshotHasClock(snapshot(.hardLock)))
+    }
+
+    func testSaverHasClockResolvesBundledThenPublishedScene() {
+        let deployed = "/Library/Screen Savers/Acme – Lobby.saver"
+        let main = "/Library/Screen Savers/PaperWalls.saver"
+        let other = "/System/Library/Screen Savers/Hello.saver"
+        let source = SystemSaverClock.SceneSource(
+            bundledSnapshot: { path in path == deployed ? self.snapshot(.active, scene: self.scene(withClock: true)) : nil },
+            publishedSnapshot: { self.snapshot(.active, scene: self.scene(withClock: false)) },
+            isPaperWallsSaver: { path in path == main || path == deployed })
+        XCTAssertTrue(SystemSaverClock.saverHasClock(at: deployed, source: source), "the bundle's own scene")
+        XCTAssertFalse(SystemSaverClock.saverHasClock(at: main, source: source), "the published scene has no clock")
+        XCTAssertFalse(SystemSaverClock.saverHasClock(at: other, source: source), "not a PaperWalls saver")
+        XCTAssertFalse(SystemSaverClock.saverHasClock(at: nil, source: source))
+
+        let unpublished = SystemSaverClock.SceneSource(bundledSnapshot: { _ in nil }, publishedSnapshot: { nil },
+                                                       isPaperWallsSaver: { _ in true })
+        XCTAssertTrue(SystemSaverClock.saverHasClock(at: main, source: unpublished), "no snapshot yet → Minimal Clock")
+    }
+
+    func testEffectiveSaverPrefersEnforcedThenSystemDefault() throws {
+        func idle(_ path: String) -> [String: Any] {
+            let configuration: [String: Any] = ["module": ["relative": ScreenSaverSelection.moduleURLString(forSaverAt: path)]]
+            return ["Content": ["Choices": [["Provider": ScreenSaverSelection.screenSaverProvider, "Files": [Any](),
+                                             "Configuration": try! PropertyListSerialization.data(fromPropertyList: configuration, format: .binary, options: 0)]],
+                                "EncodedOptionValues": Data(), "Shuffle": "$null"]]
+        }
+        let aerial: [String: Any] = ["Content": ["Choices": [["Provider": "com.apple.wallpaper.choice.aerials"]]]]
+        let store: [String: Any] = [
+            "SystemDefault": ["Idle": idle("/Library/Screen Savers/A.saver")],
+            "Displays": ["D1": ["Idle": idle("/Library/Screen Savers/B.saver")], "D2": ["Idle": idle("/Library/Screen Savers/B.saver")]],
+        ]
+        XCTAssertEqual(SystemSaverClock.effectiveSaverPath(enforced: "/Library/Screen Savers/E.saver", store: store),
+                       "/Library/Screen Savers/E.saver")
+        XCTAssertEqual(SystemSaverClock.effectiveSaverPath(enforced: "  ", store: store), "/Library/Screen Savers/A.saver",
+                       "the system default is what System Settings updates on every click")
+        XCTAssertNil(SystemSaverClock.effectiveSaverPath(enforced: nil, store: ["SystemDefault": ["Idle": aerial]]),
+                     "an aerial system default isn't a saver")
+        XCTAssertEqual(SystemSaverClock.effectiveSaverPath(enforced: nil, store: ["Displays": store["Displays"]!]),
+                       "/Library/Screen Savers/B.saver", "no system default → the most common choice")
+        XCTAssertNil(SystemSaverClock.effectiveSaverPath(enforced: nil, store: nil))
     }
 }

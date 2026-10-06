@@ -79,8 +79,8 @@ paperwallscli set ~/Pictures/x.jpg   # set on all screens (default)
 paperwallscli set x.jpg 0 --scale fit --color 1D2E3F
 paperwallscli set x.jpg --all-screens
 paperwallscli manage                 # apply MDM/user preferences
-paperwallscli screensaver            # print what the screen saver will show (read-only)
-paperwallscli screensaver enforce    # select enforcedScreenSaverPath everywhere now (run as the user)
+paperwallscli screensaver            # print what the screen saver will show + macOS's clock state (read-only)
+paperwallscli screensaver enforce    # select enforcedScreenSaverPath everywhere + apply hideSystemSaverClock now (run as the user)
 paperwallscli version
 paperwallscli help
 ```
@@ -153,6 +153,7 @@ Screen savers and Studio (same domain, same forcing rules):
 | `managedScreenSaverScene` | string (JSON) | — | An organization-provided scene, shown as a read-only **Managed** entry (ID `managed`). Build it in Studio and use the card's **Copy Scene for MDM** action (shown in Admin mode). In `managed.json` it may be an inline object instead of a string |
 | `allowedScreenSaverSceneIDs` | array of strings | — | Optional allow-list of scene IDs that may be active; other scenes stay visible but can't be set active |
 | `enforcedScreenSaverPath` | string | — | Full path of a saver to keep selected for every Space and display, e.g. `/Library/Screen Savers/PaperWalls.saver`. Applied by `paperwallscli manage` (login + hourly) or `paperwallscli screensaver enforce`; users' own picks are switched back. On macOS 14+ Apple's `moduleName` only *locks* the choice, it doesn't select a third-party saver: pair the two for a selected, locked saver (Admin Guide §12) |
+| `hideSystemSaverClock` | string | `never` | What to do about the large clock macOS draws over every screen saver (System Settings › Wallpaper › Clock Appearance › **Show large clock**, the “On Screen Saver” half) — two clocks, when the scene has one. `never` leaves it to macOS; `whenSceneHasClock` turns it off while the selected saver is a PaperWalls saver whose scene draws a clock, and puts the user's value back otherwise; `always` keeps it off. Applied by the app, `paperwallscli manage`, and `paperwallscli screensaver enforce` (the user's own `com.apple.screensaver` `showClock`, per host). A profile that forces `showClock` wins; the lock-screen clock is never touched (Admin Guide §12) |
 | `allowScreenSaverCreation` | bool | `true` | `false` = users can't create, edit, rename, or delete scenes (Studio's ScreenSaver tab is unavailable); they can still browse, preview, and Set Active |
 | `showScreenSaversPage` | bool | `true` | Shows/hides the ScreenSavers page in the sidebar's Library section |
 | `showStudio` | bool | `true` | Shows/hides Studio (the sidebar's Tools section) |

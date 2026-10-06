@@ -37,6 +37,14 @@
 			<string>PaperWalls</string>
 			<key>modulePath</key>
 			<string>/Library/Screen Savers/PaperWalls.saver</string>
+			<!-- Optional: turn off the large clock macOS draws over every
+			     screen saver ("Show large clock" › On Screen Saver), so a
+			     scene with its own clock layer doesn't show two. Forced
+			     here it's locked; the PaperWalls alternative is the
+			     hideSystemSaverClock key (Admin Guide §12).
+			<key>showClock</key>
+			<false/>
+			-->
 		</dict>
 	</array>
 	<key>PayloadDescription</key>

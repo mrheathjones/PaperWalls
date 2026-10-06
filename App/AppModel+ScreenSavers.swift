@@ -163,6 +163,8 @@ extension AppModel {
             ScreenSaverSnapshot.log.error("Could not publish screen saver snapshot: \(error.localizedDescription, privacy: .public)")
         }
         syncSceneBundles()
+        // The on-screen scene may have gained or lost a clock.
+        SystemSaverClock.applyFromPreferences()
     }
 
     // MARK: - Scene bundles (own tiles in System Settings)

@@ -6,6 +6,7 @@
     "externalWallpaperFolderPath": "/Library/CompanyWallpapers",
     "brandAssetsFolderPath": "/Library/CompanyBrand",
     "activeScreenSaverSceneID": "managed",
+    "hideSystemSaverClock": "whenSceneHasClock",
     "managedScreenSaverScene": {
       "name": "Company Screen Saver",
       "scene": {

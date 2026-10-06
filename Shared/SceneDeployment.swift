@@ -158,26 +158,48 @@ enum DeploymentEnforcement {
 
     /// A managed-preferences profile forcing `enforcedScreenSaverPath`,
     /// shaped like Deployment/com.herojoneslabs.paperwalls.mobileconfig.
+    /// With `hideSystemClock` it also carries the PaperWalls clock policy
+    /// (`ClockDelivery.paperWalls`).
     static func profile(bundle: SceneBundleSpec, packageIdentifier: String, organization: String,
-                        uuid: () -> UUID = UUID.init) -> [String: Any] {
-        let settings: [String: Any] = [
+                        hideSystemClock: Bool = false, uuid: () -> UUID = UUID.init) -> [String: Any] {
+        var settings: [String: Any] = [
             ManagedPreferenceKey.enforcedScreenSaverPath.rawValue: saverPath(for: bundle),
         ]
+        if hideSystemClock {
+            settings[ManagedPreferenceKey.hideSystemSaverClock.rawValue] = clockPolicyValue.rawValue
+        }
+        var description = "Keeps “\(bundle.displayName)” selected as the screen saver."
+        if hideSystemClock {
+            description += " Hides macOS's own clock over it while the saver's scene draws a clock."
+        }
+        description += " Requires PaperWalls with its manage LaunchAgent on the Mac."
+        return preferencesProfile(settings: settings,
+                                  identifier: "\(packageIdentifier).enforce",
+                                  payloadDisplayName: "Enforced Screen Saver",
+                                  displayName: "\(bundle.displayName) Screen Saver",
+                                  description: description,
+                                  organization: organization, uuid: uuid)
+    }
+
+    /// A computer-level profile forcing PaperWalls-domain `settings`.
+    private static func preferencesProfile(settings: [String: Any], identifier: String, payloadDisplayName: String,
+                                           displayName: String, description: String, organization: String,
+                                           uuid: () -> UUID) -> [String: Any] {
         let payload: [String: Any] = [
             "PayloadType": "com.apple.ManagedClient.preferences",
             "PayloadVersion": 1,
-            "PayloadIdentifier": "\(packageIdentifier).enforce.mcx",
+            "PayloadIdentifier": "\(identifier).mcx",
             "PayloadUUID": uuid().uuidString,
-            "PayloadDisplayName": "Enforced Screen Saver",
+            "PayloadDisplayName": payloadDisplayName,
             "PayloadContent": [
                 ManagedPreferences.domain: ["Forced": [["mcx_preference_settings": settings]]],
             ],
         ]
         return [
             "PayloadContent": [payload],
-            "PayloadDescription": "Keeps “\(bundle.displayName)” selected as the screen saver. Requires PaperWalls with its manage LaunchAgent on the Mac.",
-            "PayloadDisplayName": "\(bundle.displayName) Screen Saver",
-            "PayloadIdentifier": "\(packageIdentifier).enforce",
+            "PayloadDescription": description,
+            "PayloadDisplayName": displayName,
+            "PayloadIdentifier": identifier,
             "PayloadOrganization": organization.isEmpty ? "YourOrg" : organization,
             "PayloadRemovalDisallowed": false,
             "PayloadScope": "System",
@@ -219,10 +241,89 @@ enum DeploymentEnforcement {
         ]
     }
 
-    /// The same setting for /Library/Application Support/PaperWalls/managed.json.
-    static func managedJSON(bundle: SceneBundleSpec) -> String {
-        let object: [String: Any] = ["forced": [ManagedPreferenceKey.enforcedScreenSaverPath.rawValue: saverPath(for: bundle)]]
+    /// The same setting(s) for /Library/Application Support/PaperWalls/managed.json.
+    static func managedJSON(bundle: SceneBundleSpec, hideSystemClock: Bool = false) -> String {
+        var forced: [String: Any] = [ManagedPreferenceKey.enforcedScreenSaverPath.rawValue: saverPath(for: bundle)]
+        if hideSystemClock {
+            forced[ManagedPreferenceKey.hideSystemSaverClock.rawValue] = clockPolicyValue.rawValue
+        }
+        return managedJSON(forced: forced)
+    }
+
+    private static func managedJSON(forced: [String: Any]) -> String {
+        let object: [String: Any] = ["forced": forced]
         let data = (try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data()
         return String(decoding: data, as: UTF8.self) + "\n"
+    }
+
+    // MARK: macOS's clock over the saver
+
+    /// How a package deals with the large clock macOS draws over every
+    /// screen saver (two clocks, when the scene has one of its own). The
+    /// admin picks the delivery that fits their fleet.
+    enum ClockDelivery: String, CaseIterable {
+        /// Nothing in the package.
+        case leave
+        /// A `com.apple.screensaver` profile forcing `showClock = false`:
+        /// always off, locked, no PaperWalls needed on the Mac.
+        case profile
+        /// PaperWalls' `hideSystemSaverClock = whenSceneHasClock`: the
+        /// manage agent turns the clock off while a clock scene is on
+        /// screen and puts it back otherwise. Needs PaperWalls on the Mac.
+        case paperWalls
+
+        var displayName: String {
+            switch self {
+            case .leave: return "Leave to macOS"
+            case .profile: return "Profile: always off"
+            case .paperWalls: return "PaperWalls: off when the scene has a clock"
+            }
+        }
+    }
+
+    /// What the PaperWalls delivery sets.
+    static let clockPolicyValue = SystemSaverClockPolicy.whenSceneHasClock
+
+    /// The PaperWalls delivery on its own, for a package that doesn't
+    /// enforce a saver.
+    static func clockPolicyProfile(packageIdentifier: String, organization: String,
+                                   uuid: () -> UUID = UUID.init) -> [String: Any] {
+        preferencesProfile(settings: [ManagedPreferenceKey.hideSystemSaverClock.rawValue: clockPolicyValue.rawValue],
+                           identifier: "\(packageIdentifier).clock",
+                           payloadDisplayName: "Screen Saver Clock Policy",
+                           displayName: "PaperWalls Screen Saver Clock",
+                           description: "Hides macOS's own clock over the screen saver while a PaperWalls saver whose scene draws a clock is selected. Requires PaperWalls with its manage LaunchAgent on the Mac.",
+                           organization: organization, uuid: uuid)
+    }
+
+    static func clockPolicyManagedJSON() -> String {
+        managedJSON(forced: [ManagedPreferenceKey.hideSystemSaverClock.rawValue: clockPolicyValue.rawValue])
+    }
+
+    /// The profile delivery: a computer-level `com.apple.screensaver`
+    /// profile forcing `showClock = false` — the "On Screen Saver" half of
+    /// "Show large clock". Only that key, like the lock profile.
+    static func hideClockProfile(packageIdentifier: String, organization: String,
+                                 uuid: () -> UUID = UUID.init) -> [String: Any] {
+        let payload: [String: Any] = [
+            "PayloadType": SystemSaverClock.domain,
+            "PayloadVersion": 1,
+            "PayloadIdentifier": "\(packageIdentifier).hideclock.screensaver",
+            "PayloadUUID": uuid().uuidString,
+            "PayloadDisplayName": "Screen Saver Clock",
+            SystemSaverClock.key: false,
+        ]
+        return [
+            "PayloadContent": [payload],
+            "PayloadDescription": "Turns off the large clock macOS shows over screen savers (Show large clock › On Screen Saver), so a saver with its own clock doesn't show two. Users can't turn it back on while the profile is installed.",
+            "PayloadDisplayName": "Hide Screen Saver Clock",
+            "PayloadIdentifier": "\(packageIdentifier).hideclock",
+            "PayloadOrganization": organization.isEmpty ? "YourOrg" : organization,
+            "PayloadRemovalDisallowed": false,
+            "PayloadScope": "System",
+            "PayloadType": "Configuration",
+            "PayloadUUID": uuid().uuidString,
+            "PayloadVersion": 1,
+        ]
     }
 }

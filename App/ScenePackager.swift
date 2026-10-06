@@ -7,7 +7,8 @@ import os
 ///     <Name>-<version>/
 ///       <Name>-<version>.pkg        installs every saver to /Library/Screen Savers
 ///       Savers/<Display Name>.saver the same bundles, for other delivery tools
-///       Enforce/                    optional: selects (PaperWalls profile / managed.json) and locks (screensaver profile) one saver
+///       Enforce/                    optional: selects (PaperWalls profile / managed.json) and locks (screensaver profile) one saver,
+///                                   and/or hides macOS's clock over the saver (profile, or PaperWalls policy)
 ///       MDM/<scene>.json            managedScreenSaverScene values
 ///       DEPLOY.txt                  what's here and how to ship it
 ///
@@ -35,13 +36,16 @@ enum ScenePackager {
         /// The saver to keep selected on target Macs (`enforcedScreenSaverPath`);
         /// nil skips it.
         var enforcedSaver: SceneBundleSpec?
+        /// What to do about macOS's large clock over the saver.
+        var systemClock: DeploymentEnforcement.ClockDelivery = .leave
         var organization: String
     }
 
     struct Result {
         let folder: URL
         let pkg: URL
-        /// The Enforce/ profiles (select + lock), when a saver is enforced.
+        /// The Enforce/ profiles: select + lock when a saver is enforced,
+        /// and the clock profile or policy when one is included.
         let profiles: [URL]
     }
 
@@ -154,22 +158,36 @@ enum ScenePackager {
             }
         }
         var profilePaths: [String] = []   // relative to the output folder
-        if let saver = request.enforcedSaver {
-            let enforce = staging.appendingPathComponent("Enforce", isDirectory: true)
+        let enforce = staging.appendingPathComponent("Enforce", isDirectory: true)
+        func writeProfile(_ profile: [String: Any], named name: String) throws {
             try fileManager.createDirectory(at: enforce, withIntermediateDirectories: true)
-            let profile = DeploymentEnforcement.profile(bundle: saver, packageIdentifier: request.package.identifier,
-                                                        organization: request.organization)
-            let selectName = "\(saver.title) – Enforce Screen Saver.mobileconfig"
             try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0)
-                .write(to: enforce.appendingPathComponent(selectName))
-            try Data(DeploymentEnforcement.managedJSON(bundle: saver).utf8)
+                .write(to: enforce.appendingPathComponent(name))
+            profilePaths.append("Enforce/\(name)")
+        }
+        let hideClockViaPaperWalls = request.systemClock == .paperWalls
+        let packageTitle = SceneBundleSpec.sanitizedTitle(request.package.name)
+        if let saver = request.enforcedSaver {
+            let profile = DeploymentEnforcement.profile(bundle: saver, packageIdentifier: request.package.identifier,
+                                                        organization: request.organization,
+                                                        hideSystemClock: hideClockViaPaperWalls)
+            try writeProfile(profile, named: "\(saver.title) – Enforce Screen Saver.mobileconfig")
+            try Data(DeploymentEnforcement.managedJSON(bundle: saver, hideSystemClock: hideClockViaPaperWalls).utf8)
                 .write(to: enforce.appendingPathComponent("managed.json"))
             let lock = DeploymentEnforcement.lockProfile(bundle: saver, packageIdentifier: request.package.identifier,
                                                          organization: request.organization)
-            let lockName = "\(saver.title) – Lock Screen Saver.mobileconfig"
-            try PropertyListSerialization.data(fromPropertyList: lock, format: .xml, options: 0)
-                .write(to: enforce.appendingPathComponent(lockName))
-            profilePaths = ["Enforce/\(selectName)", "Enforce/\(lockName)"]
+            try writeProfile(lock, named: "\(saver.title) – Lock Screen Saver.mobileconfig")
+        } else if hideClockViaPaperWalls {
+            let profile = DeploymentEnforcement.clockPolicyProfile(packageIdentifier: request.package.identifier,
+                                                                   organization: request.organization)
+            try writeProfile(profile, named: "\(packageTitle) – PaperWalls Clock Policy.mobileconfig")
+            try Data(DeploymentEnforcement.clockPolicyManagedJSON().utf8)
+                .write(to: enforce.appendingPathComponent("managed.json"))
+        }
+        if request.systemClock == .profile {
+            let profile = DeploymentEnforcement.hideClockProfile(packageIdentifier: request.package.identifier,
+                                                                 organization: request.organization)
+            try writeProfile(profile, named: "\(packageTitle) – Hide System Clock.mobileconfig")
         }
         try Data(deployNotes(request, includesMDM: !mdmItems.isEmpty).utf8)
             .write(to: staging.appendingPathComponent("DEPLOY.txt"))
@@ -262,6 +280,42 @@ enum ScenePackager {
             With SELECT alone, users can change the saver until the next agent run. Keep
             idle time and password settings in your existing screen saver profile; if it
             already sets moduleName, use that instead of the LOCK profile.
+
+
+            """
+        }
+        switch request.systemClock {
+        case .leave:
+            break
+        case .profile:
+            let name = SceneBundleSpec.sanitizedTitle(request.package.name)
+            notes += """
+            SYSTEM CLOCK (Enforce/)
+            macOS draws its own large clock over every screen saver when System Settings ›
+            Wallpaper › Clock Appearance › "Show large clock" includes the screen saver — two
+            clocks, for a scene that draws one. "\(name) – Hide System Clock.mobileconfig"
+            forces com.apple.screensaver showClock = false (the "On Screen Saver" half of that
+            setting; the lock screen clock is untouched). Users can't turn it back on while
+            the profile is installed. Nothing from PaperWalls is needed on the Mac. If your
+            own screen saver profile already sets showClock, use that instead.
+
+
+            """
+        case .paperWalls:
+            let carrier = request.enforcedSaver != nil
+                ? "the SELECT profile and managed.json above also set"
+                : "\"\(SceneBundleSpec.sanitizedTitle(request.package.name)) – PaperWalls Clock Policy.mobileconfig\" (or managed.json in /Library/Application Support/PaperWalls/ on Macs without MDM) sets"
+            notes += """
+            SYSTEM CLOCK (Enforce/)
+            macOS draws its own large clock over every screen saver when System Settings ›
+            Wallpaper › Clock Appearance › "Show large clock" includes the screen saver — two
+            clocks, for a scene that draws one. Here \(carrier)
+            hideSystemSaverClock = whenSceneHasClock. The PaperWalls manage LaunchAgent (and
+            the app) then turns macOS's clock off while a PaperWalls saver whose scene draws a
+            clock is the selected one, and puts the user's setting back when it isn't. The
+            key is honored by PaperWalls 0.8 or later; a configuration profile that forces
+            showClock wins over it. To apply at once, run as the user:
+              paperwallscli screensaver enforce
 
 
             """

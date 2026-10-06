@@ -252,6 +252,12 @@ struct SettingsContent: View {
                         EmptyView()
                     }
                     SettingsDivider()
+                    SettingsChipsRow(title: "macOS clock over the saver",
+                                     subtitle: "macOS draws its own large clock over every screen saver (System Settings › Wallpaper › Clock Appearance). Hiding it avoids two clocks when your scene has one; PaperWalls puts your setting back when the policy stops applying",
+                                     managedKey: .hideSystemSaverClock,
+                                     options: SystemSaverClockPolicy.allCases.map { ($0.displayName, $0) },
+                                     selection: $prefs.hideSystemSaverClock)
+                    SettingsDivider()
                     SettingsRow(title: "Show ScreenSavers page",
                                 subtitle: "Your screen saver library, in the sidebar's Library section",
                                 managedKey: .showScreenSaversPage) {
@@ -772,6 +778,7 @@ struct SettingsChipsRow<Value: Hashable>: View {
     @EnvironmentObject private var prefs: PreferencesStore
 
     let title: String
+    var subtitle: String?
     var managedKey: ManagedPreferenceKey?
     let options: [(label: String, value: Value)]
     @Binding var selection: Value
@@ -784,6 +791,11 @@ struct SettingsChipsRow<Value: Hashable>: View {
                 if let managedKey, prefs.isForced(managedKey) {
                     ManagedBadge()
                 }
+            }
+            if let subtitle {
+                Text(subtitle)
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
             }
             HStack(spacing: 8) {
                 ForEach(options, id: \.value) { option in

@@ -141,6 +141,11 @@ case. That's your organization's configuration, not a malfunction.
 - Wallpaper won't set? Check for a lock notice (work Macs), then try another
   wallpaper.
 - A download fails? Check your internet connection and try again.
+- Two clocks? macOS draws its own large clock over every screen saver. In
+  Settings › Screen Saver, set **macOS clock over the saver** to *Hide when
+  the scene has a clock* — PaperWalls turns the macOS clock off while a scene
+  with a clock is selected and puts your setting back otherwise. (Or change
+  **Show large clock** under System Settings › Wallpaper › Clock Appearance.)
 - Screen saver shows a simple clock instead of yours? Make sure one is marked
   **ACTIVE** on the ScreenSavers page. Shows a plain color? Screen savers
   are turned off in Settings, or by your organization.

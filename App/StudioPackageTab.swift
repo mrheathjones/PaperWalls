@@ -18,6 +18,7 @@ struct StudioPackageTab: View {
     @State private var installerIdentities: [String] = []
     @State private var includeMDMJSON = true
     @State private var includeProfile = false
+    @State private var systemClock: DeploymentEnforcement.ClockDelivery = .leave
     @State private var profileSceneID = ""
     @State private var isBuilding = false
     @State private var progressMessage = ""
@@ -138,10 +139,29 @@ struct StudioPackageTab: View {
                         SettingsToggle(isOn: $includeProfile, disabled: selected.isEmpty)
                     }
                 }
+                SettingsDivider()
+                SettingsRow(title: "macOS clock over the saver",
+                            subtitle: systemClockSubtitle) {
+                    Picker("", selection: $systemClock) {
+                        ForEach(DeploymentEnforcement.ClockDelivery.allCases, id: \.self) { delivery in
+                            Text(delivery.displayName).tag(delivery)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 300)
+                }
             }
         }
 
         buildBar
+    }
+
+    /// How many of the ticked scenes draw a clock — the case the option exists for.
+    private var systemClockSubtitle: String {
+        let clocks = selected.filter(\.scene.hasClock).count
+        let count = clocks == 0 ? "None of the selected savers draw a clock"
+            : "\(clocks) of \(selected.count) selected saver\(selected.count == 1 ? "" : "s") draw\(clocks == 1 ? "s" : "") a clock"
+        return "\(count). macOS adds its own large clock on top unless “Show large clock” excludes the screen saver: a profile turns it off for good; the PaperWalls policy needs the app on the Mac and only hides it while a clock scene is selected"
     }
 
     private func sceneRow(_ saver: StoredScreenSaver) -> some View {
@@ -267,6 +287,7 @@ struct StudioPackageTab: View {
                                             appIdentity: appIdentity.isEmpty ? nil : appIdentity,
                                             installerIdentity: installerIdentity.isEmpty ? nil : installerIdentity,
                                             enforcedSaver: enforcedSaver,
+                                            systemClock: systemClock,
                                             organization: prefs.companyName.trimmingCharacters(in: .whitespaces))
         isBuilding = true
         errorMessage = nil
