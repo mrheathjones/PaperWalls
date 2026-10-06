@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Reference profile: pre-approve PaperWalls' background items.
+	     On macOS 13 and later, the first time a LaunchAgent or LaunchDaemon
+	     from a new developer is loaded the user sees "App Background
+	     Activity — Software from “<developer>” can run in the background",
+	     and can switch the items off under System Settings › General ›
+	     Login Items & Extensions. A Managed Login Items payload
+	     (com.apple.servicemanagement) approves them up front: no
+	     notification, and users can't disable them.
+
+	     The LabelPrefix rule below matches every PaperWalls launchd job
+	     (manage, watch, saverclock, lockscreenclock). A TeamIdentifier rule
+	     is the broader alternative when you sign the pkg yourself: replace
+	     TEAMID with your Developer ID team identifier. Deploy at computer
+	     level BEFORE the PaperWalls pkg so the first load is already
+	     approved. -->
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadType</key>
+			<string>com.apple.servicemanagement</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PayloadIdentifier</key>
+			<string>com.herojoneslabs.paperwalls.backgroundactivity.servicemanagement</string>
+			<key>PayloadUUID</key>
+			<string>7A1C3E52-6B8D-4F0A-9C2E-1D5B7F3A9E04</string>
+			<key>PayloadDisplayName</key>
+			<string>PaperWalls Background Items</string>
+			<key>Rules</key>
+			<array>
+				<dict>
+					<key>RuleType</key>
+					<string>LabelPrefix</string>
+					<key>RuleValue</key>
+					<string>com.herojoneslabs.paperwalls</string>
+					<key>Comment</key>
+					<string>PaperWalls LaunchAgents and LaunchDaemon (manage, watch, saverclock, lockscreenclock)</string>
+				</dict>
+				<!-- Alternative / addition when you sign with your own identity:
+				<dict>
+					<key>RuleType</key>
+					<string>TeamIdentifier</string>
+					<key>RuleValue</key>
+					<string>TEAMID</string>
+					<key>Comment</key>
+					<string>Everything signed by our Developer ID team</string>
+				</dict>
+				-->
+			</array>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Approves PaperWalls' background items (LaunchAgents and LaunchDaemon) so macOS shows no "App Background Activity" notification and users can't switch them off in Login Items.</string>
+	<key>PayloadDisplayName</key>
+	<string>PaperWalls Background Activity</string>
+	<key>PayloadIdentifier</key>
+	<string>com.herojoneslabs.paperwalls.backgroundactivity</string>
+	<key>PayloadOrganization</key>
+	<string>YourOrg</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>7A1C3E52-6B8D-4F0A-9C2E-1D5B7F3A9E05</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>

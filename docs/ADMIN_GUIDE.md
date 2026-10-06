@@ -38,7 +38,26 @@ user's session immediately, so settings converge without a logout/login, and
 restarts the screen saver host so an updated saver is the one that runs.
 Building your own pkg: `Deployment/build-pkg.sh` (configure the CONFIG block;
 `INSTALL_WATCH_AGENT=true` adds the watcher agent to the payload,
+`INSTALL_CLOCK_WATCHERS=false` leaves the clock watchers out,
 `INSTALL_SAVER=false` leaves the screen saver out).
+
+### Background activity (Login Items)
+
+On macOS 13 and later, the first time the pkg's LaunchAgents and LaunchDaemon
+load, macOS tells the user **"App Background Activity — Software from
+“<developer>” can run in the background"** (the developer is whoever signed
+`paperwallscli`), and lists them under System Settings › General › **Login
+Items & Extensions**, where the user can switch them off. For a managed fleet,
+approve them up front with a **Managed Login Items** payload
+(`com.apple.servicemanagement`): no notification, and the items can't be
+disabled. `Deployment/com.herojoneslabs.paperwalls.backgroundactivity.mobileconfig`
+is a reference with a `LabelPrefix` rule for `com.herojoneslabs.paperwalls`
+(covers `manage`, `watch`, `saverclock`, `lockscreenclock`); a
+`TeamIdentifier` rule with your own team ID is the broader alternative when
+you sign the pkg yourself. In Jamf Pro it's the **Managed Login Items**
+payload of a computer configuration profile. Deploy it **before** the pkg so
+the first load is already approved; deployed afterwards it still approves the
+items and removes the user's ability to disable them.
 
 The app is deliberately **not sandboxed** (it must set the desktop picture,
 read `/Library/Managed Preferences`, and scan arbitrary folders) and is
@@ -82,7 +101,9 @@ the user may still override. A sample ships in `Deployment/managed.json.example`
 Application & Custom Settings (External Applications → Custom Schema, domain
 `com.herojoneslabs.paperwalls`). It renders every key as a friendly form
 control — add only the keys you want to force. A raw `.mobileconfig` example
-is also in `Deployment/`.
+is also in `Deployment/`, alongside the Managed Login Items profile that
+approves PaperWalls' background items (§1) and the screen saver references
+(§12).
 
 ---
 
@@ -347,6 +368,7 @@ go to its stdout and the unified log.
 | Profile keys don't apply / no "Managed" badge | The payload must target domain `com.herojoneslabs.paperwalls` and install as **Forced** (Jamf Application & Custom Settings does this). Verify on-device: `sudo ls "/Library/Managed Preferences/"` (and the per-user subfolder) for the plist, then check the `preferences` log category. Note `defaults read com.herojoneslabs.paperwalls` shows **only the user layer** — managed values won't appear there |
 | `managed.json` ignored | Must be valid JSON/plist shaped `{"forced":{…},"defaults":{…}}` at `/Library/Application Support/PaperWalls/managed.json`; parse failures log to `preferences`. World-readable, admin-writable |
 | Changes need an app relaunch | They shouldn't: the app watches the profile store and `managed.json` and reloads within ~1 s. If a change genuinely doesn't land, check the file actually changed on disk and see the `preferences` log |
+| "App Background Activity" notification on install, or the LaunchAgents/LaunchDaemon show as switchable in Login Items | macOS's Background Task Management saw PaperWalls' launchd jobs load without a Managed Login Items payload | Deploy `Deployment/com.herojoneslabs.paperwalls.backgroundactivity.mobileconfig` (§1); `sfltool dumpbtm` lists what BTM has approved |
 | User settings "snap back" | The key is forced (MDM or local `forced`) — writes to forced keys are dropped by design |
 
 ### Locks and enforcement

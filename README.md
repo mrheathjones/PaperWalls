@@ -282,6 +282,10 @@ the CONFIG block at the top and run it. Pkg payload:
 - `paperwallscli` → `/usr/local/bin/`
 - `Deployment/com.herojoneslabs.paperwalls.manage.plist` → `/Library/LaunchAgents/`
   (+ a postinstall that bootstraps the agent for the console user)
+- `Deployment/com.herojoneslabs.paperwalls.saverclock.plist` → `/Library/LaunchAgents/`
+  and `…lockscreenclock.plist` → `/Library/LaunchDaemons/` (`INSTALL_CLOCK_WATCHERS=true`,
+  the default): the clock watchers that keep `hideSystemSaverClock` applied
+  (Admin Guide §12)
 - `PaperWalls.saver` → `/Library/Screen Savers/` (`INSTALL_SAVER=true`, the
   default; signed with the app identity, notarized with the app when
   `NOTARIZE=true`; the postinstall restarts the screen saver host so an
@@ -299,6 +303,12 @@ launchctl bootstrap gui/$(id -u <user>) /Library/LaunchAgents/com.herojoneslabs.
 `com.apple.ManagedClient.preferences` profile forcing every supported key —
 trim it to the keys you actually want to manage (unlisted keys remain
 user-editable). It is unsigned; sign/deploy through your MDM as usual.
+
+macOS 13+ shows an **App Background Activity** notification the first time
+the pkg's LaunchAgents and LaunchDaemon load, and lets users switch them off
+in Login Items & Extensions. `Deployment/com.herojoneslabs.paperwalls.backgroundactivity.mobileconfig`
+is a Managed Login Items (`com.apple.servicemanagement`) profile that
+approves them up front — deploy it before the pkg (Admin Guide §1).
 
 ## Bundled wallpapers
 
