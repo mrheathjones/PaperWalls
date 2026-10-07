@@ -253,7 +253,10 @@ struct SceneComposer: View {
     private var layersPanel: some View {
         ComposerSection(title: "Layers") {
             // Front-most first, like every layers list; the background
-            // is always at the bottom.
+            // is always at the bottom. The top inset puts the first row's
+            // highlight 16pt in, matching the Text card's field.
+            Color.clear
+                .frame(height: 13)
             ForEach(draft.scene.layers.reversed()) { layer in
                 layerRow(layer)
                 SettingsDivider()
@@ -278,7 +281,7 @@ struct SceneComposer: View {
                 .fixedSize()
                 Spacer()
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 16)
             .padding(.vertical, 10)
         }
     }
@@ -335,13 +338,14 @@ struct SceneComposer: View {
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
             trailing()
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 26)
         .padding(.vertical, 11)
         .background {
             if isSelected {
+                // 16pt in from the card, like the Text card's field.
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Theme.selectedRow)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 3)
             }
         }
