@@ -258,14 +258,15 @@ extension BrandAssetStore {
 
 extension ScreenSaverScene {
     /// Every Studio asset-store image this scene draws: the background
-    /// image, if any, and each icon layer that uses an image.
+    /// image, if any, each icon layer that uses an image, and each
+    /// subject cutout.
     var referencedAssetNames: Set<String> {
         var names: Set<String> = []
         if case .image(let name) = background.source, !name.isEmpty {
             names.insert(name)
         }
         for layer in layers {
-            if case .icon(let icon) = layer.content, let name = icon.imageAssetName, !name.isEmpty {
+            if let name = layer.content.imageAssetName {
                 names.insert(name)
             }
         }

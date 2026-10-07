@@ -312,12 +312,72 @@ final class ScreenSaverSceneCodingTests: XCTestCase {
     }
 
     func testNewLayerDefaultsAreSensible() {
-        for layer in [SceneLayer.clock(), .text(), .icon()] {
+        for layer in [SceneLayer.clock(), .text(), .icon(), .subject(imageAssetName: "abc.png")] {
             XCTAssertTrue(layer.isVisible)
-            XCTAssertTrue(SceneLayer.sizeRange.contains(layer.size))
+            XCTAssertTrue(SceneLayer.sizeRange(for: layer.content).contains(layer.size))
             XCTAssertEqual(layer.opacity, 1)
             XCTAssertEqual(layer.motion.kind, .still)
         }
+    }
+
+    // MARK: Subject layers
+
+    func testSubjectLayerRoundTripsAndStartsPinned() throws {
+        let layer = SceneLayer.subject(imageAssetName: "cutout.png", sourceAssetName: "photo.heic")
+        guard case .subject(let subject) = layer.content else { return XCTFail("expected a subject layer") }
+        XCTAssertTrue(subject.isPinned)
+        XCTAssertFalse(subject.shadow)
+        XCTAssertEqual(subject.sourceAssetName, "photo.heic")
+
+        var scene = ScreenSaverScene(layers: [layer])
+        XCTAssertEqual(try roundTrip(scene), scene)
+
+        scene.layers[0].content = .subject(SubjectLayer(imageAssetName: "cutout.png", sourceAssetName: nil,
+                                                        bounds: SceneRect(x: 0.2, y: 0.1, width: 0.5, height: 0.8),
+                                                        isPinned: false, shadow: true))
+        scene.layers[0].size = 0.9
+        XCTAssertEqual(try roundTrip(scene), scene)
+
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(scene)) as? [String: Any])
+        let content = try XCTUnwrap((object["layers"] as? [[String: Any]])?.first?["content"] as? [String: Any])
+        XCTAssertEqual(content["kind"] as? String, "subject")
+        XCTAssertEqual(content["imageAssetName"] as? String, "cutout.png")
+    }
+
+    func testSubjectLayerDecodesLenientlyAndMayFillTheScreen() throws {
+        let scene = try decode(#"{"layers": [{"content": {"kind": "subject", "imageAssetName": "c.png"}, "size": 5}]}"#)
+        let layer = try XCTUnwrap(scene.layers.first)
+        guard case .subject(let subject) = layer.content else { return XCTFail("expected a subject layer") }
+        XCTAssertTrue(subject.isPinned)
+        XCTAssertNil(subject.sourceAssetName)
+        XCTAssertNil(subject.bounds)
+        // A subject may be as tall as the screen; other layers still cap at 60%.
+        XCTAssertEqual(layer.size, SceneLayer.subjectSizeRange.upperBound)
+        XCTAssertEqual(SceneLayer.sizeRange(for: .clock(ClockLayer())).upperBound, SceneLayer.sizeRange.upperBound)
+    }
+
+    func testSubjectBoundsClampAndMapToPixels() throws {
+        let scene = try decode(#"{"layers": [{"content": {"kind": "subject", "imageAssetName": "c.png", "bounds": {"x": 0.5, "y": -1, "width": 0.9, "height": 0.25}}}]}"#)
+        guard case .subject(let subject) = scene.layers.first?.content else { return XCTFail("expected a subject layer") }
+        XCTAssertEqual(subject.bounds, SceneRect(x: 0.5, y: 0, width: 0.5, height: 0.25))
+        XCTAssertEqual(subject.bounds?.pixelRect(in: CGSize(width: 1000, height: 800)),
+                       CGRect(x: 500, y: 0, width: 500, height: 200))
+        XCTAssertNil(SceneRect(x: 0.5, y: 0.5, width: 0.0001, height: 0.5).pixelRect(in: CGSize(width: 100, height: 100)))
+    }
+
+    func testImageAssetNameCoversIconsAndSubjects() {
+        var icon = IconLayer()
+        XCTAssertNil(SceneLayerContent.icon(icon).imageAssetName)
+        icon.imageAssetName = "logo.png"
+        XCTAssertEqual(SceneLayerContent.icon(icon).imageAssetName, "logo.png")
+        XCTAssertEqual(SceneLayerContent.subject(SubjectLayer(imageAssetName: "c.png")).imageAssetName, "c.png")
+        XCTAssertNil(SceneLayerContent.subject(SubjectLayer()).imageAssetName)
+        XCTAssertNil(SceneLayerContent.clock(ClockLayer()).imageAssetName)
+
+        var scene = ScreenSaverScene()
+        scene.background.source = .image(assetName: "photo.heic")
+        scene.layers = [.subject(imageAssetName: "c.png", sourceAssetName: "photo.heic"), .clock()]
+        XCTAssertEqual(scene.referencedAssetNames, ["photo.heic", "c.png"])
     }
 }
 

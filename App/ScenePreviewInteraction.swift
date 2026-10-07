@@ -18,7 +18,8 @@ struct InteractiveScenePreview: View {
 
     @State private var dragTarget: DragTarget?
     @State private var zoomAtPinchStart: Double?
-    /// Pixel sizes of background images, by file, so overflow math is cheap.
+    /// Pixel sizes of background and cutout images, by file, so overflow
+    /// and hit-test math is cheap.
     @State private var pixelSizes: [URL: CGSize] = [:]
     @Environment(\.displayScale) private var displayScale
 
@@ -38,10 +39,13 @@ struct InteractiveScenePreview: View {
                     }
                 }
                 .onAppear {
-                    cachePixelSize()
+                    cachePixelSizes()
                 }
                 .onChange(of: scene.background.source) { _, _ in
-                    cachePixelSize()
+                    cachePixelSizes()
+                }
+                .onChange(of: subjectURLs) { _, _ in
+                    cachePixelSizes()
                 }
         }
     }
@@ -84,6 +88,8 @@ struct InteractiveScenePreview: View {
     /// else the background.
     private func target(at point: CGPoint, canvas: CGSize) -> DragTarget {
         for (index, layer) in scene.layers.enumerated().reversed() where layer.isVisible {
+            // A pinned subject moves with the picture, not on its own.
+            if case .subject(let subject) = layer.content, subject.isPinned { continue }
             let pointSize = max(1, layer.size * canvas.height)
             let size = measuredSize(of: layer, pointSize: pointSize)
             let center = CGPoint(x: layer.position.x * canvas.width, y: layer.position.y * canvas.height)
@@ -107,6 +113,14 @@ struct InteractiveScenePreview: View {
                                               font: text.font, pointSize: pointSize)
         case .icon:
             return CGSize(width: pointSize, height: pointSize)
+        case .subject(let subject):
+            guard let url = resources.assetURL(subject.imageAssetName),
+                  let pixels = pixelSizes[url] else {
+                return CGSize(width: pointSize, height: pointSize)
+            }
+            let crop = subject.bounds?.pixelRect(in: pixels) ?? CGRect(origin: .zero, size: pixels)
+            guard crop.height > 0 else { return CGSize(width: pointSize, height: pointSize) }
+            return CGSize(width: pointSize * crop.width / crop.height, height: pointSize)
         case .unsupported:
             return .zero
         }
@@ -177,16 +191,27 @@ struct InteractiveScenePreview: View {
         }
     }
 
-    private func cachePixelSize() {
-        guard let url = backgroundURL(), pixelSizes[url] == nil else { return }
-        Task.detached(priority: .utility) {
-            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-                  let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-                  let width = properties[kCGImagePropertyPixelWidth] as? Int,
-                  let height = properties[kCGImagePropertyPixelHeight] as? Int else { return }
-            let size = CGSize(width: width, height: height)
-            await MainActor.run {
-                pixelSizes[url] = size
+    /// Cutout files of the scene's subject layers (hit-testing needs
+    /// their aspect ratio).
+    private var subjectURLs: [URL] {
+        scene.layers.compactMap { layer in
+            guard case .subject(let subject) = layer.content else { return nil }
+            return resources.assetURL(subject.imageAssetName)
+        }
+    }
+
+    private func cachePixelSizes() {
+        let urls = ([backgroundURL()].compactMap { $0 } + subjectURLs).filter { pixelSizes[$0] == nil }
+        for url in Set(urls) {
+            Task.detached(priority: .utility) {
+                guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                      let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+                      let width = properties[kCGImagePropertyPixelWidth] as? Int,
+                      let height = properties[kCGImagePropertyPixelHeight] as? Int else { return }
+                let size = CGSize(width: width, height: height)
+                await MainActor.run {
+                    pixelSizes[url] = size
+                }
             }
         }
     }

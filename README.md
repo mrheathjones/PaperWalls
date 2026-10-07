@@ -53,6 +53,16 @@ System Settings" on its card): the app generates a per-scene copy of the saver
 in `~/Library/Screen Savers`, with that scene's thumbnail. Settings is always
 the last sidebar item.
 
+**Photo subjects.** Add Layer › **Subject from Photo…** takes a photo (from
+the Photos library via the system picker, or a file), lifts its foreground
+with Vision on the Mac, and adds it as a layer above the clock and text,
+with the photo as the background — the iPhone lock-screen "depth" look, where
+the time sits behind the person or object in front. A pinned subject keeps
+its place in the photo; unpin it to move, resize, and animate the subject on
+its own in front of any other background (a wallpaper, a color, a generated
+image). Nothing leaves the Mac, and no Photos permission or PPPC profile is
+needed: the picker runs out of process and hands over only the chosen photo.
+
 Shared sources (`WallpaperEngine.swift`, `PreferencesStore.swift`,
 `ManagedPreferences.swift`, `WallpaperCatalog.swift`) are compiled into **both**
 targets via Target Membership — no framework, no package.

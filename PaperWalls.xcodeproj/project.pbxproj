@@ -137,6 +137,11 @@
 		FF00000000000000000000E1 /* SceneGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D3 /* SceneGenerator.swift */; };
 		FF00000000000000000000E2 /* SceneGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D3 /* SceneGenerator.swift */; };
 		FF00000000000000000000E3 /* AISceneComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D4 /* AISceneComposer.swift */; };
+		FF00000000000000000000E5 /* PhotoImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D6 /* PhotoImport.swift */; };
+		FF00000000000000000000E6 /* SubjectLayerControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D7 /* SubjectLayerControls.swift */; };
+		FF00000000000000000000E7 /* SubjectRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D8 /* SubjectRenderTests.swift */; };
+		FF00000000000000000000E8 /* SceneImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000063 /* SceneImageStore.swift */; };
+		FF00000000000000000000E9 /* SaverSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000064 /* SaverSceneView.swift */; };
 		FF00000000000000000000E4 /* SceneGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D5 /* SceneGeneratorTests.swift */; };
 		FF00000000000000000000D4 /* ScenePreviewInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CA /* ScenePreviewInteraction.swift */; };
 		FF00000000000000000000D5 /* BrandAssetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CB /* BrandAssetStore.swift */; };
@@ -258,6 +263,9 @@
 		DD00000000000000000000C9 /* ExternalImageEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalImageEndpointTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D3 /* SceneGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneGenerator.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D4 /* AISceneComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISceneComposer.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D6 /* PhotoImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoImport.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D7 /* SubjectLayerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectLayerControls.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D8 /* SubjectRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectRenderTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D5 /* SceneGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneGeneratorTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000CA /* ScenePreviewInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenePreviewInteraction.swift; sourceTree = "<group>"; };
 		DD00000000000000000000CB /* BrandAssetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandAssetStore.swift; sourceTree = "<group>"; };
@@ -368,6 +376,7 @@
 			children = (
 				DD0000000000000000000051 /* PaperWallsTests.swift */,
 				DD0000000000000000000066 /* SceneTests.swift */,
+				DD00000000000000000000D8 /* SubjectRenderTests.swift */,
 				DD0000000000000000000085 /* ScreenSaverStoreTests.swift */,
 				DD00000000000000000000A4 /* SceneBundleTests.swift */,
 				DD00000000000000000000AC /* WallpaperDeploymentTests.swift */,
@@ -411,6 +420,8 @@
 				DD0000000000000000000090 /* SceneComposer.swift */,
 				DD00000000000000000000CA /* ScenePreviewInteraction.swift */,
 				DD0000000000000000000091 /* SceneLayerControls.swift */,
+				DD00000000000000000000D7 /* SubjectLayerControls.swift */,
+				DD00000000000000000000D6 /* PhotoImport.swift */,
 				DD0000000000000000000092 /* ComposerPickers.swift */,
 				DD00000000000000000000A3 /* SceneBundles.swift */,
 				DD00000000000000000000A6 /* ScenePackager.swift */,
@@ -645,6 +656,8 @@
 				FF00000000000000000000CF /* PromptImprover.swift in Sources */,
 				FF00000000000000000000E0 /* SceneGenerator.swift in Sources */,
 				FF00000000000000000000E3 /* AISceneComposer.swift in Sources */,
+				FF00000000000000000000E5 /* PhotoImport.swift in Sources */,
+				FF00000000000000000000E6 /* SubjectLayerControls.swift in Sources */,
 				FF00000000000000000000D2 /* ExternalImageProvider.swift in Sources */,
 				FF00000000000000000000DA /* JamfPublishPolicy.swift in Sources */,
 				FF00000000000000000000DD /* JamfPublisher.swift in Sources */,
@@ -696,8 +709,11 @@
 				FF0000000000000000000036 /* PaperWallsTests.swift in Sources */,
 				FF0000000000000000000061 /* ScreenSaverScene.swift in Sources */,
 				FF0000000000000000000063 /* SceneMotionMath.swift in Sources */,
+				FF00000000000000000000E8 /* SceneImageStore.swift in Sources */,
+				FF00000000000000000000E9 /* SaverSceneView.swift in Sources */,
 				FF0000000000000000000065 /* ScreenSaverPresets.swift in Sources */,
 				FF0000000000000000000069 /* SceneTests.swift in Sources */,
+				FF00000000000000000000E7 /* SubjectRenderTests.swift in Sources */,
 				FF0000000000000000000081 /* ScreenSaverSceneStore.swift in Sources */,
 				FF0000000000000000000083 /* ScreenSaverPolicy.swift in Sources */,
 				FF00000000000000000000B4 /* ScreenSaverSelection.swift in Sources */,
@@ -885,6 +901,7 @@
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 32;
 				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -901,6 +918,7 @@
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 32;
 				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

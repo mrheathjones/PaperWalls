@@ -104,8 +104,7 @@ struct SaverSceneView: View {
 
     private var assetURLs: [URL] {
         scene.layers.compactMap { layer in
-            guard layer.isVisible, case .icon(let icon) = layer.content,
-                  let name = icon.imageAssetName else { return nil }
+            guard layer.isVisible, let name = layer.content.imageAssetName else { return nil }
             return resources.assetURL(name)
         }
     }
@@ -262,6 +261,37 @@ struct SceneFrameView: View {
 
     @ViewBuilder
     private func layerView(_ layer: SceneLayer) -> some View {
+        if case .subject(let subject) = layer.content, subject.isPinned {
+            pinnedSubjectView(subject, opacity: layer.opacity)
+        } else {
+            movingLayerView(layer)
+        }
+    }
+
+    /// A pinned subject goes through the background's own image path —
+    /// same fit, focus, zoom and slow zoom — so it lands pixel-for-pixel
+    /// on the photo it was cut from. Blur and dim are the background's
+    /// alone: the subject stays crisp in front of them.
+    @ViewBuilder
+    private func pinnedSubjectView(_ subject: SubjectLayer, opacity: Double) -> some View {
+        if let image = assetImage(subject.imageAssetName) {
+            let treatment = scene.background.treatment
+            let zoom = treatment.slowZoom ? SceneMotionMath.slowZoom(time: time) : (scale: 1, offset: .zero)
+            backgroundImage(image)
+                .frame(width: size.width, height: size.height)
+                .clipped()
+                .scaleEffect(zoom.scale)
+                .offset(x: zoom.offset.x * size.width, y: zoom.offset.y * size.height)
+                .shadow(color: .black.opacity(subject.shadow ? 0.5 : 0),
+                        radius: size.height * 0.015, y: size.height * 0.005)
+                .opacity(opacity)
+                .frame(width: size.width, height: size.height)
+                .clipped()
+        }
+    }
+
+    @ViewBuilder
+    private func movingLayerView(_ layer: SceneLayer) -> some View {
         // Relative size → points for THIS canvas.
         let pointSize = max(1, layer.size * size.height)
         let state = SceneMotionMath.state(motion: layer.motion,
@@ -316,6 +346,17 @@ struct SceneFrameView: View {
                     .foregroundStyle(color(icon.colorHex, for: layer, bounceCount: bounceCount))
                     .sceneShadow(icon.shadow, pointSize: pointSize)
             }
+        case .subject(let subject):
+            // Unpinned: the subject's crop of the cutout is an image
+            // layer, `size` tall.
+            if let image = assetImage(subject.imageAssetName).map({ subject.croppedToBounds($0) }) {
+                Image(decorative: image, scale: 1)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: pointSize)
+                    .shadow(color: .black.opacity(subject.shadow ? 0.5 : 0),
+                            radius: pointSize * 0.025, y: pointSize * 0.01)
+            }
         case .unsupported:
             EmptyView()
         }
@@ -343,9 +384,25 @@ struct SceneFrameView: View {
             }
             guard let image = assetImage(name), image.height > 0 else { return .zero }
             return CGSize(width: pointSize * CGFloat(image.width) / CGFloat(image.height), height: pointSize)
+        case .subject(let subject):
+            guard let image = assetImage(subject.imageAssetName).map({ subject.croppedToBounds($0) }),
+                  image.height > 0 else { return .zero }
+            return CGSize(width: pointSize * CGFloat(image.width) / CGFloat(image.height), height: pointSize)
         case .unsupported:
             return .zero
         }
+    }
+}
+
+extension SubjectLayer {
+    /// The subject's own rectangle of the cutout (what an unpinned layer
+    /// draws), or the whole image when no bounds were recorded.
+    /// `CGImage.cropping` shares the pixels, so this is cheap per frame.
+    func croppedToBounds(_ image: CGImage) -> CGImage {
+        guard let bounds,
+              let rect = bounds.pixelRect(in: CGSize(width: image.width, height: image.height)),
+              let cropped = image.cropping(to: rect) else { return image }
+        return cropped
     }
 }
 

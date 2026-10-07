@@ -427,8 +427,7 @@ enum ScreenSaverThumbnailer {
         }
         var assets: [String: CGImage] = [:]
         for layer in scene.layers {
-            guard layer.isVisible, case .icon(let icon) = layer.content,
-                  let name = icon.imageAssetName, assets[name] == nil,
+            guard layer.isVisible, let name = layer.content.imageAssetName, assets[name] == nil,
                   let url = resources.assetURL(name) else { continue }
             assets[name] = await Task.detached(priority: .utility) {
                 ImageBox(image: SceneImageLoader.downsampledImage(at: url, maxPixelSize: maxImagePixels))

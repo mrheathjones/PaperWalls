@@ -183,9 +183,18 @@ extension Color {
 
 struct SceneLayerControls: View {
     @Binding var layer: SceneLayer
+    /// The scene's background — a subject layer can swap its photo in.
+    var background: Binding<SceneBackground>?
 
     @Environment(\.composerKind) private var kind
     @State private var showsAdvanced = false
+
+    /// A pinned subject has no size, position or motion of its own: it
+    /// follows the background.
+    private var isPinnedSubject: Bool {
+        if case .subject(let subject) = layer.content { return subject.isPinned }
+        return false
+    }
 
     var body: some View {
         // The sections sit side by side so the whole form is visible
@@ -194,8 +203,20 @@ struct SceneLayerControls: View {
             contentSection
                 .frame(maxWidth: .infinity, alignment: .topLeading)
 
+            if isPinnedSubject {
+                ComposerSection(title: "Size & Position") {
+                    Text("A pinned subject keeps its place in the photo. Drag the picture in the preview, or change the background’s fit, focus and zoom, and the subject follows. Unpin it to move or resize it on its own.")
+                        .font(Theme.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(16)
+                    SettingsDivider()
+                    ComposerSlider(title: "Opacity", value: $layer.opacity,
+                                   lowLabel: "Faint", highLabel: "Solid")
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            } else {
             ComposerSection(title: "Size & Position") {
-                ComposerSlider(title: "Size", value: $layer.size, range: 0.02...0.4,
+                ComposerSlider(title: "Size", value: $layer.size, range: sizeSliderRange,
                                lowLabel: "Small", highLabel: "Large")
                 SettingsDivider()
                 ComposerSlider(title: "Across", value: $layer.position.x,
@@ -210,8 +231,9 @@ struct SceneLayerControls: View {
                 advanced
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
 
-            if kind == .screenSaver {
+            if kind == .screenSaver && !isPinnedSubject {
                 ComposerSection(title: "Motion") {
                     ComposerRow(title: "Motion") {
                         Picker("Motion", selection: $layer.motion.kind) {
@@ -244,13 +266,19 @@ struct SceneLayerControls: View {
         }
     }
 
+    /// Text and icons cap at 40% of the screen; a subject can fill it.
+    private var sizeSliderRange: ClosedRange<Double> {
+        if case .subject = layer.content { return SceneLayer.subjectSizeRange }
+        return 0.02...0.4
+    }
+
     /// Exact numbers for the sliders above, tucked at the bottom of the
     /// Size & Position card.
     private var advanced: some View {
         DisclosureGroup(isExpanded: $showsAdvanced) {
             VStack(spacing: 0) {
                 ComposerPercentField(title: "Size (of screen height)", value: $layer.size,
-                                     range: SceneLayer.sizeRange)
+                                     range: SceneLayer.sizeRange(for: layer.content))
                 SettingsDivider()
                 ComposerPercentField(title: "Across", value: $layer.position.x)
                 SettingsDivider()
@@ -303,6 +331,9 @@ struct SceneLayerControls: View {
             TextLayerControls(text: contentBinding(text, wrap: SceneLayerContent.text))
         case .icon(let icon):
             IconLayerControls(icon: contentBinding(icon, wrap: SceneLayerContent.icon))
+        case .subject(let subject):
+            SubjectLayerControls(subject: contentBinding(subject, wrap: SceneLayerContent.subject),
+                                 background: background)
         case .unsupported:
             ComposerSection(title: "Layer") {
                 Text("This layer was made with a newer version of PaperWalls. It is kept as-is but can't be edited here.")
@@ -791,6 +822,9 @@ struct SceneBackgroundControls: View {
                             .truncationMode(.middle)
                             .frame(maxWidth: 180)
                     }
+                    PhotoLibraryButton(onPicked: importPhoto) {
+                        Text("From Photos…")
+                    }
                     Button("Choose Image…", action: chooseImage)
                 }
             }
@@ -868,6 +902,16 @@ struct SceneBackgroundControls: View {
             background.source = .image(assetName: try ScreenSaverSceneStore.importAsset(from: url))
         } catch {
             importError = "That file couldn’t be added. Choose a PNG, JPEG, HEIC, TIFF, or GIF image."
+        }
+    }
+
+    /// A photo from the Photos picker: stored upright, like any other
+    /// imported image.
+    private func importPhoto(data: Data) {
+        do {
+            background.source = .image(assetName: try PhotoImporter.importPhoto(data: data).assetName)
+        } catch {
+            importError = error.localizedDescription
         }
     }
 

@@ -191,6 +191,14 @@ extension ScenePoint {
 struct SceneLayer: Codable, Equatable, Identifiable {
     /// Layer height may not exceed this fraction of the screen height.
     static let sizeRange: ClosedRange<Double> = 0.01...0.6
+    /// A free-floating photo subject may fill the whole screen height.
+    static let subjectSizeRange: ClosedRange<Double> = 0.05...1
+
+    /// The size limits that apply to a layer of this content.
+    static func sizeRange(for content: SceneLayerContent) -> ClosedRange<Double> {
+        if case .subject = content { return subjectSizeRange }
+        return sizeRange
+    }
 
     var id = UUID()
     var isVisible: Bool = true
@@ -210,7 +218,8 @@ extension SceneLayer {
         content = try container.decode(SceneLayerContent.self, forKey: .content)
         position = container.sceneValue(.position, default: .center)
         let rawSize = container.sceneValue(.size, default: 0.1)
-        size = min(max(rawSize, Self.sizeRange.lowerBound), Self.sizeRange.upperBound)
+        let range = Self.sizeRange(for: content)
+        size = min(max(rawSize, range.lowerBound), range.upperBound)
         opacity = container.sceneValue(.opacity, default: 1).clampedToUnit
         motion = container.sceneValue(.motion, default: SceneMotion())
     }
@@ -228,12 +237,26 @@ extension SceneLayer {
     static func icon(symbolName: String = "sparkles") -> SceneLayer {
         SceneLayer(content: .icon(IconLayer(symbolName: symbolName)), size: 0.12)
     }
+
+    /// A subject cut out of a photo. It starts pinned, so it sits exactly
+    /// where it was in the photo (over whatever is behind it); unpinned it
+    /// is a free layer whose default height is 60% of the screen.
+    static func subject(imageAssetName: String, sourceAssetName: String? = nil,
+                        bounds: SceneRect? = nil) -> SceneLayer {
+        SceneLayer(content: .subject(SubjectLayer(imageAssetName: imageAssetName,
+                                                  sourceAssetName: sourceAssetName,
+                                                  bounds: bounds)),
+                   size: 0.6)
+    }
 }
 
 enum SceneLayerContent: Equatable {
     case clock(ClockLayer)
     case text(TextLayer)
     case icon(IconLayer)
+    /// The foreground subject lifted out of a photo (a PNG with
+    /// transparency in the asset store).
+    case subject(SubjectLayer)
     /// A layer type this version doesn't know — preserved, never drawn.
     case unsupported(kind: String, payload: SceneJSONValue)
 
@@ -243,7 +266,23 @@ enum SceneLayerContent: Equatable {
         case .clock: return "Clock"
         case .text: return "Text"
         case .icon: return "Icon"
+        case .subject: return "Subject"
         case .unsupported: return "Unsupported Layer"
+        }
+    }
+
+    /// The asset-store image this layer draws, if it draws one: an icon's
+    /// imported image or a subject's cutout. What the renderer preloads
+    /// and what packaging copies.
+    var imageAssetName: String? {
+        switch self {
+        case .icon(let icon):
+            guard let name = icon.imageAssetName, !name.isEmpty else { return nil }
+            return name
+        case .subject(let subject):
+            return subject.imageAssetName.isEmpty ? nil : subject.imageAssetName
+        case .clock, .text, .unsupported:
+            return nil
         }
     }
 }
@@ -257,6 +296,7 @@ extension SceneLayerContent: Codable {
         case "clock": self = .clock(try ClockLayer(from: decoder))
         case "text": self = .text(try TextLayer(from: decoder))
         case "icon": self = .icon(try IconLayer(from: decoder))
+        case "subject": self = .subject(try SubjectLayer(from: decoder))
         default: self = .unsupported(kind: kind, payload: try SceneJSONValue(from: decoder))
         }
     }
@@ -273,6 +313,9 @@ extension SceneLayerContent: Codable {
         case .icon(let icon):
             try icon.encode(to: encoder)
             try container.encode("icon", forKey: .kind)
+        case .subject(let subject):
+            try subject.encode(to: encoder)
+            try container.encode("subject", forKey: .kind)
         case .unsupported(_, let payload):
             try payload.encode(to: encoder)
         }
@@ -470,6 +513,70 @@ extension IconLayer {
         imageAssetName = container.sceneValue(.imageAssetName, default: nil)
         colorHex = container.sceneValue(.colorHex, default: "FFFFFF")
         shadow = container.sceneValue(.shadow, default: true)
+    }
+}
+
+/// The foreground of a photo, cut out in Studio and stored as a PNG with
+/// transparency (`imageAssetName`), the same pixel size as the photo it
+/// came from (`sourceAssetName`, also in the asset store).
+///
+/// Pinned, the cutout is drawn with exactly the background's fit, focus
+/// and zoom — so with the photo as the background it lands on itself,
+/// and any layer below it in the list (the clock, text) shows through
+/// the gaps: the iOS lock-screen "depth" look. Unpinned, it is an
+/// ordinary layer with a position, size and motion, for standing a
+/// subject in front of a different background.
+struct SubjectLayer: Codable, Equatable {
+    var imageAssetName: String = ""
+    var sourceAssetName: String?
+    /// Where the subject sits in the photo (unit rect, top-left origin),
+    /// found at import. Unpinned, the layer is this crop of the cutout,
+    /// so `size` means the subject's height, not the whole photo's. nil
+    /// (older scenes) means the whole frame.
+    var bounds: SceneRect?
+    var isPinned: Bool = true
+    var shadow: Bool = false
+}
+
+extension SubjectLayer {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        imageAssetName = container.sceneValue(.imageAssetName, default: "")
+        sourceAssetName = container.sceneValue(.sourceAssetName, default: nil)
+        bounds = container.sceneValue(.bounds, default: nil)
+        isPinned = container.sceneValue(.isPinned, default: true)
+        shadow = container.sceneValue(.shadow, default: false)
+    }
+}
+
+/// Unit-space rectangle: (0, 0) is the top-left of the image, (1, 1)
+/// the bottom-right. Decodes to nothing useful rather than failing: an
+/// empty or out-of-range rect is clamped, and the renderer treats a
+/// degenerate one as "the whole image".
+struct SceneRect: Codable, Equatable {
+    var x: Double = 0
+    var y: Double = 0
+    var width: Double = 1
+    var height: Double = 1
+
+    static let full = SceneRect()
+
+    /// Pixel rect in an image of `pixelSize`, or nil when degenerate.
+    func pixelRect(in pixelSize: CGSize) -> CGRect? {
+        let rect = CGRect(x: x * pixelSize.width, y: y * pixelSize.height,
+                          width: width * pixelSize.width, height: height * pixelSize.height)
+        guard rect.width >= 1, rect.height >= 1 else { return nil }
+        return rect.integral
+    }
+}
+
+extension SceneRect {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        x = container.sceneValue(.x, default: 0).clampedToUnit
+        y = container.sceneValue(.y, default: 0).clampedToUnit
+        width = min(container.sceneValue(.width, default: 1).clampedToUnit, 1 - x)
+        height = min(container.sceneValue(.height, default: 1).clampedToUnit, 1 - y)
     }
 }
 

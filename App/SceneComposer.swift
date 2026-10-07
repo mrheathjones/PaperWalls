@@ -26,6 +26,7 @@ struct SceneComposer: View {
     @State private var savedDesign: StoredWallpaperDesign?
     @State private var isSaving = false
     @State private var formHeight: CGFloat = 400
+    @State private var isAddingSubject = false
 
     /// The Name field and the AI Prompt card under it share this width.
     private static let sidebarWidth: CGFloat = 400
@@ -103,6 +104,11 @@ struct SceneComposer: View {
             Button("Keep Editing", role: .cancel) {}
         } message: {
             Text("“\(savedName ?? "")” is in your library.")
+        }
+        .sheet(isPresented: $isAddingSubject) {
+            SubjectImportSheet { imported, usePhotoAsBackground in
+                addSubject(imported, usePhotoAsBackground: usePhotoAsBackground)
+            }
         }
         .alert("Saved to Personal", isPresented: savedDesignPresented) {
             if let design = savedDesign, let wallpaper = model.exportedWallpaper(for: design),
@@ -275,6 +281,8 @@ struct SceneComposer: View {
                     }
                     Button("Text") { add(.text(kind == .wallpaper ? "Your text here" : "Be right back")) }
                     Button("Icon") { add(.icon()) }
+                    Divider()
+                    Button("Subject from Photo…") { isAddingSubject = true }
                 } label: {
                     Label("Add Layer", systemImage: "plus")
                 }
@@ -372,6 +380,7 @@ struct SceneComposer: View {
         case .clock: return "clock"
         case .text: return "textformat"
         case .icon: return "star"
+        case .subject: return "person.crop.rectangle"
         case .unsupported: return "questionmark.square.dashed"
         }
     }
@@ -397,7 +406,7 @@ struct SceneComposer: View {
             SceneBackgroundControls(background: $draft.scene.background)
         case .layer(let id):
             if let index = draft.scene.layers.firstIndex(where: { $0.id == id }) {
-                SceneLayerControls(layer: $draft.scene.layers[index])
+                SceneLayerControls(layer: $draft.scene.layers[index], background: $draft.scene.background)
                     .id(id)
             } else {
                 SceneBackgroundControls(background: $draft.scene.background)
@@ -410,6 +419,20 @@ struct SceneComposer: View {
     private func add(_ layer: SceneLayer) {
         draft.scene.layers.append(layer)
         selection = .layer(layer.id)
+    }
+
+    /// The subject goes in front of everything, so the clock and text
+    /// already in the scene show through behind it. With the photo as
+    /// the background the pinned cutout lands back on itself.
+    private func addSubject(_ imported: ImportedSubject, usePhotoAsBackground: Bool) {
+        if usePhotoAsBackground {
+            draft.scene.background.source = .image(assetName: imported.photoAssetName)
+            draft.scene.background.treatment.scaleMode = .fill
+            draft.scene.background.treatment.zoom = 1
+            draft.scene.background.treatment.focus = .center
+        }
+        add(.subject(imageAssetName: imported.subjectAssetName, sourceAssetName: imported.photoAssetName,
+                     bounds: imported.bounds))
     }
 
     private func selectFrontLayer() {

@@ -53,7 +53,7 @@ enum SceneDeployment {
             assetNames.append(name)
         }
         for layer in snapshot.scene?.layers ?? [] {
-            if case .icon(let icon) = layer.content, let name = icon.imageAssetName,
+            if let name = layer.content.imageAssetName,
                snapshot.assetURL(named: name) != nil, !assetNames.contains(name) {
                 assetNames.append(name)
             }
