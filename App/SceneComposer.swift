@@ -25,34 +25,50 @@ struct SceneComposer: View {
     @State private var savedName: String?
     @State private var savedDesign: StoredWallpaperDesign?
     @State private var isSaving = false
+    @State private var formHeight: CGFloat = 400
 
-    /// The Name field and the Layers list below it share this width.
+    /// The Name field, the AI Prompt card under it and the Layers column
+    /// share this width.
     private static let sidebarWidth: CGFloat = 300
 
     var body: some View {
-        // Layers sit under the Name field; the preview stays put beside
-        // them and only the edit form below it scrolls, so every change
-        // is visible as it's made.
+        // The preview is the design surface, so it takes every point the
+        // form row doesn't need. The AI Prompt card sits under the Name
+        // field beside it; the layers list and the selected item's
+        // controls share one row below, which scrolls only when the
+        // window is short.
         GeometryReader { proxy in
             VStack(alignment: .leading, spacing: 16) {
                 toolbar
                 HStack(alignment: .top, spacing: 20) {
-                    ScrollView {
-                        layersPanel
-                            .padding(.bottom, 20)
-                    }
-                    .frame(width: Self.sidebarWidth)
-                    VStack(spacing: 16) {
-                        preview
-                            .frame(height: min(400, max(180, proxy.size.height * 0.42)))
-                            .frame(maxWidth: .infinity)
+                    if prefs.aiPolicy.offersGeneration {
                         ScrollView {
-                            controlsPanel
-                                .frame(maxWidth: .infinity, alignment: .topLeading)
-                                .padding(.bottom, 20)
+                            SceneAIPromptSection(background: $draft.scene.background)
+                        }
+                        .frame(width: Self.sidebarWidth)
+                    }
+                    preview
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                // Exactly as tall as its content, up to a cap that keeps
+                // the preview at least half the window; past the cap it
+                // scrolls.
+                ScrollView {
+                    HStack(alignment: .top, spacing: 18) {
+                        layersPanel
+                            .frame(width: Self.sidebarWidth)
+                        controlsPanel
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                    }
+                    .padding(.bottom, 4)
+                    .background {
+                        GeometryReader { content in
+                            Color.clear.preference(key: FormHeightKey.self, value: content.size.height)
                         }
                     }
                 }
+                .onPreferenceChange(FormHeightKey.self) { formHeight = $0 }
+                .frame(height: min(formHeight, max(200, proxy.size.height * 0.45)))
             }
         }
         .environment(\.composerKind, kind)
@@ -422,5 +438,12 @@ struct SceneComposer: View {
 
     private var savedDesignPresented: Binding<Bool> {
         Binding(get: { savedDesign != nil }, set: { if !$0 { savedDesign = nil } })
+    }
+}
+
+private struct FormHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 400
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }

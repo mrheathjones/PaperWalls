@@ -591,6 +591,38 @@ struct IconLayerControls: View {
     }
 }
 
+// MARK: - AI Prompt
+
+/// "Describe a background and generate it": sits under the Name field in
+/// the composer whatever is selected, since the result always replaces
+/// the background. Shows nothing when no AI service is turned on.
+struct SceneAIPromptSection: View {
+    @EnvironmentObject private var prefs: PreferencesStore
+
+    @Binding var background: SceneBackground
+
+    @Environment(\.composerKind) private var kind
+    @Environment(\.composerPixelSize) private var pixelSize
+
+    var body: some View {
+        if prefs.aiPolicy.offersGeneration {
+            ComposerSection(title: "AI Prompt") {
+                Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at \(kind == .wallpaper ? "this wallpaper's" : "your display's") shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
+                    .font(Theme.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                SettingsDivider()
+                AIBackgroundGenerator(policy: prefs.aiPolicy, pixelSize: pixelSize) { assetName in
+                    background.source = .image(assetName: assetName)
+                    background.treatment.scaleMode = .fitBlur
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Background controls
 
 struct SceneBackgroundControls: View {
@@ -601,7 +633,6 @@ struct SceneBackgroundControls: View {
     @Binding var background: SceneBackground
 
     @Environment(\.composerKind) private var kind
-    @Environment(\.composerPixelSize) private var pixelSize
     @State private var importError: String?
 
     enum SourceKind: String, CaseIterable, Identifiable {
@@ -632,23 +663,6 @@ struct SceneBackgroundControls: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 18) {
-            if prefs.aiPolicy.offersGeneration {
-                ComposerSection(title: "AI Prompt") {
-                    Text("Describe a background and generate it with one of the services turned on in Settings › AI Generation. The result replaces the current background, shown whole with a blurred fill behind it. Local and External generate at \(kind == .wallpaper ? "this wallpaper's" : "your display's") shape; Apple On-Device always makes a square, so use Fit + Blur or set the Focus to choose what Fill keeps.")
-                        .font(Theme.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                    SettingsDivider()
-                    AIBackgroundGenerator(policy: prefs.aiPolicy, pixelSize: pixelSize) { assetName in
-                        background.source = .image(assetName: assetName)
-                        background.treatment.scaleMode = .fitBlur
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-
             ComposerSection(title: "Background") {
                 if case .unsupported = background.source {
                     Text("This background was made with a newer version of PaperWalls. Choose another to replace it.")
