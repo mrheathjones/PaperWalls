@@ -40,15 +40,19 @@ struct SceneComposer: View {
         GeometryReader { proxy in
             VStack(alignment: .leading, spacing: 16) {
                 toolbar
-                HStack(alignment: .top, spacing: 20) {
-                    if prefs.aiPolicy.offersGeneration {
-                        ScrollView {
-                            SceneAIPromptSection(background: $draft.scene.background)
+                GeometryReader { area in
+                    let slot = previewSlot(in: area.size)
+                    ZStack(alignment: .topLeading) {
+                        if prefs.aiPolicy.offersGeneration {
+                            ScrollView {
+                                SceneAIPromptSection(background: $draft.scene.background)
+                            }
+                            .frame(width: Self.sidebarWidth, height: area.size.height, alignment: .top)
                         }
-                        .frame(width: Self.sidebarWidth)
+                        preview
+                            .frame(width: slot.width, height: area.size.height, alignment: .top)
+                            .offset(x: slot.x)
                     }
-                    preview
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 // Exactly as tall as its content, up to a cap that keeps
                 // the preview at least half the window; past the cap it
@@ -206,6 +210,21 @@ struct SceneComposer: View {
         .accessibilityLabel("Wallpaper size")
     }
 
+    /// Where the preview goes in the area beside the AI Prompt column:
+    /// centred on the page, unless that would run under the column, in
+    /// which case it's centred in the space to the column's right.
+    private func previewSlot(in area: CGSize) -> (x: CGFloat, width: CGFloat) {
+        let column = prefs.aiPolicy.offersGeneration ? Self.sidebarWidth + 20 : 0
+        let captionAllowance: CGFloat = 28
+        let natural = min(area.width, max(0, area.height - captionAllowance) * previewAspect)
+        let centredX = (area.width - natural) / 2
+        if centredX >= column {
+            return (centredX, natural)
+        }
+        let width = min(natural, area.width - column)
+        return (column + (area.width - column - width) / 2, width)
+    }
+
     private var previewAspect: CGFloat {
         if kind == .wallpaper, let size = pixelSize?.wrappedValue, size.width > 0, size.height > 0 {
             return size.width / size.height
@@ -316,13 +335,14 @@ struct SceneComposer: View {
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
             trailing()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 11)
         .background {
             if isSelected {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Theme.selectedRow)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
             }
         }
     }
