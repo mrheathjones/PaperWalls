@@ -27,9 +27,9 @@ struct SceneComposer: View {
     @State private var isSaving = false
     @State private var formHeight: CGFloat = 400
 
-    /// The Name field, the AI Prompt card under it and the Layers column
-    /// share this width.
-    private static let sidebarWidth: CGFloat = 300
+    /// The Name field and the AI Prompt card under it share this width.
+    private static let sidebarWidth: CGFloat = 400
+    private static let layersWidth: CGFloat = 300
 
     var body: some View {
         // The preview is the design surface, so it takes every point the
@@ -56,7 +56,7 @@ struct SceneComposer: View {
                 ScrollView {
                     HStack(alignment: .top, spacing: 18) {
                         layersPanel
-                            .frame(width: Self.sidebarWidth)
+                            .frame(width: Self.layersWidth)
                         controlsPanel
                             .frame(maxWidth: .infinity, alignment: .topLeading)
                     }

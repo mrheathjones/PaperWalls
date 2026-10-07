@@ -36,23 +36,29 @@ struct AIBackgroundGenerator: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Text("Describe it")
-                    .font(.system(size: 14, weight: .medium))
-                TextField("", text: $prompt, prompt: Text("e.g. soft blue mountains at dawn"))
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    Text("Describe it")
+                        .font(.system(size: 14, weight: .medium))
+                    Spacer(minLength: 12)
+                    if policy.offersPromptImprovement {
+                        if isImproving {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Button("Improve", action: improvePrompt)
+                            .disabled(trimmedPrompt.isEmpty || isImproving || isGenerating || !hasClaudeKey)
+                            .help(hasClaudeKey
+                                  ? "Have Claude rewrite this into a detailed image prompt (sent to \(PromptImprover.host))"
+                                  : "Add the Claude API key in Settings › AI Generation")
+                    }
+                }
+                // Grows a line at a time as the description gets longer
+                // (an improved prompt can run to a paragraph).
+                TextField("", text: $prompt, prompt: Text("e.g. soft blue mountains at dawn"), axis: .vertical)
+                    .lineLimit(1...8)
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel("Image description")
-                if policy.offersPromptImprovement {
-                    if isImproving {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                    Button("Improve", action: improvePrompt)
-                        .disabled(trimmedPrompt.isEmpty || isImproving || isGenerating || !hasClaudeKey)
-                        .help(hasClaudeKey
-                              ? "Have Claude rewrite this into a detailed image prompt (sent to \(PromptImprover.host))"
-                              : "Add the Claude API key in Settings › AI Generation")
-                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
