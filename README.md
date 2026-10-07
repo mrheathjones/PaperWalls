@@ -60,7 +60,9 @@ with the photo as the background — the iPhone lock-screen "depth" look, where
 the time sits behind the person or object in front. A pinned subject keeps
 its place in the photo; unpin it to move, resize, and animate the subject on
 its own in front of any other background (a wallpaper, a color, a generated
-image). Nothing leaves the Mac, and no Photos permission or PPPC profile is
+image). Background › An Image has the same picker and a **Lift Subject**
+button, which cuts the subject out of the chosen background into its own
+layer. Nothing leaves the Mac, and no Photos permission or PPPC profile is
 needed: the picker runs out of process and hands over only the chosen photo.
 
 Shared sources (`WallpaperEngine.swift`, `PreferencesStore.swift`,

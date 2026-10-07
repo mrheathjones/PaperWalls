@@ -655,9 +655,18 @@ struct SceneBackgroundControls: View {
     @EnvironmentObject private var prefs: PreferencesStore
 
     @Binding var background: SceneBackground
+    /// The scene's layers, so "Lift Subject" can add one.
+    var layers: Binding<[SceneLayer]>?
+    /// Called with the new subject layer's ID (the composer selects it).
+    var onSubjectLifted: ((UUID) -> Void)?
 
     @Environment(\.composerKind) private var kind
     @State private var importError: String?
+    @State private var isLifting = false
+
+    private struct SubjectBox: @unchecked Sendable {
+        let result: Result<ImportedSubject, Error>
+    }
 
     enum SourceKind: String, CaseIterable, Identifiable {
         case currentDesktop
@@ -705,7 +714,7 @@ struct SceneBackgroundControls: View {
                     .fixedSize()
                 }
                 sourceRows
-                    .alert("Couldn’t Add Image", isPresented: errorPresented) {
+                    .alert("Couldn’t Use Image", isPresented: errorPresented) {
                         Button("OK", role: .cancel) {}
                     } message: {
                         Text(importError ?? "")
@@ -828,6 +837,28 @@ struct SceneBackgroundControls: View {
                     Button("Choose Image…", action: chooseImage)
                 }
             }
+            if layers != nil, !name.isEmpty {
+                SettingsDivider()
+                ComposerRow(title: "Subject") {
+                    HStack(spacing: 8) {
+                        if isLifting {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        if hasSubject(from: name) {
+                            Text("Lifted into its own layer")
+                                .font(Theme.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Button("Lift Subject") {
+                                liftSubject(from: name)
+                            }
+                            .disabled(isLifting)
+                            .help("Cut the person, pet, or object in front out of this image and add it as a layer above the clock and text")
+                        }
+                    }
+                }
+            }
         case .solid(let colorHex):
             SettingsDivider()
             ComposerColorRow(title: "Color", hex: Binding(get: { colorHex },
@@ -902,6 +933,47 @@ struct SceneBackgroundControls: View {
             background.source = .image(assetName: try ScreenSaverSceneStore.importAsset(from: url))
         } catch {
             importError = "That file couldn’t be added. Choose a PNG, JPEG, HEIC, TIFF, or GIF image."
+        }
+    }
+
+    /// Whether a subject layer already came from this image.
+    private func hasSubject(from assetName: String) -> Bool {
+        layers?.wrappedValue.contains { layer in
+            if case .subject(let subject) = layer.content { return subject.sourceAssetName == assetName }
+            return false
+        } ?? false
+    }
+
+    /// Runs the cutout on the background image and adds the subject as
+    /// a pinned layer in front of everything. The image is re-imported
+    /// through the photo path, so one chosen before this existed (stored
+    /// as-is, maybe rotated or huge) gets an upright, size-capped copy
+    /// that matches its cutout; the background follows it.
+    private func liftSubject(from assetName: String) {
+        guard let layers, let url = model.sceneResources.assetURL(assetName),
+              let data = try? Data(contentsOf: url) else {
+            importError = PhotoImportError.unreadable.localizedDescription
+            return
+        }
+        isLifting = true
+        Task {
+            let box = await Task.detached(priority: .userInitiated) {
+                SubjectBox(result: Result { try SubjectCutout.importSubject(photoData: data) })
+            }.value
+            isLifting = false
+            switch box.result {
+            case .success(let imported):
+                if imported.photoAssetName != assetName {
+                    background.source = .image(assetName: imported.photoAssetName)
+                }
+                let layer = SceneLayer.subject(imageAssetName: imported.subjectAssetName,
+                                               sourceAssetName: imported.photoAssetName,
+                                               bounds: imported.bounds)
+                layers.wrappedValue.append(layer)
+                onSubjectLifted?(layer.id)
+            case .failure(let error):
+                importError = error.localizedDescription
+            }
         }
     }
 

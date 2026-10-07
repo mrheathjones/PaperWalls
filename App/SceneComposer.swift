@@ -403,15 +403,21 @@ struct SceneComposer: View {
     private var controlsPanel: some View {
         switch selection {
         case .background:
-            SceneBackgroundControls(background: $draft.scene.background)
+            backgroundControls
         case .layer(let id):
             if let index = draft.scene.layers.firstIndex(where: { $0.id == id }) {
                 SceneLayerControls(layer: $draft.scene.layers[index], background: $draft.scene.background)
                     .id(id)
             } else {
-                SceneBackgroundControls(background: $draft.scene.background)
+                backgroundControls
             }
         }
+    }
+
+    private var backgroundControls: some View {
+        SceneBackgroundControls(background: $draft.scene.background,
+                                layers: $draft.scene.layers,
+                                onSubjectLifted: { selection = .layer($0) })
     }
 
     // MARK: - Actions
