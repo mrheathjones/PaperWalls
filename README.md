@@ -60,7 +60,9 @@ with the photo as the background — the iPhone lock-screen "depth" look, where
 the time sits behind the person or object in front. The subject starts as a
 free layer where it sat in the photo: move, resize, and animate it in front
 of any background (a wallpaper, a color, a generated image), or **Pin** it to
-lock it exactly onto the photo for the depth look. Layers can be renamed
+lock it exactly onto the photo for the depth look. When a subject above a
+clock hides more than about a third of it, a warning under the preview says
+how much and offers **Send Behind Clock**. Layers can be renamed
 (double-click, or right-click › Rename…) and duplicated (right-click, or the
 row's button). Background › An Image has the same picker and a **Lift Subject**
 button, which cuts the subject out of the chosen background into its own

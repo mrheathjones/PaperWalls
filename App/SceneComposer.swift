@@ -261,6 +261,7 @@ struct SceneComposer: View {
             Text("Drag a layer to move it · drag the picture to pan · scroll or pinch to zoom")
                 .font(Theme.caption)
                 .foregroundStyle(.secondary)
+            SceneCoverageWarning(scene: $draft.scene, resources: model.sceneResources, aspect: previewAspect)
         }
     }
 
@@ -531,6 +532,120 @@ struct SceneComposer: View {
 
     private var savedDesignPresented: Binding<Bool> {
         Binding(get: { savedDesign != nil }, set: { if !$0 { savedDesign = nil } })
+    }
+}
+
+/// "The subject hides most of the clock": shown under the preview when a
+/// subject layer above a clock covers more than `SceneCoverage.warningThreshold`
+/// of it. iOS turns its depth effect off in that case; here the fix is one
+/// click — send the subject behind the clock — or the user moves either.
+struct SceneCoverageWarning: View {
+    @Binding var scene: ScreenSaverScene
+    let resources: SceneResources
+    /// Preview width / height; coverage is computed on a canvas this shape.
+    var aspect: CGFloat = 16.0 / 10.0
+
+    @State private var masks: [URL: SceneAlphaMask] = [:]
+
+    private struct MaskBox: @unchecked Sendable {
+        let mask: SceneAlphaMask?
+    }
+
+    struct Finding: Equatable {
+        let subjectID: UUID
+        let clockID: UUID
+        let subjectTitle: String
+        let fraction: Double
+    }
+
+    var body: some View {
+        // A container that exists even with nothing to show, so the mask
+        // loader below runs (modifiers on an empty Group never fire).
+        VStack(spacing: 0) {
+            if let finding = findings.max(by: { $0.fraction < $1.fraction }) {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("\(finding.subjectTitle) hides \(Int((finding.fraction * 100).rounded()))% of the clock. Move the clock, or send the subject behind it.")
+                        .font(Theme.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Send Behind Clock") {
+                        sendBehindClock(finding)
+                    }
+                    .controlSize(.small)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Theme.chipFill, in: Capsule())
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .task(id: subjectURLs) {
+            await loadMasks()
+        }
+    }
+
+    private var subjectURLs: [URL] {
+        scene.layers.compactMap { layer in
+            guard case .subject(let subject) = layer.content else { return nil }
+            return resources.assetURL(subject.imageAssetName)
+        }
+    }
+
+    /// Every visible (subject above clock) pair over the threshold.
+    private var findings: [Finding] {
+        let canvas = CGSize(width: 1600, height: 1600 / max(0.1, aspect))
+        let date = Date()
+        var result: [Finding] = []
+        for (clockIndex, clockLayer) in scene.layers.enumerated() {
+            guard clockLayer.isVisible, case .clock(let clock) = clockLayer.content else { continue }
+            let pointSize = max(1, clockLayer.size * canvas.height)
+            let clockRect = SceneCoverage.restingRect(
+                center: clockLayer.position,
+                size: SceneLayerMetrics.clockSize(clock, pointSize: pointSize,
+                                                  dateLine: SceneTextResolver.dateLine(for: date)),
+                canvas: canvas)
+            for subjectLayer in scene.layers[(clockIndex + 1)...] {
+                guard subjectLayer.isVisible, case .subject(let subject) = subjectLayer.content,
+                      let url = resources.assetURL(subject.imageAssetName), let mask = masks[url] else { continue }
+                let placed = SceneCoverage.subjectRect(subject, layer: subjectLayer, mask: mask,
+                                                       treatment: scene.background.treatment,
+                                                       canvas: canvas, displayScale: 2)
+                let fraction = SceneCoverage.fraction(of: clockRect, coveredBy: mask, drawnIn: placed.maskRect)
+                if fraction > SceneCoverage.warningThreshold {
+                    result.append(Finding(subjectID: subjectLayer.id, clockID: clockLayer.id,
+                                          subjectTitle: subjectLayer.title, fraction: fraction))
+                }
+            }
+        }
+        return result
+    }
+
+    /// Moves the subject to just below the clock in the list.
+    private func sendBehindClock(_ finding: Finding) {
+        guard let from = scene.layers.firstIndex(where: { $0.id == finding.subjectID }),
+              let clockIndex = scene.layers.firstIndex(where: { $0.id == finding.clockID }),
+              from > clockIndex else { return }
+        let layer = scene.layers.remove(at: from)
+        scene.layers.insert(layer, at: clockIndex)
+    }
+
+    private func loadMasks() async {
+        let urls = Set(subjectURLs)
+        for url in masks.keys where !urls.contains(url) {
+            masks[url] = nil
+        }
+        for url in urls where masks[url] == nil {
+            let box = await Task.detached(priority: .utility) { () -> MaskBox in
+                guard let image = SceneImageLoader.downsampledImage(at: url, maxPixelSize: 256) else {
+                    return MaskBox(mask: nil)
+                }
+                return MaskBox(mask: SceneAlphaMask(image: image, maxPixelSize: 128))
+            }.value
+            if let mask = box.mask {
+                masks[url] = mask
+            }
+        }
     }
 }
 

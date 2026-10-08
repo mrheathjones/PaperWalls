@@ -142,6 +142,9 @@
 		FF00000000000000000000E7 /* SubjectRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D8 /* SubjectRenderTests.swift */; };
 		FF00000000000000000000E8 /* SceneImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000063 /* SceneImageStore.swift */; };
 		FF00000000000000000000E9 /* SaverSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000064 /* SaverSceneView.swift */; };
+		FF00000000000000000000EA /* SceneCoverage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D9 /* SceneCoverage.swift */; };
+		FF00000000000000000000EB /* SceneCoverage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D9 /* SceneCoverage.swift */; };
+		FF00000000000000000000EC /* SceneCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000DA /* SceneCoverageTests.swift */; };
 		FF00000000000000000000E4 /* SceneGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000D5 /* SceneGeneratorTests.swift */; };
 		FF00000000000000000000D4 /* ScenePreviewInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CA /* ScenePreviewInteraction.swift */; };
 		FF00000000000000000000D5 /* BrandAssetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000000000000000000CB /* BrandAssetStore.swift */; };
@@ -266,6 +269,8 @@
 		DD00000000000000000000D6 /* PhotoImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoImport.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D7 /* SubjectLayerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectLayerControls.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D8 /* SubjectRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectRenderTests.swift; sourceTree = "<group>"; };
+		DD00000000000000000000D9 /* SceneCoverage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneCoverage.swift; sourceTree = "<group>"; };
+		DD00000000000000000000DA /* SceneCoverageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneCoverageTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000D5 /* SceneGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneGeneratorTests.swift; sourceTree = "<group>"; };
 		DD00000000000000000000CA /* ScenePreviewInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenePreviewInteraction.swift; sourceTree = "<group>"; };
 		DD00000000000000000000CB /* BrandAssetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandAssetStore.swift; sourceTree = "<group>"; };
@@ -349,6 +354,7 @@
 				DD0000000000000000000062 /* ScreenSaverPresets.swift */,
 				DD0000000000000000000063 /* SceneImageStore.swift */,
 				DD0000000000000000000064 /* SaverSceneView.swift */,
+				DD00000000000000000000D9 /* SceneCoverage.swift */,
 				DD0000000000000000000080 /* ScreenSaverSceneStore.swift */,
 				DD0000000000000000000081 /* ScreenSaverPolicy.swift */,
 				DD00000000000000000000A8 /* ScreenSaverSelection.swift */,
@@ -377,6 +383,7 @@
 				DD0000000000000000000051 /* PaperWallsTests.swift */,
 				DD0000000000000000000066 /* SceneTests.swift */,
 				DD00000000000000000000D8 /* SubjectRenderTests.swift */,
+				DD00000000000000000000DA /* SceneCoverageTests.swift */,
 				DD0000000000000000000085 /* ScreenSaverStoreTests.swift */,
 				DD00000000000000000000A4 /* SceneBundleTests.swift */,
 				DD00000000000000000000AC /* WallpaperDeploymentTests.swift */,
@@ -621,6 +628,7 @@
 				FF0000000000000000000064 /* ScreenSaverPresets.swift in Sources */,
 				FF0000000000000000000066 /* SceneImageStore.swift in Sources */,
 				FF0000000000000000000067 /* SaverSceneView.swift in Sources */,
+				FF00000000000000000000EA /* SceneCoverage.swift in Sources */,
 				FF0000000000000000000068 /* ScenePreviewPresenter.swift in Sources */,
 				FF0000000000000000000080 /* ScreenSaverSceneStore.swift in Sources */,
 				FF0000000000000000000082 /* ScreenSaverPolicy.swift in Sources */,
@@ -711,6 +719,8 @@
 				FF0000000000000000000063 /* SceneMotionMath.swift in Sources */,
 				FF00000000000000000000E8 /* SceneImageStore.swift in Sources */,
 				FF00000000000000000000E9 /* SaverSceneView.swift in Sources */,
+				FF00000000000000000000EB /* SceneCoverage.swift in Sources */,
+				FF00000000000000000000EC /* SceneCoverageTests.swift in Sources */,
 				FF0000000000000000000065 /* ScreenSaverPresets.swift in Sources */,
 				FF0000000000000000000069 /* SceneTests.swift in Sources */,
 				FF00000000000000000000E7 /* SubjectRenderTests.swift in Sources */,
