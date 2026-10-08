@@ -201,6 +201,9 @@ struct SceneLayer: Codable, Equatable, Identifiable {
     }
 
     var id = UUID()
+    /// A name the user gave the layer; nil shows a title derived from
+    /// the content (see `title`).
+    var name: String?
     var isVisible: Bool = true
     var content: SceneLayerContent
     var position: ScenePoint = .center
@@ -214,6 +217,7 @@ extension SceneLayer {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = container.sceneValue(.id, default: UUID())
+        name = container.sceneValue(.name, default: nil)
         isVisible = container.sceneValue(.isVisible, default: true)
         content = try container.decode(SceneLayerContent.self, forKey: .content)
         position = container.sceneValue(.position, default: .center)
@@ -238,15 +242,56 @@ extension SceneLayer {
         SceneLayer(content: .icon(IconLayer(symbolName: symbolName)), size: 0.12)
     }
 
-    /// A subject cut out of a photo. It starts pinned, so it sits exactly
-    /// where it was in the photo (over whatever is behind it); unpinned it
-    /// is a free layer whose default height is 60% of the screen.
+    /// A subject cut out of a photo: a free layer (not pinned) placed
+    /// and sized where the subject sat in the photo, so with the photo
+    /// filling the screen it starts roughly on itself. Without bounds it
+    /// is centred at 60% of the screen height.
     static func subject(imageAssetName: String, sourceAssetName: String? = nil,
                         bounds: SceneRect? = nil) -> SceneLayer {
-        SceneLayer(content: .subject(SubjectLayer(imageAssetName: imageAssetName,
-                                                  sourceAssetName: sourceAssetName,
-                                                  bounds: bounds)),
-                   size: 0.6)
+        var layer = SceneLayer(content: .subject(SubjectLayer(imageAssetName: imageAssetName,
+                                                              sourceAssetName: sourceAssetName,
+                                                              bounds: bounds)),
+                               size: 0.6)
+        if let bounds {
+            layer.position = ScenePoint(x: (bounds.x + bounds.width / 2).clampedToUnit,
+                                        y: (bounds.y + bounds.height / 2).clampedToUnit)
+            layer.size = min(max(bounds.height, subjectSizeRange.lowerBound), subjectSizeRange.upperBound)
+        }
+        return layer
+    }
+
+    /// What the layers list shows: the user's name, else a title from the
+    /// content (text layers are named by what they say).
+    var title: String {
+        if let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            return name
+        }
+        guard case .text(let text) = content else { return content.displayName }
+        let preview = text.segments.map { segment -> String in
+            switch segment {
+            case .text(let string): return string
+            case .token(let token): return "[\(token.displayName)]"
+            }
+        }.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+        return preview.isEmpty ? "Text" : preview
+    }
+}
+
+extension ScreenSaverScene {
+    /// Inserts a copy of the layer directly in front of the original and
+    /// returns the copy's ID, or nil when there is no such layer. A named
+    /// layer's copy is "<name> copy"; an unnamed one keeps deriving its
+    /// title from the content.
+    @discardableResult
+    mutating func duplicateLayer(withID id: UUID) -> UUID? {
+        guard let index = layers.firstIndex(where: { $0.id == id }) else { return nil }
+        var copy = layers[index]
+        copy.id = UUID()
+        if let name = copy.name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            copy.name = name + " copy"
+        }
+        layers.insert(copy, at: index + 1)
+        return copy.id
     }
 }
 
@@ -520,12 +565,13 @@ extension IconLayer {
 /// transparency (`imageAssetName`), the same pixel size as the photo it
 /// came from (`sourceAssetName`, also in the asset store).
 ///
-/// Pinned, the cutout is drawn with exactly the background's fit, focus
-/// and zoom — so with the photo as the background it lands on itself,
-/// and any layer below it in the list (the clock, text) shows through
-/// the gaps: the iOS lock-screen "depth" look. Unpinned, it is an
-/// ordinary layer with a position, size and motion, for standing a
-/// subject in front of a different background.
+/// Unpinned (the default), it is an ordinary layer with a position, size
+/// and motion — its crop of the cutout, for standing a subject anywhere
+/// in front of any background. Pinned, the whole cutout is drawn with
+/// exactly the background's fit, focus and zoom, so with the photo as
+/// the background it lands on itself and any layer below it in the list
+/// (the clock, text) shows through the gaps: the iOS lock-screen "depth"
+/// look.
 struct SubjectLayer: Codable, Equatable {
     var imageAssetName: String = ""
     var sourceAssetName: String?
@@ -534,7 +580,7 @@ struct SubjectLayer: Codable, Equatable {
     /// so `size` means the subject's height, not the whole photo's. nil
     /// (older scenes) means the whole frame.
     var bounds: SceneRect?
-    var isPinned: Bool = true
+    var isPinned: Bool = false
     var shadow: Bool = false
 }
 
@@ -544,7 +590,7 @@ extension SubjectLayer {
         imageAssetName = container.sceneValue(.imageAssetName, default: "")
         sourceAssetName = container.sceneValue(.sourceAssetName, default: nil)
         bounds = container.sceneValue(.bounds, default: nil)
-        isPinned = container.sceneValue(.isPinned, default: true)
+        isPinned = container.sceneValue(.isPinned, default: false)
         shadow = container.sceneValue(.shadow, default: false)
     }
 }

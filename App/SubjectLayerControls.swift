@@ -126,7 +126,7 @@ struct SubjectLayerControls: View {
                         .font(.system(size: 14, weight: .medium))
                     Text(subject.isPinned
                          ? "Sits exactly where it was in the photo and follows the background’s fit, focus, and zoom. Layers below it in the list show through behind it."
-                         : "Moves, resizes, and animates like any other layer — for standing the subject in front of a different background.")
+                         : "Moves, resizes, and animates like any other layer. Pin it to lock it exactly where it was in the photo, with the clock and text showing through behind it.")
                         .font(Theme.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

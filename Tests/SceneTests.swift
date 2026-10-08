@@ -322,12 +322,21 @@ final class ScreenSaverSceneCodingTests: XCTestCase {
 
     // MARK: Subject layers
 
-    func testSubjectLayerRoundTripsAndStartsPinned() throws {
+    func testSubjectLayerRoundTripsAndStartsFreeWhereItSat() throws {
         let layer = SceneLayer.subject(imageAssetName: "cutout.png", sourceAssetName: "photo.heic")
         guard case .subject(let subject) = layer.content else { return XCTFail("expected a subject layer") }
-        XCTAssertTrue(subject.isPinned)
+        XCTAssertFalse(subject.isPinned)
         XCTAssertFalse(subject.shadow)
         XCTAssertEqual(subject.sourceAssetName, "photo.heic")
+        XCTAssertEqual(layer.size, 0.6)
+        XCTAssertEqual(layer.position, .center)
+
+        // With bounds, the free layer starts where the subject was.
+        let placed = SceneLayer.subject(imageAssetName: "c.png",
+                                        bounds: SceneRect(x: 0.1, y: 0.2, width: 0.4, height: 0.5))
+        XCTAssertEqual(placed.position.x, 0.3, accuracy: 1e-9)
+        XCTAssertEqual(placed.position.y, 0.45, accuracy: 1e-9)
+        XCTAssertEqual(placed.size, 0.5)
 
         var scene = ScreenSaverScene(layers: [layer])
         XCTAssertEqual(try roundTrip(scene), scene)
@@ -348,7 +357,7 @@ final class ScreenSaverSceneCodingTests: XCTestCase {
         let scene = try decode(#"{"layers": [{"content": {"kind": "subject", "imageAssetName": "c.png"}, "size": 5}]}"#)
         let layer = try XCTUnwrap(scene.layers.first)
         guard case .subject(let subject) = layer.content else { return XCTFail("expected a subject layer") }
-        XCTAssertTrue(subject.isPinned)
+        XCTAssertFalse(subject.isPinned)
         XCTAssertNil(subject.sourceAssetName)
         XCTAssertNil(subject.bounds)
         // A subject may be as tall as the screen; other layers still cap at 60%.
@@ -363,6 +372,44 @@ final class ScreenSaverSceneCodingTests: XCTestCase {
         XCTAssertEqual(subject.bounds?.pixelRect(in: CGSize(width: 1000, height: 800)),
                        CGRect(x: 500, y: 0, width: 500, height: 200))
         XCTAssertNil(SceneRect(x: 0.5, y: 0.5, width: 0.0001, height: 0.5).pixelRect(in: CGSize(width: 100, height: 100)))
+    }
+
+    // MARK: Names and duplicates
+
+    func testLayerNameRoundTripsAndDrivesTheTitle() throws {
+        var layer = SceneLayer.text("Be right back")
+        XCTAssertEqual(layer.title, "Be right back")
+        XCTAssertEqual(SceneLayer.clock().title, "Clock")
+        layer.name = "Lobby message"
+        XCTAssertEqual(layer.title, "Lobby message")
+        layer.name = "   "
+        XCTAssertEqual(layer.title, "Be right back", "blank names fall back to the automatic title")
+
+        layer.name = "Lobby message"
+        let scene = ScreenSaverScene(layers: [layer])
+        XCTAssertEqual(try roundTrip(scene), scene)
+        // Older files have no "name".
+        XCTAssertNil(try decode(#"{"layers": [{"content": {"kind": "clock"}}]}"#).layers.first?.name)
+    }
+
+    func testDuplicateLayerInsertsACopyInFront() {
+        var scene = ScreenSaverScene(layers: [.clock(), .text("Hi"), .icon()])
+        var named = scene.layers[1]
+        named.name = "Greeting"
+        scene.layers[1] = named
+
+        let copyID = scene.duplicateLayer(withID: named.id)
+        XCTAssertEqual(scene.layers.count, 4)
+        XCTAssertEqual(scene.layers[2].id, copyID)
+        XCTAssertNotEqual(scene.layers[2].id, named.id)
+        XCTAssertEqual(scene.layers[2].name, "Greeting copy")
+        XCTAssertEqual(scene.layers[2].content, named.content)
+        XCTAssertEqual(scene.layers[3].content, .icon(IconLayer()), "the layers after it keep their order")
+
+        let clockCopy = scene.duplicateLayer(withID: scene.layers[0].id)
+        XCTAssertNil(scene.layers[1].name, "unnamed copies keep the automatic title")
+        XCTAssertEqual(scene.layers[1].id, clockCopy)
+        XCTAssertNil(scene.duplicateLayer(withID: UUID()))
     }
 
     func testImageAssetNameCoversIconsAndSubjects() {

@@ -27,6 +27,9 @@ struct SceneComposer: View {
     @State private var isSaving = false
     @State private var formHeight: CGFloat = 400
     @State private var isAddingSubject = false
+    /// The layer being renamed and the name typed so far.
+    @State private var renaming: (id: UUID, name: String)?
+    @State private var renameText = ""
 
     /// The Name field and the AI Prompt card under it share this width.
     private static let sidebarWidth: CGFloat = 400
@@ -104,6 +107,13 @@ struct SceneComposer: View {
             Button("Keep Editing", role: .cancel) {}
         } message: {
             Text("“\(savedName ?? "")” is in your library.")
+        }
+        .alert("Rename Layer", isPresented: renamePresented) {
+            TextField("Name", text: $renameText)
+            Button("Rename", action: commitRename)
+            Button("Cancel", role: .cancel) { renaming = nil }
+        } message: {
+            Text("Leave the name empty to go back to the automatic title.")
         }
         .sheet(isPresented: $isAddingSubject) {
             SubjectImportSheet { imported, usePhotoAsBackground in
@@ -297,12 +307,15 @@ struct SceneComposer: View {
     private func layerRow(_ layer: SceneLayer) -> some View {
         let index = draft.scene.layers.firstIndex { $0.id == layer.id } ?? 0
         return row(isSelected: selection == .layer(layer.id),
-                   systemImage: icon(for: layer), title: title(for: layer),
+                   systemImage: icon(for: layer), title: layer.title,
                    dimmed: !layer.isVisible) {
             selection = .layer(layer.id)
         } trailing: {
             rowIcon(layer.isVisible ? "eye" : "eye.slash", help: layer.isVisible ? "Hide" : "Show") {
                 draft.scene.layers[index].isVisible.toggle()
+            }
+            rowIcon("plus.square.on.square", help: "Duplicate layer") {
+                duplicate(layer)
             }
             rowIcon("chevron.up", help: "Bring forward",
                     disabled: index >= draft.scene.layers.count - 1) {
@@ -312,12 +325,19 @@ struct SceneComposer: View {
                 draft.scene.layers.swapAt(index, index - 1)
             }
             rowIcon("trash", help: "Delete layer") {
-                draft.scene.layers.remove(at: index)
-                if selection == .layer(layer.id) {
-                    selectFrontLayer()
-                }
+                delete(layer)
             }
         }
+        .contextMenu {
+            Button("Rename…") { beginRename(layer) }
+            Button("Duplicate") { duplicate(layer) }
+            Button(layer.isVisible ? "Hide" : "Show") {
+                draft.scene.layers[index].isVisible.toggle()
+            }
+            Divider()
+            Button("Delete", role: .destructive) { delete(layer) }
+        }
+        .simultaneousGesture(TapGesture(count: 2).onEnded { beginRename(layer) })
     }
 
     /// One list row: a real button selects it (so keyboard and
@@ -385,16 +405,36 @@ struct SceneComposer: View {
         }
     }
 
-    /// Text layers are named by what they say.
-    private func title(for layer: SceneLayer) -> String {
-        guard case .text(let text) = layer.content else { return layer.content.displayName }
-        let preview = text.segments.map { segment -> String in
-            switch segment {
-            case .text(let string): return string
-            case .token(let token): return "[\(token.displayName)]"
-            }
-        }.joined().trimmingCharacters(in: .whitespacesAndNewlines)
-        return preview.isEmpty ? "Text" : preview
+    private func beginRename(_ layer: SceneLayer) {
+        renameText = layer.name ?? ""
+        renaming = (layer.id, renameText)
+    }
+
+    private func commitRename() {
+        guard let renaming, let index = draft.scene.layers.firstIndex(where: { $0.id == renaming.id }) else {
+            self.renaming = nil
+            return
+        }
+        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        draft.scene.layers[index].name = trimmed.isEmpty ? nil : trimmed
+        self.renaming = nil
+    }
+
+    private var renamePresented: Binding<Bool> {
+        Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })
+    }
+
+    private func duplicate(_ layer: SceneLayer) {
+        if let id = draft.scene.duplicateLayer(withID: layer.id) {
+            selection = .layer(id)
+        }
+    }
+
+    private func delete(_ layer: SceneLayer) {
+        draft.scene.layers.removeAll { $0.id == layer.id }
+        if selection == .layer(layer.id) {
+            selectFrontLayer()
+        }
     }
 
     // MARK: - Controls

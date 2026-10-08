@@ -57,10 +57,12 @@ the last sidebar item.
 the Photos library via the system picker, or a file), lifts its foreground
 with Vision on the Mac, and adds it as a layer above the clock and text,
 with the photo as the background — the iPhone lock-screen "depth" look, where
-the time sits behind the person or object in front. A pinned subject keeps
-its place in the photo; unpin it to move, resize, and animate the subject on
-its own in front of any other background (a wallpaper, a color, a generated
-image). Background › An Image has the same picker and a **Lift Subject**
+the time sits behind the person or object in front. The subject starts as a
+free layer where it sat in the photo: move, resize, and animate it in front
+of any background (a wallpaper, a color, a generated image), or **Pin** it to
+lock it exactly onto the photo for the depth look. Layers can be renamed
+(double-click, or right-click › Rename…) and duplicated (right-click, or the
+row's button). Background › An Image has the same picker and a **Lift Subject**
 button, which cuts the subject out of the chosen background into its own
 layer. Nothing leaves the Mac, and no Photos permission or PPPC profile is
 needed: the picker runs out of process and hands over only the chosen photo.

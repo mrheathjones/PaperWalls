@@ -66,7 +66,8 @@ final class SubjectRenderTests: XCTestCase {
     func testPinnedSubjectCoversLayersBelowAndShowsLayersAbove() throws {
         let photo = try picture(transparentBackground: false)
         let cutout = try picture(transparentBackground: true)
-        let subject = SceneLayer.subject(imageAssetName: "cutout.png", sourceAssetName: "photo.jpg")
+        var subject = SceneLayer.subject(imageAssetName: "cutout.png", sourceAssetName: "photo.jpg")
+        subject.content = .subject(SubjectLayer(imageAssetName: "cutout.png", sourceAssetName: "photo.jpg", isPinned: true))
         // The 1600×1000 photo fills the 400×250 canvas at 1/4: the block is
         // x 150–250, y 75–175. Centre is inside it; (60, 125) is beside it.
         let centre = (x: 200, y: 125), beside = (x: 60, y: 125)
@@ -95,7 +96,9 @@ final class SubjectRenderTests: XCTestCase {
         var zoomed = scene
         zoomed.background.treatment.zoom = 2
         zoomed.background.treatment.focus = ScenePoint(x: 0, y: 0)   // keep the top-left
-        zoomed.layers = [band, .subject(imageAssetName: "cutout.png")]
+        var pinned = SceneLayer.subject(imageAssetName: "cutout.png")
+        pinned.content = .subject(SubjectLayer(imageAssetName: "cutout.png", isPinned: true))
+        zoomed.layers = [band, pinned]
         let image = try render(zoomed, photo: photo, cutout: cutout)
         // At 2× keeping the top-left, the block spans x 300–500, y 150–350
         // on the canvas: (350, 200) is block, (200, 125) is now band.
