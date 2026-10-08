@@ -64,7 +64,8 @@ lock it exactly onto the photo for the depth look. When a subject above a
 clock hides more than about a third of it, a warning under the preview says
 how much and offers **Send Behind Clock**. Layers can be renamed
 (double-click, or right-click › Rename…) and duplicated (right-click, or the
-row's button). Background › An Image has the same picker and a **Lift Subject**
+row's button). Background › An Image and Icon › Use your own image have the
+same Photos picker, and the background gains a **Lift Subject**
 button, which cuts the subject out of the chosen background into its own
 layer. Nothing leaves the Mac, and no Photos permission or PPPC profile is
 needed: the picker runs out of process and hands over only the chosen photo.

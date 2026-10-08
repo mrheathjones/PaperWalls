@@ -586,7 +586,12 @@ struct IconLayerControls: View {
             }
             SettingsDivider()
             ComposerRow(title: "Use your own image") {
-                Button("Choose Image…", action: chooseImage)
+                HStack(spacing: 8) {
+                    PhotoLibraryButton(onPicked: importPhoto) {
+                        Text("From Photos…")
+                    }
+                    Button("Choose Image…", action: chooseImage)
+                }
             }
             SettingsDivider()
             ComposerRow(title: "Shadow") {
@@ -614,6 +619,17 @@ struct IconLayerControls: View {
             icon.imageAssetName = try ScreenSaverSceneStore.importAsset(from: url)
         } catch {
             importError = "That file couldn’t be added. Choose a PNG, JPEG, HEIC, TIFF, or GIF image."
+        }
+    }
+
+    /// A photo from the Photos picker, stored upright like a background
+    /// photo (an icon is rarely a 48 MP shot, but a sideways one would
+    /// draw sideways otherwise).
+    private func importPhoto(data: Data) {
+        do {
+            icon.imageAssetName = try PhotoImporter.importPhoto(data: data).assetName
+        } catch {
+            importError = error.localizedDescription
         }
     }
 
